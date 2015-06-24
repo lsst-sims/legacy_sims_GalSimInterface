@@ -1,0 +1,9 @@
+setupRequired(GalSim)
+setupRequired(sims_catUtils)
+
+setupOptional(obs_lsstSim)
+
+#This is needed by the mssql python module
+envPrepend(TDSVER, 7.0)
+
+envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
