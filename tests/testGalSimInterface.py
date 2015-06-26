@@ -7,7 +7,7 @@ import eups
 import galsim
 from collections import OrderedDict
 import lsst.utils.tests as utilsTests
-from lsst.sims.photUtils import Bandpass, expectedSkyCountsForM5, LSSTdefaults, PhotometricParameters
+from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
 from lsst.sims.catalogs.generation.utils import makePhoSimTestDB
 from lsst.sims.catalogs.generation.db import ObservationMetaData
@@ -270,7 +270,7 @@ class GalSimInterfaceTest(unittest.TestCase):
             #calculate the expected skyCounts in each filter
             backgroundCounts = {}
             for filterName in bandpassDict.keys():
-                cts = expectedSkyCountsForM5(catalog.obs_metadata.m5[filterName], bandpassDict[filterName],
+                cts = calcSkyCountsPerPixelForM5(catalog.obs_metadata.m5[filterName], bandpassDict[filterName],
                                              catalog.photParams, seeing=catalog.obs_metadata.seeing[filterName])
 
                 backgroundCounts[filterName] = cts
@@ -365,7 +365,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         #calculate the expected skyCounts in each filter
         backgroundCounts = {}
         for filterName in noisyBandpassDict.keys():
-            cts = expectedSkyCountsForM5(noisyCatalog.obs_metadata.m5[filterName], noisyBandpassDict[filterName],
+            cts = calcSkyCountsPerPixelForM5(noisyCatalog.obs_metadata.m5[filterName], noisyBandpassDict[filterName],
                                          noisyCatalog.photParams, seeing=noisyCatalog.obs_metadata.seeing[filterName])
 
             backgroundCounts[filterName] = cts
@@ -585,7 +585,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         m5 = 24.5
         bandpass = Bandpass()
         bandpass.readThroughput(os.path.join(eups.productDir('throughputs'),'baseline','total_r.dat'))
-        background = expectedSkyCountsForM5(m5, bandpass, seeing=lsstDefaults.seeing('r'),
+        background = calcSkyCountsPerPixelForM5(m5, bandpass, seeing=lsstDefaults.seeing('r'),
                                             photParams=photParams)
 
         noisyImage = noise.addNoiseAndBackground(img, bandpass, m5=m5,

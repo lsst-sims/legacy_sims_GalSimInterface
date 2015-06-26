@@ -5,7 +5,7 @@ galsim into the CatSim interface
 
 import numpy
 import galsim
-from lsst.sims.photUtils import expectedSkyCountsForM5, PhotometricParameters, \
+from lsst.sims.photUtils import calcSkyCountsPerPixelForM5, PhotometricParameters, \
                                 LSSTdefaults
 
 __all__ = ["ExampleCCDNoise"]
@@ -99,7 +99,7 @@ class NoiseAndBackgroundBase(object):
 
 
         #calculate the sky background to be added to each pixel
-        skyCounts = expectedSkyCountsForM5(m5, bandpass, seeing=seeing, photParams=photParams)
+        skyCounts = calcSkyCountsPerPixelForM5(m5, bandpass, seeing=seeing, photParams=photParams)
 
         image = image.copy()
 
