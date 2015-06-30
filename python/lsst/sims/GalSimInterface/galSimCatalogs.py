@@ -494,7 +494,7 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
                                              atmoTransmission=self.atmoTransmissionName,
                                              skySED=self.skySEDname)
 
-            self.galSimInterpreter = GalSimInterpreter(obs_metadata=self.obs_metadata, detectors=detectors,
+            self.galSimInterpreter = GalSimInterpreter(obs_metadata=self.obs_metadata, epoch=self.db_obj.epoch, detectors=detectors,
                                                        bandpassDict=self.bandpassDict, noiseWrapper=self.noise_and_background)
 
             self.galSimInterpreter.setPSF(PSF=self.PSF)

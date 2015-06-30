@@ -11,10 +11,12 @@ GalSimInterpreter expects.
 import os
 import numpy
 import galsim
-from lsst.sims.utils import arcsecFromRadians
+from lsst.sims.utils import arcsecFromRadians, radiansFromArcsec
+from lsst.sims.coordUtils import observedFromICRS
 from lsst.sims.photUtils import LSSTdefaults
 
 __all__ = ["GalSimInterpreter", "GalSimDetector"]
+
 
 class GalSimDetector(object):
     """
@@ -75,7 +77,7 @@ class GalSimInterpreter(object):
     into FITS images.
     """
 
-    def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None, noiseWrapper=None):
+    def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None, noiseWrapper=None, epoch=None):
 
         """
         @param [in] obs_metadata is an instantiation of the ObservationMetaData class which
@@ -94,6 +96,7 @@ class GalSimInterpreter(object):
         """
 
         self.obs_metadata = obs_metadata
+        self.epoch = epoch
         self.PSF = None
         self._LSSTdefaults = LSSTdefaults()
         self.noiseWrapper = noiseWrapper
@@ -111,6 +114,7 @@ class GalSimInterpreter(object):
                                   #returning a deep copy
 
         self.setBandpasses(bandpassDict=bandpassDict)
+
 
     def setBandpasses(self, bandpassDict):
         """
@@ -365,6 +369,41 @@ class GalSimInterpreter(object):
 
         return outputString, outputList, centeredObjDict
 
+
+    def _createWCS(self, detector):
+        """
+        Create an AffineTransform WCS (which is a GalSim class) corresponding to this
+        detector
+        """
+
+        if not hasattr(self, '_boreRA'):
+            coords = observedFromICRS(numpy.array([self.obs_metadata._unrefractedRA]),
+                                                           numpy.array([self.obs_metadata._unrefractedDec]),
+                                                           obs_metadata=self.obs_metadata, epoch=self.epoch)
+
+            self._boreRA = coords[0][0]
+            self._boreDec = coords[1][0]
+
+
+        #we will now approximate the celestial sphere as a plane centered on the boresite of the telescope
+
+        theta = self.obs_metadata._rotSkyPos
+        conversionFactor = numpy.degrees(radiansFromArcsec(detector.photParams.platescale))
+        dudx = numpy.cos(theta)*conversionFactor/numpy.cos(self._boreDec)
+        dudy = -numpy.sin(theta)*conversionFactor/numpy.cos(self._boreDec)
+        dvdx = numpy.sin(theta)*conversionFactor
+        dvdy = numpy.cos(theta)*conversionFactor
+
+        raOrigin = radiansFromArcsec(detector.xMin*numpy.cos(theta) - detector.yMin*numpy.sin(theta))/numpy.cos(self._boreDec)
+        decOrigin = radiansFromArcsec(detector.xMin*numpy.sin(theta) + detector.yMin*numpy.cos(theta))
+
+        ra0 = numpy.degrees(self._boreRA + raOrigin)
+        dec0 = numpy.degrees(self._boreDec + decOrigin)
+        print ra0,dec0
+        wcs = galsim.AffineTransform(dudx, dudy, dvdx, dvdy, world_origin=galsim.PositionD(x=ra0, y=dec0))
+        return wcs
+
+
     def blankImage(self, detector=None):
         """
         Draw a blank image associated with a specific detector.  The image will have the correct size
@@ -385,7 +424,10 @@ class GalSimInterpreter(object):
             #set the size of the image
             nx = int((detector.xMax - detector.xMin)/detector.photParams.platescale)
             ny = int((detector.yMax - detector.yMin)/detector.photParams.platescale)
-            image = galsim.Image(nx, ny, scale=detector.photParams.platescale)
+
+            wcs = self._createWCS(detector)
+
+            image = galsim.Image(nx, ny, wcs=wcs)
             self.blankImageCache[detector.name] = image
             return image.copy()
 
