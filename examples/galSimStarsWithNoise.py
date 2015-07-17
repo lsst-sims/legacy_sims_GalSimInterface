@@ -4,7 +4,8 @@ This script illustrates how to add noise to a series of FITS images using stars
 
 import os
 import galsim
-from lsst.sims.catalogs.generation.db import CatalogDBObject, ObservationMetaData
+from lsst.sims.catalogs.generation.db import CatalogDBObject
+from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catUtils.baseCatalogModels import StarObj, OpSim3_61DBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF, ExampleCCDNoise
 from lsst.sims.photUtils import LSSTdefaults

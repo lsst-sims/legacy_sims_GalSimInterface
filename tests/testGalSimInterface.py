@@ -10,7 +10,7 @@ import lsst.utils.tests as utilsTests
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
 from lsst.sims.catalogs.generation.utils import makePhoSimTestDB
-from lsst.sims.catalogs.generation.db import ObservationMetaData
+from lsst.sims.utils import ObservationMetaData
 from lsst.sims.GalSimInterface import GalSimGalaxies, GalSimStars, GalSimAgn, \
                                                SNRdocumentPSF, ExampleCCDNoise
 from lsst.sims.catUtils.utils import calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj, \
