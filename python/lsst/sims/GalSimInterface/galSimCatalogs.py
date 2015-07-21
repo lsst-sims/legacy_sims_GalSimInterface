@@ -16,9 +16,10 @@ import eups
 import copy
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, is_null
-from lsst.sims.coordUtils import CameraCoords, AstrometryGalaxies, AstrometryStars
+from lsst.sims.catUtils.mixins import CameraCoords, AstrometryGalaxies, AstrometryStars, \
+                                      EBVmixin
 from lsst.sims.GalSimInterface import GalSimInterpreter, GalSimDetector
-from lsst.sims.photUtils import EBVmixin, Sed, Bandpass, PhotometryHardware, \
+from lsst.sims.photUtils import Sed, Bandpass, PhotometryHardware, \
                                 PhotometricParameters, LSSTdefaults
 import lsst.afw.cameraGeom.testUtils as camTestUtils
 import lsst.afw.geom as afwGeom
