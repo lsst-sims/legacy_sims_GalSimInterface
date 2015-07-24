@@ -420,28 +420,7 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
 
                 plateScale = numpy.sqrt(numpy.power(translationPupil.getX()-centerPupil.getX(),2)+
                                         numpy.power(translationPupil.getY()-centerPupil.getY(),2))/numpy.sqrt(2.0)
-                xmax = None
-                xmin = None
-                ymax = None
-                ymin = None
-                for corner in dd.getCorners(FOCAL_PLANE):
-                    pt = self.camera.makeCameraPoint(corner, FOCAL_PLANE)
-                    pp = self.camera.transform(pt, cs).getPoint()
-                    if xmax is None or pp.getX() > xmax:
-                        xmax = pp.getX()
-                    if xmin is None or pp.getX() < xmin:
-                        xmin = pp.getX()
-                    if ymax is None or pp.getY() > ymax:
-                        ymax = pp.getY()
-                    if ymin is None or pp.getY() < ymin:
-                        ymin = pp.getY()
 
-                xCenter = 3600.0*numpy.degrees(centerPupil.getX())
-                yCenter = 3600.0*numpy.degrees(centerPupil.getY())
-                xMin = 3600.0*numpy.degrees(xmin)
-                xMax = 3600.0*numpy.degrees(xmax)
-                yMin = 3600.0*numpy.degrees(ymin)
-                yMax = 3600.0*numpy.degrees(ymax)
                 plateScale = 3600.0*numpy.degrees(plateScale)
 
                 #make a detector-custom photParams that copies all of the quantities
