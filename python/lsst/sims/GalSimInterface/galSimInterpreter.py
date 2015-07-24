@@ -399,7 +399,7 @@ class GalSimInterpreter(object):
 
         ra0 = numpy.degrees(self._boreRA + raOrigin)
         dec0 = numpy.degrees(self._boreDec + decOrigin)
-        print ra0,dec0
+
         wcs = galsim.AffineTransform(dudx, dudy, dvdx, dvdy, world_origin=galsim.PositionD(x=ra0, y=dec0))
         return wcs
 
