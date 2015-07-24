@@ -457,9 +457,7 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
                                                platescale=plateScale)
 
 
-                detector = GalSimDetector(name=dd.getName(), xCenter=xCenter, yCenter=yCenter,
-                                          xMin=xMin, yMin=yMin, xMax=xMax, yMax=yMax,
-                                          photParams=params)
+                detector = GalSimDetector(dd, self.camera, photParams=params)
 
                 detectors.append(detector)
 

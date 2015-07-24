@@ -11,6 +11,7 @@ GalSimInterpreter expects.
 import os
 import numpy
 import galsim
+from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 from lsst.sims.utils import arcsecFromRadians, radiansFromArcsec
 from lsst.sims.coordUtils import observedFromICRS
 from lsst.sims.photUtils import LSSTdefaults
@@ -23,19 +24,11 @@ class GalSimDetector(object):
     This class stores information about individual detectors for use by the GalSimInterpreter
     """
 
-    def __init__(self, name=None, xCenter=None, yCenter=None,
-                 xMin=None, xMax=None, yMin=None, yMax=None,
-                 photParams=None):
+    def __init__(self, afwDetector, afwCamera, photParams=None):
         """
-        @param [in] name is a string denoting the name of the detector (this should be the
-        same name that will be returned by the astrometry method findChipName())
+        @param [in] afwDetector is an instaniation of afw.cameraGeom.Detector
 
-        @param [in] xCenter is the x pupil coordinate of the center of the detector in arcseconds
-
-        @param [in] yCenter is the y pupil coordinate of the center of the detector in arcseconds
-
-        @param [in] xMin, xMax, yMin, yMax are the corresponding minimum and maximum values of the
-        pupil coordinates on this detector in arcseconds
+        @param [in] afwCamera is an instantiation of afw.cameraGeom.camera
 
         @param [in] photParams is an instantiation of the PhotometricParameters class that carries
         details about the photometric response of the telescope.
@@ -48,13 +41,60 @@ class GalSimDetector(object):
             raise RuntimeError("You need to specify an instantiation of PhotometricParameters " +
                                "when constructing a GalSimDetector")
 
-        self.name = name
-        self.xCenter = xCenter
-        self.yCenter = yCenter
-        self.xMin = xMin
-        self.xMax = xMax
-        self.yMin = yMin
-        self.yMax = yMax
+        self.name = afwDetector.getName()
+        self.xCenter = None
+        self.yCenter = None
+        self.xCenterPix = None
+        self.yCenterPix = None
+        self.xMin = None
+        self.yMin = None
+        self.xMax = None
+        self.yMax = None
+        self.xMinPix = None
+        self.xMaxPix = None
+        self.yMinPix = None
+        self.yMaxPix = None
+
+        self.pupilSystem = afwDetector.makeCameraSys(PUPIL)
+        self.pixelSystem = afwDetector.makeCameraSys(PIXELS)
+
+        centerPoint = afwDetector.getCenter(FOCAL_PLANE)
+        centerPupil = afwCamera.transform(centerPoint, self.pupilSystem).getPoint()
+        self.xCenter = arcsecFromRadians(centerPupil.getX())
+        self.yCenter = arcsecFromRadians(centerPupil.getY())
+        centerPixel = afwCamera.transform(centerPoint, self.pixelSystem).getPoint()
+        self.xCenterPix = centerPixel.getX()
+        self.yCenterPix = centerPixel.getY()
+
+        cornerPointList = afwDetector.getCorners(FOCAL_PLANE)
+        for cornerPoint in cornerPointList:
+            cameraPoint = afwDetector.makeCameraPoint(cornerPoint, FOCAL_PLANE)
+            cameraPointPupil = afwCamera.transform(cameraPoint, self.pupilSystem).getPoint()
+
+            xx = arcsecFromRadians(cameraPointPupil.getX())
+            yy = arcsecFromRadians(cameraPointPupil.getY())
+            if self.xMin is None or xx<self.xMin:
+                self.xMin = xx
+            if self.xMax is None or xx>self.xMax:
+                self.xMax = xx
+            if self.yMin is None or yy<self.yMin:
+                self.yMin = yy
+            if self.yMax is None or yy>self.yMax:
+                self.yMax = yy
+
+            cameraPointPixel = afwCamera.transform(cameraPoint, self.pixelSystem).getPoint()
+            xx = cameraPointPixel.getX()
+            yy = cameraPointPixel.getY()
+            if self.xMinPix is None or xx<self.xMinPix:
+                self.xMinPix = xx
+            if self.xMaxPix is None or xx>self.xMaxPix:
+                self.xMaxPix = xx
+            if self.yMinPix is None or yy<self.yMinPix:
+                self.yMinPix = yy
+            if self.yMaxPix is None or yy>self.yMaxPix:
+                self.yMaxPix =yy
+
+
         self.photParams = photParams
         self.fileName = self._getFileName()
 
