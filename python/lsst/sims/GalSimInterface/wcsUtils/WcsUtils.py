@@ -31,6 +31,9 @@ def _nativeLonLatFromRaDec(ra, dec, raPointing, decPointing):
     @param [out] lonOut is the native longitude in radians
 
     @param [out] latOut is the native latitude in radians
+
+    Note: while ra and dec can be numpy.arrays, raPointing and decPointing
+    must be floats (you cannot transform for more than one pointing at once)
     """
 
     x = -1.0*numpy.cos(dec)*numpy.sin(ra)
@@ -58,20 +61,25 @@ def _nativeLonLatFromRaDec(ra, dec, raPointing, decPointing):
     cc = numpy.sqrt(v2[0]*v2[0]+v2[1]*v2[1])
     latOut = numpy.arctan2(v2[2], cc)
 
-    if numpy.abs(latOut)>numpy.pi/2.0:
-        raise RuntimeError('returned latOut %e' % latOut)
-
     _y = v2[1]/numpy.cos(latOut)
     _ra = numpy.arccos(_y)
     _x = -numpy.sin(_ra)
 
-    if numpy.isnan(_ra):
-        lonOut = 0.0
-    elif (numpy.abs(_x)>1.0e-9 and numpy.sign(_x)!=numpy.sign(v2[0])) \
-         or (numpy.abs(_y)>1.0e-9 and numpy.sign(_y)!=numpy.sign(v2[1])):
-        lonOut = 2.0*numpy.pi-_ra
+    if type(_ra) is numpy.float64:
+        if numpy.isnan(_ra):
+            lonOut = 0.0
+        elif (numpy.abs(_x)>1.0e-9 and numpy.sign(_x)!=numpy.sign(v2[0])) \
+             or (numpy.abs(_y)>1.0e-9 and numpy.sign(_y)!=numpy.sign(v2[1])):
+            lonOut = 2.0*numpy.pi-_ra
+        else:
+            lonOut = _ra
     else:
-        lonOut = _ra
+        _lonOut = [2.0*numpy.pi-rr if (numpy.abs(xx)>1.0e-9 and numpy.sign(xx)!=numpy.sign(v2_0)) \
+                                   or (numpy.abs(yy)>1.0e-9 and numpy.sign(yy)!=numpy.sign(v2_1)) \
+                                   else rr \
+                                   for rr, xx, yy, v2_0, v2_1 in zip(_ra, _x, _y, v2[0], v2[1])]
+
+        lonOut = numpy.array([0.0 if numpy.isnan(ll) else ll for ll in _lonOut])
 
     return lonOut, latOut
 
@@ -103,6 +111,9 @@ def nativeLonLatFromRaDec(ra, dec, raPointing, decPointing):
     @param [out] lonOut is the native longitude in degrees
 
     @param [out] latOut is the native latitude in degrees
+
+    Note: while ra and dec can be numpy.arrays, raPointing and decPointing
+    must be floats (you cannot transform for more than one pointing at once)
     """
 
     lon, lat = _nativeLonLatFromRaDec(numpy.radians(ra), numpy.radians(dec),
@@ -131,6 +142,9 @@ def _raDecFromNativeLonLat(lon, lat, raPointing, decPointing):
     @param [out] raOut is the RA of the star in radians
 
     @param [in] decOut is the Dec of the star in radians
+
+    Note: while lon and lat can be numpy.arrays, raPointing and decPointing
+    must be floats (you cannot transform for more than one pointing at once)
     """
 
     x = -1.0*numpy.cos(lat)*numpy.sin(lon)
@@ -159,20 +173,26 @@ def _raDecFromNativeLonLat(lon, lat, raPointing, decPointing):
     cc = numpy.sqrt(v2[0]*v2[0]+v2[1]*v2[1])
     decOut = numpy.arctan2(v2[2], cc)
 
-    if numpy.abs(decOut)>numpy.pi/2.0:
-        raise RuntimeError('returned decOut %e' % decOut)
-
     _y = v2[1]/numpy.cos(decOut)
     _ra = numpy.arccos(_y)
     _x = -numpy.sin(_ra)
 
-    if numpy.isnan(_ra):
-        raOut = 0.0
-    elif (numpy.abs(_x)>1.0e-9 and numpy.sign(_x)!=numpy.sign(v2[0])) \
-         or (numpy.abs(_y)>1.0e-9 and numpy.sign(_y)!=numpy.sign(v2[1])):
-        raOut = 2.0*numpy.pi-_ra
+    if type(_ra) is numpy.float64:
+        if numpy.isnan(_ra):
+            raOut = 0.0
+        elif (numpy.abs(_x)>1.0e-9 and numpy.sign(_x)!=numpy.sign(v2[0])) \
+             or (numpy.abs(_y)>1.0e-9 and numpy.sign(_y)!=numpy.sign(v2[1])):
+            raOut = 2.0*numpy.pi-_ra
+        else:
+            raOut = _ra
     else:
-        raOut = _ra
+        _raOut = [2.0*numpy.pi-rr if (numpy.abs(xx)>1.0e-9 and numpy.sign(xx)!=numpy.sign(v2_0)) \
+                                  or (numpy.abs(yy)>1.0e-9 and numpy.sign(yy)!=numpy.sign(v2_1)) \
+                                  else rr \
+                                  for rr, xx, yy, v2_0, v2_1 in zip(_ra, _x, _y, v2[0], v2[1])]
+
+        raOut = numpy.array([0.0 if numpy.isnan(rr) else rr for rr in _raOut])
+
 
     return raOut, decOut
 
@@ -196,6 +216,9 @@ def raDecFromNativeLonLat(lon, lat, raPointing, decPointing):
     @param [out] raOut is the RA of the star in degrees
 
     @param [in] decOut is the Dec of the star in degrees
+
+    Note: while lon and lat can be numpy.arrays, raPointing and decPointing
+    must be floats (you cannot transform for more than one pointing at once)
     """
 
     ra, dec = _raDecFromNativeLonLat(numpy.radians(lon),
