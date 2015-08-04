@@ -6,10 +6,11 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 import lsst.afw.image.utils as afwImageUtils
 import lsst.daf.base as dafBase
+import lsst.meas.astrom as measAstrom
 
 __all__ = ["_nativeLonLatFromRaDec", "_raDecFromNativeLonLat",
            "nativeLonLatFromRaDec", "raDecFromNativeLonLat",
-           "tanWcsFromDetector"]
+           "tanWcsFromDetector", "tanSipWcsFromDetector"]
 
 
 def _nativeLonLatFromRaDec(ra, dec, raPointing, decPointing):
@@ -378,17 +379,57 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     return tanWcs
 
 
-def tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
+def tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch,
+                          order=3,
+                          skyToleranceArcSec=0.001,
+                          pixelTolerance=0.01):
+    """
+    Take an afw Detector and approximate its pixel-to-(Ra,Dec) transformation
+    with a TAN-SIP WCs.
 
-    size = afwDetector.getPixelSize()
+    Definition of the TAN-SIP WCS can be found in Shupe and Hook (2008)
+    http://fits.gsfc.nasa.gov/registry/sip/SIP_distortion_v1_0.pdf
+
+    @param [in] afwDetector is an instantiation of afw.cameraGeom's Detector
+    class which characterizes the detector for which you wish to return th
+    WCS
+
+    @param [in] afwCamera is an instantiation of afw.cameraGeom's Camera
+    class which characterizes the camera containing afwDetector
+
+    @param [in] obs_metadata is an instantiation of ObservationMetaData
+    characterizing the telescope's current pointing
+
+    @param [in] epoch is the epoch in Julian years of the equinox against
+    which RA and Dec are measured
+
+    @param [in] order is the order of the SIP polynomials to be fit to the
+    optical distortions (default 3)
+
+    @param [in] skyToleranceArcSec is the maximum allowed error in the fitted
+    world coordinates (in arcseconds).  Default 0.001
+
+    @param [in] pixelTolerance is the maximum allowed error in the fitted
+    pixel coordinates.  Default 0.02
+
+    @param [out] tanSipWcs is an instantiation of afw.image's TanWcs class
+    representing the WCS of the detector with optical distortions parametrized
+    by the SIP polynomials.
+    """
+
+    bbox = afwDetector.getBBox()
 
     tanWcs = tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
 
-    mockExposure = afwImage.Exposure(int(size.getX()), int(size.getY()))
+    mockExposure = afwImage.ExposureF(bbox.getMaxX(), bbox.getMaxY())
     mockExposure.setWcs(tanWcs)
     mockExposure.setDetector(afwDetector)
 
-    outWcs = afwImageUtils.getDistortedWcs(mockExposure.getInfo())
+    distortedWcs = afwImageUtils.getDistortedWcs(mockExposure.getInfo())
+    tanSipWcs = measAstrom.approximateWcs(distortedWcs, bbox,
+                                          order=order,
+                                          skyTolerance=skyToleranceArcSec*afwGeom.arcseconds,
+                                          pixelTolerance=pixelTolerance)
 
-    return outWcs
+    return tanSipWcs
 
