@@ -1,8 +1,8 @@
 import unittest
-import eups
 import os
 import numpy
 import lsst.utils.tests as utilsTests
+from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData, haversine, arcsecFromRadians
 from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.sims.coordUtils import observedFromICRS, raDecFromPixelCoordinates
@@ -102,7 +102,7 @@ class NativeLonLatTest(unittest.TestCase):
 class WcsTest(unittest.TestCase):
 
     def setUp(self):
-        baseDir = os.path.join(eups.productDir('sims_GalSimInterface'), 'tests', 'cameraData')
+        baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
         self.camera = ReturnCamera(baseDir)
         self.obs = ObservationMetaData(unrefractedRA=25.0, unrefractedDec=-10.0,
                                        boundType='circle', boundLength=1.0,
