@@ -114,33 +114,36 @@ class WcsTest(unittest.TestCase):
                                                              obs_metadata=self.obs,
                                                              epoch=self.epoch)
 
-    def testTanWcs(self):
+
+    def evaluateTanWcs(self, xPixList, yPixList, detector, camera, obs_metadata, epoch):
         """
-        Test method to return a Tan WCS by generating a bunch of pixel coordinates
-        in the undistorted TAN-PIXELS coordinate system.  Then, use sims_coordUtils
-        to convert those pixel coordinates into RA and Dec.  Compare these to the
-        RA and Dec returned by the WCS.  Demand agreement to witin 0.001 arcseconds.
+        Fit an un-distorted Tan WCS to pixel coordinates.  Return the maximum
+        distance between the actual RA, Dec for each pixel and the RA and Dec
+        calculated according to the fit WCS
+
+        @param [in] xPixList list of undistorted x pixel coordinates
+
+        @param [in] yPixList list of undistorted y pixel coordinates
+
+        @param [in] detector is an afwCameraGeom Detector instantiation
+
+        @param [in] camera is an afwCamerGaom Camera instantiation
+
+        @param [in] obs_metadata is an ObservationMetaData instantiation
+
+        @param [in] epoch is the epoch of the coordinate system in Julian years
+
+        @param [out] maxDist is the maximum distance in arcseconds betweeen a pixel's
+        actual RA, Dec position, and the RA, Dec position predicted by the WCS
         """
 
-        detector = self.camera[0]
+        nameList = [detector.getName()] * len(xPixList)
 
-        xPixList = []
-        yPixList = []
-        nameList = []
-        for xx in numpy.arange(0.0, 4001.0, 1000.0):
-            for yy in numpy.arange(0.0, 4001.0, 1000.0):
-                xPixList.append(xx)
-                yPixList.append(yy)
-                nameList.append(detector.getName())
-
-        xPixList = numpy.array(xPixList)
-        yPixList = numpy.array(yPixList)
-
-        raList, decList = raDecFromPixelCoordinates(xPixList, yPixList, nameList, camera=self.camera,
-                                                    obs_metadata=self.obs, epoch=self.epoch,
+        raList, decList = raDecFromPixelCoordinates(xPixList, yPixList, nameList, camera=camera,
+                                                    obs_metadata=obs_metadata, epoch=epoch,
                                                     includeDistortion=False)
 
-        tanWcs = tanWcsFromDetector(detector, self.camera, self.obs, self.epoch)
+        tanWcs = tanWcsFromDetector(detector, camera, obs_metadata, epoch)
 
         # read the data relevant to the transformation between pixels
         # and world coordinates from the WCS
@@ -192,6 +195,33 @@ class WcsTest(unittest.TestCase):
                                                          self.raPointing[0], self.decPointing[0])
 
         maxDistance = arcsecFromRadians(haversine(raTestList, decTestList, raList, decList).max())
+
+        return maxDistance
+
+
+
+    def testTanWcs(self):
+        """
+        Test method to return a Tan WCS by generating a bunch of pixel coordinates
+        in the undistorted TAN-PIXELS coordinate system.  Then, use sims_coordUtils
+        to convert those pixel coordinates into RA and Dec.  Compare these to the
+        RA and Dec returned by the WCS.  Demand agreement to witin 0.001 arcseconds.
+        """
+
+        detector = self.camera[0]
+
+        xPixList = []
+        yPixList = []
+        for xx in numpy.arange(0.0, 4001.0, 1000.0):
+            for yy in numpy.arange(0.0, 4001.0, 1000.0):
+                xPixList.append(xx)
+                yPixList.append(yy)
+
+        xPixList = numpy.array(xPixList)
+        yPixList = numpy.array(yPixList)
+
+        maxDistance = self.evaluateTanWcs(xPixList, yPixList, self.camera[0], self.camera,
+                                          self.obs, self.epoch)
 
         self.assertTrue(maxDistance<0.001)
 
