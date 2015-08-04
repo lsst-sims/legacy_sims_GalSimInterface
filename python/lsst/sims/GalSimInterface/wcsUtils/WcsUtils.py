@@ -1,4 +1,7 @@
 import numpy
+from lsst.sims.coordUtils import raDecFromPixelCoordinates, observedFromICRS
+from lsst.afw.cameraGeom import PUPIL, PIXELS, TAN_PIXELS, FOCAL_PLANE
+import lsst.afw.geom as afwGeom
 
 __all__ = ["_nativeLonLatFromRaDec", "_raDecFromNativeLonLat",
            "nativeLonLatFromRaDec", "raDecFromNativeLonLat"]
@@ -227,3 +230,92 @@ def raDecFromNativeLonLat(lon, lat, raPointing, decPointing):
                                      numpy.radians(decPointing))
 
     return numpy.degrees(ra), numpy.degrees(dec)
+
+
+def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
+
+    tanPixelSystem = afwDetector.makeCameraSys(TAN_PIXELS)
+    xPixMin = None
+    xPixMax = None
+    yPixMin = None
+    yPixMax = None
+    cornerPointList = afwDetector.getCorners(FOCAL_PLANE)
+    for cornerPoint in cornerPointList:
+        cameraPoint = afwCamera.transform(
+                           afwDetector.makeCamerPoint(cornerPoint, FOCAL_PLANE),
+                           tanPixelSystem).getPoint()
+
+        xx = cameraPoint.getX()
+        yy = cameraPoint.getY()
+        if xPixMin is None or xx<xPixMin:
+            xPixMin = xx
+        if xPixMax is None or xx>xPixMax:
+            xPixMax = xx
+        if yPixMin is None or yy<yPixMin:
+            yPixMin = yy
+        if yPixMax is None or yy>yPixMax:
+            yPixMax = yy
+
+    xPixList = []
+    yPixList = []
+    nameList = []
+    dx = 0.1*(xPixMax-xPixMin)
+    dy = 0.1*(yPixMax-yPixMin)
+    for xx in numpy.arange(xPixMin, xPixMax+0.5*dx, dx):
+        for yy in numpy.arange(yPixMin, yPixMax+0.5*dx, dx):
+            xPixList.append(xx)
+            yPixList.append(yy)
+            nameList.append(afwDetector.getName())
+
+
+    raList, decList = raDecFromPixelCoordinates(xPixList, yPixList, nameList,
+                                                camera=afwCamera,
+                                                obs_metadata=obs_metadata,
+                                                epoch=epoch,
+                                                includeDistortion=False)
+
+    raPointing, decPointing = observedFromICRS(numpy.array([obs_metadata._unrefractedRA]),
+                                               numpy.array([obs_metadata._unrefractedDec]),
+                                               obs_metadta=obs_metadata, epoch=epoch)
+
+    crPix1, crPix2 = calculatePixelCoordinates(ra=raPointing, dec=decPointing,
+                                               chipNames=[afwDetector.getName()], camera=afwCamera,
+                                               obs_metadata=obs_metadata, epoch=epoch,
+                                               includeDistortion=False)
+
+    lonList, latList = _nativeLonLatFromRaDec(raList, decList, raPointing[0], decPointing[0])
+
+    #convert from native longitude and latitude to intermediate world coordinates
+    #according to equations (12), (13), (54) and (55) of
+    #
+    #Calabretta and Greisen (2002), A&A 395, p. 1077
+    #
+    radiusList = 180.0/(numpy.tan(latList)*numpy.pi)
+    uList = radiusList*numpy.sin(lonList)
+    vList = -radiusList*numpy.cos(lonList)
+
+    delta_xList = xPixList - crPix1[0]
+    delta_yList = yPixList - crPix2[0]
+
+    bVector = numpy.array([
+                          (delta_xList*uList).sum(),
+                          (delta_yList*uList).sum(),
+                          (delta_xList*vList).sum(),
+                          (delta_yList*vList).sum()
+                          ])
+
+    offDiag = (delta_yList*delta_xList).sum()
+    xsq = numpy.power(delta_xList,2).sum()
+    ysq = numpy.power(delta_yList,2).sum()
+
+    aMatrix = numpy.array([
+                          [xsq, offDiag, 0.0, 0.0],
+                          [offDiag, ysq, 0.0, 0.0],
+                          [0.0, 0.0, xsq, offDiag],
+                          [0.0, 0.0, offDiag, ysq]
+                          ])
+
+    coeffs = numpy.linalg.solve(aMatrix, bVector)
+
+    crValPoint = afwGeom.Point2D(numpy.degrees(raPointing[0]), numpy.degrees(decPointing[0]))
+    crPixPoint = afwGeom.Point2D(crPix1[0], crPix2[0])
