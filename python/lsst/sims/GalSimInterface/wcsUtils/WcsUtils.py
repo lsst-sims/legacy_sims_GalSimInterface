@@ -1,10 +1,15 @@
 import numpy
-from lsst.sims.coordUtils import raDecFromPixelCoordinates, observedFromICRS
+from lsst.sims.coordUtils import raDecFromPixelCoordinates, observedFromICRS, \
+                                 calculatePixelCoordinates
 from lsst.afw.cameraGeom import PUPIL, PIXELS, TAN_PIXELS, FOCAL_PLANE
 import lsst.afw.geom as afwGeom
+import lsst.afw.image as afwImage
+import lsst.afw.image.utils as afwImageUtils
+import lsst.daf.base as dafBase
 
 __all__ = ["_nativeLonLatFromRaDec", "_raDecFromNativeLonLat",
-           "nativeLonLatFromRaDec", "raDecFromNativeLonLat"]
+           "nativeLonLatFromRaDec", "raDecFromNativeLonLat",
+           "tanWcsFromDetector"]
 
 
 def _nativeLonLatFromRaDec(ra, dec, raPointing, decPointing):
@@ -231,8 +236,7 @@ def raDecFromNativeLonLat(lon, lat, raPointing, decPointing):
 
     return numpy.degrees(ra), numpy.degrees(dec)
 
-
-def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
+def _getTanPixelBounds(afwDetector, afwCamera):
 
     tanPixelSystem = afwDetector.makeCameraSys(TAN_PIXELS)
     xPixMin = None
@@ -242,7 +246,7 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     cornerPointList = afwDetector.getCorners(FOCAL_PLANE)
     for cornerPoint in cornerPointList:
         cameraPoint = afwCamera.transform(
-                           afwDetector.makeCamerPoint(cornerPoint, FOCAL_PLANE),
+                           afwDetector.makeCameraPoint(cornerPoint, FOCAL_PLANE),
                            tanPixelSystem).getPoint()
 
         xx = cameraPoint.getX()
@@ -256,13 +260,49 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
         if yPixMax is None or yy>yPixMax:
             yPixMax = yy
 
+    return xPixMin, xPixMax, yPixMin, yPixMax
+
+
+def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
+    """
+    Take an afw.cameraGeom detector and return a WCS which approximates
+    the focal plane as perfectly flat (i.e. it ignores optical distortions
+    that the telescope may impose on the image)
+
+    @param [in] afwDetector is an instantiation of afw.cameraGeom's Detector
+    class which characterizes the detector for which you wish to return th
+    WCS
+
+    @param [in] afwCamera is an instantiation of afw.cameraGeom's Camera
+    class which characterizes the camera containing afwDetector
+
+    @param [in] obs_metadata is an instantiation of ObservationMetaData
+    characterizing the telescope's current pointing
+
+    @param [in] epoch is the epoch in Julian years of the equinox against
+    which RA and Dec are measured
+
+    @param [out] tanWcs is an instantiation of afw.image's TanWcs class
+    representing the WCS of the detector as if there were no optical
+    distortions imposed by the telescope.
+    """
+
+    xTanPixMin, xTanPixMax, \
+    yTanPixMin, yTanPixMax = _getTanPixelBounds(afwDetector, afwCamera)
+
+
     xPixList = []
     yPixList = []
     nameList = []
-    dx = 0.1*(xPixMax-xPixMin)
-    dy = 0.1*(yPixMax-yPixMin)
-    for xx in numpy.arange(xPixMin, xPixMax+0.5*dx, dx):
-        for yy in numpy.arange(yPixMin, yPixMax+0.5*dx, dx):
+
+    #dx and dy are set somewhat heuristically
+    #setting them eqal to 0.1(max-min) lead to errors
+    #on the order of 0.7 arcsec in the WCS
+
+    dx = 0.5*(xTanPixMax-xTanPixMin)
+    dy = 0.5*(yTanPixMax-yTanPixMin)
+    for xx in numpy.arange(xTanPixMin, xTanPixMax+0.5*dx, dx):
+        for yy in numpy.arange(yTanPixMin, yTanPixMax+0.5*dx, dx):
             xPixList.append(xx)
             yPixList.append(yy)
             nameList.append(afwDetector.getName())
@@ -276,7 +316,7 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
 
     raPointing, decPointing = observedFromICRS(numpy.array([obs_metadata._unrefractedRA]),
                                                numpy.array([obs_metadata._unrefractedDec]),
-                                               obs_metadta=obs_metadata, epoch=epoch)
+                                               obs_metadata=obs_metadata, epoch=epoch)
 
     crPix1, crPix2 = calculatePixelCoordinates(ra=raPointing, dec=decPointing,
                                                chipNames=[afwDetector.getName()], camera=afwCamera,
@@ -319,3 +359,36 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
 
     crValPoint = afwGeom.Point2D(numpy.degrees(raPointing[0]), numpy.degrees(decPointing[0]))
     crPixPoint = afwGeom.Point2D(crPix1[0], crPix2[0])
+
+    fitsHeader = dafBase.PropertyList()
+    fitsHeader.set("RADECSYS", "ICRS")
+    fitsHeader.set("EQUINOX", epoch)
+    fitsHeader.set("CRVAL1", numpy.degrees(raPointing[0]))
+    fitsHeader.set("CRVAL2", numpy.degrees(decPointing[0]))
+    fitsHeader.set("CRPIX1", crPix1[0])
+    fitsHeader.set("CRPIX2", crPix2[0])
+    fitsHeader.set("CTYPE1", "RA---TAN")
+    fitsHeader.set("CTYPE2", "DEC--TAN")
+    fitsHeader.setDouble("CD1_1", coeffs[0])
+    fitsHeader.setDouble("CD1_2", coeffs[1])
+    fitsHeader.setDouble("CD2_1", coeffs[2])
+    fitsHeader.setDouble("CD2_2", coeffs[3])
+    tanWcs = afwImage.cast_TanWcs(afwImage.makeWcs(fitsHeader))
+
+    return tanWcs
+
+
+def tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
+
+    size = afwDetector.getPixelSize()
+
+    tanWcs = tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
+
+    mockExposure = afwImage.Exposure(int(size.getX()), int(size.getY()))
+    mockExposure.setWcs(tanWcs)
+    mockExposure.setDetector(afwDetector)
+
+    outWcs = afwImageUtils.getDistortedWcs(mockExposure.getInfo())
+
+    return outWcs
+
