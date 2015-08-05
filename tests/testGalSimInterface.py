@@ -288,14 +288,14 @@ class GalSimInterfaceTest(unittest.TestCase):
             for line in lines:
                 if line[0] != '#':
                     gg = line.split(';')
-                    sedName = gg[5]
-                    magNorm = float(gg[11])
-                    redshift = float(gg[12])
-                    internalAv = float(gg[13])
-                    internalRv = float(gg[14])
-                    galacticAv = float(gg[15])
-                    galacticRv = float(gg[16])
-                    listOfFileNames = gg[17].split('//')
+                    sedName = gg[7]
+                    magNorm = float(gg[13])
+                    redshift = float(gg[14])
+                    internalAv = float(gg[15])
+                    internalRv = float(gg[16])
+                    galacticAv = float(gg[17])
+                    galacticRv = float(gg[18])
+                    listOfFileNames = gg[19].split('//')
                     alreadyWritten = []
 
                     for name in listOfFileNames:
@@ -745,18 +745,18 @@ class GalSimInterfaceTest(unittest.TestCase):
         controlImages = {}
         for i, line in enumerate(results):
             galSimType = line[0]
-            xPupil = line[3]
-            yPupil = line[4]
+            xPupil = line[5]
+            yPupil = line[6]
 
             ra, dec = raDecFromPupilCoordinates(numpy.array([radiansFromArcsec(xPupil)]),
                                                 numpy.array([radiansFromArcsec(yPupil)]),
                                                 obs_metadata=obs_metadata, epoch=2000.0)
 
-            majorAxis = line[6]
-            minorAxis = line[7]
-            sindex = line[8]
-            halfLightRadius = line[9]
-            positionAngle = line[10]
+            majorAxis = line[8]
+            minorAxis = line[9]
+            sindex = line[10]
+            halfLightRadius = line[11]
+            positionAngle = line[12]
             if firstLine:
                 sedList = cat._calculateGalSimSeds()
                 for detector in cat.galSimInterpreter.detectors:
