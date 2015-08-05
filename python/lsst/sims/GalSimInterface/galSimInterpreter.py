@@ -216,13 +216,46 @@ class GalSimDetector(object):
         nameList = [self.name]
         if type(ra) is numpy.ndarray:
             nameList = nameList*len(ra)
-            _ra=ra
-            _dec=dec
+            raLocal=ra
+            decLocal=dec
         else:
-            _ra = numpy.array([ra])
-            _dec = numpy.array([dec])
+            raLocal = numpy.array([ra])
+            decLocal = numpy.array([dec])
 
-        xPix, yPix = calculatePixelCoordinates(ra=ra, dec=dec, chipNames=nameList,
+        xPix, yPix = calculatePixelCoordinates(ra=raLocal, dec=decLocal, chipNames=nameList,
+                                               obs_metadata=self.obs_metadata,
+                                               epoch=self.epoch,
+                                               camera=self.afwCamera)
+
+        return xPix, yPix
+
+
+
+    def pixelCoordinatesFromPupilCoordinates(self, xPupil, yPupil):
+        """
+        Convert pupil coordinates into pixel coordinates on this detector
+
+        @param [in] xPupil is a numpy array or a float indicating x pupil coordinates
+        in radians
+
+        @param [in] yPupil a numpy array or a float indicating y pupil coordinates
+        in radians
+
+        @param [out] xPix is a numpy array indicating the x pixel coordinate
+
+        @param [out] yPix is a numpy array indicating the y pixel coordinate
+        """
+
+        nameList = [self.name]
+        if type(xPupil) is numpy.ndarray:
+            nameList = nameList*len(xPupil)
+            xp = xPupil
+            yp = yPupil
+        else:
+            xp = numpy.array([xPupil])
+            yp = numpy.array([yPupil])
+
+        xPix, yPix = calculatePixelCoordinates(xPupil=xp, yPupil=yp, chipNames=nameList,
                                                obs_metadata=self.obs_metadata,
                                                epoch=self.epoch,
                                                camera=self.afwCamera)
@@ -243,6 +276,25 @@ class GalSimDetector(object):
         """
 
         xPix, yPix = self.pixelCoordinatesFromRaDec(ra, dec)
+        points = [afwGeom.Point2D(xx, yy) for xx, yy in zip(xPix, yPix)]
+        answer = [self.bbox.contains(pp) for pp in points]
+        return answer
+
+
+    def containsPupilCoordinates(self, xPupil, yPupil):
+        """
+        Does a given set of pupil coordinates fall on this detector?
+
+        @param [in] xPupil is a numpy array or a float indicating x pupil coordinates
+        in radians
+
+        @param [in] yPupuil is a numpy array or a float indicating y pupil coordinates
+        in radians
+
+        @param [out] answer is an array of booleans indicating whether or not
+        the corresponding RA, Dec pair falls on this detector
+        """
+        xPix, yPix = self.pixelCoordinatesFromPupilCoordinates(xPupil, yPupil)
         points = [afwGeom.Point2D(xx, yy) for xx, yy in zip(xPix, yPix)]
         answer = [self.bbox.contains(pp) for pp in points]
         return answer
