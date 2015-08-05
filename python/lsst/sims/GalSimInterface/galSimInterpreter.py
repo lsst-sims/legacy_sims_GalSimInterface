@@ -708,14 +708,20 @@ class GalSimInterpreter(object):
 
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
 
-                obj = centeredObj.shift(arcsecFromRadians(ra-detector.raCenter), \
-                                        arcsecFromRadians(dec-detector.decCenter))
+                xPix, yPix = calculatePixelCoordinates(xPupil=numpy.array([xPupil]), yPupil=numpy.array([yPupil]),
+                                                       chipNames=[detector.name],
+                                                       camera=detector.afwCamera,
+                                                       obs_metadata=detector.obs_metadata,
+                                                       epoch=detector.epoch)
+
+                obj = centeredObj.copy()
 
                 #convolve the object's shape profile with the spectrum
                 obj = obj*spectrum
                 localImage = self.blankImage(detector=detector)
                 localImage = obj.drawImage(bandpass=self.bandpasses[bandpassName], wcs=detector.wcs,
-                                           method='phot', gain=detector.photParams.gain, image=localImage)
+                                           method='phot', gain=detector.photParams.gain, image=localImage,
+                                           offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix))
 
                 self.detectorImages[name] += localImage
 

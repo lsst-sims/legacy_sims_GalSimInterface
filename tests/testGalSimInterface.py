@@ -9,7 +9,7 @@ import lsst.utils
 import lsst.utils.tests as utilsTests
 from lsst.sims.utils import arcsecFromRadians, radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
-from lsst.sims.coordUtils import raDecFromPupilCoordinates
+from lsst.sims.coordUtils import calculatePixelCoordinates
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
 from lsst.sims.catalogs.generation.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
@@ -748,9 +748,6 @@ class GalSimInterfaceTest(unittest.TestCase):
             xPupil = line[5]
             yPupil = line[6]
 
-            ra, dec = raDecFromPupilCoordinates(numpy.array([radiansFromArcsec(xPupil)]),
-                                                numpy.array([radiansFromArcsec(yPupil)]),
-                                                obs_metadata=obs_metadata, epoch=2000.0)
 
             majorAxis = line[8]
             minorAxis = line[9]
@@ -771,13 +768,20 @@ class GalSimInterfaceTest(unittest.TestCase):
                 bandpass = cat.galSimInterpreter.bandpasses[bp]
                 for detector in cat.galSimInterpreter.detectors:
                     centeredObj = cat.galSimInterpreter.PSF.applyPSF(xPupil=xPupil, yPupil=yPupil, bandpass=bandpass)
-                    dx = arcsecFromRadians(ra[0] - detector.raCenter)
-                    dy = arcsecFromRadians(dec[0] - detector.decCenter)
-                    obj = centeredObj.shift(dx, dy)
-                    obj = obj*spectrum
+
+                    xPix, yPix = calculatePixelCoordinates(xPupil=numpy.array([radiansFromArcsec(xPupil)]),
+                                                           yPupil=numpy.array([radiansFromArcsec(yPupil)]),
+                                                           chipNames = [detector.name],
+                                                           camera = detector.afwCamera,
+                                                           obs_metadata=obs_metadata, epoch=2000.0)
+
+                    dx = xPix[0] - detector.xCenterPix
+                    dy = yPix[0] - detector.yCenterPix
+                    obj = centeredObj*spectrum
                     localImage = cat.galSimInterpreter.blankImage(detector=detector)
                     localImage = obj.drawImage(bandpass=bandpass, wcs=detector.wcs, method='phot',
-                                               gain=detector.photParams.gain, image=localImage)
+                                               gain=detector.photParams.gain, image=localImage,
+                                               offset=galsim.PositionD(dx, dy))
 
                     controlImages['placementControl_' + \
                                   cat.galSimInterpreter._getFileName(detector=detector, bandpassName=bp)] += \
