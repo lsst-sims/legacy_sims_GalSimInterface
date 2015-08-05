@@ -7,7 +7,9 @@ import galsim
 from collections import OrderedDict
 import lsst.utils
 import lsst.utils.tests as utilsTests
+from lsst.sims.utils import arcsecFromRadians, radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
+from lsst.sims.coordUtils import raDecFromPupilCoordinates
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
 from lsst.sims.catalogs.generation.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
@@ -745,6 +747,11 @@ class GalSimInterfaceTest(unittest.TestCase):
             galSimType = line[0]
             xPupil = line[3]
             yPupil = line[4]
+
+            ra, dec = raDecFromPupilCoordinates(numpy.array([radiansFromArcsec(xPupil)]),
+                                                numpy.array([radiansFromArcsec(yPupil)]),
+                                                obs_metadata=obs_metadata, epoch=2000.0)
+
             majorAxis = line[6]
             minorAxis = line[7]
             sindex = line[8]
@@ -764,12 +771,12 @@ class GalSimInterfaceTest(unittest.TestCase):
                 bandpass = cat.galSimInterpreter.bandpasses[bp]
                 for detector in cat.galSimInterpreter.detectors:
                     centeredObj = cat.galSimInterpreter.PSF.applyPSF(xPupil=xPupil, yPupil=yPupil, bandpass=bandpass)
-                    dx = xPupil - detector.xCenter
-                    dy = yPupil - detector.yCenter
+                    dx = arcsecFromRadians(ra[0] - detector.raCenter)
+                    dy = arcsecFromRadians(dec[0] - detector.decCenter)
                     obj = centeredObj.shift(dx, dy)
                     obj = obj*spectrum
                     localImage = cat.galSimInterpreter.blankImage(detector=detector)
-                    localImage = obj.drawImage(bandpass=bandpass, scale=detector.photParams.platescale, method='phot',
+                    localImage = obj.drawImage(bandpass=bandpass, wcs=detector.wcs, method='phot',
                                                gain=detector.photParams.gain, image=localImage)
 
                     controlImages['placementControl_' + \

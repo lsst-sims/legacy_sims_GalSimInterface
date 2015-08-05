@@ -606,40 +606,6 @@ class GalSimInterpreter(object):
         return outputString, outputList, centeredObjDict
 
 
-    def _createWCS(self, detector):
-        """
-        Create an AffineTransform WCS (which is a GalSim class) corresponding to this
-        detector
-        """
-
-        if not hasattr(self, '_boreRA'):
-            coords = observedFromICRS(numpy.array([self.obs_metadata._unrefractedRA]),
-                                                           numpy.array([self.obs_metadata._unrefractedDec]),
-                                                           obs_metadata=self.obs_metadata, epoch=self.epoch)
-
-            self._boreRA = coords[0][0]
-            self._boreDec = coords[1][0]
-
-
-        #we will now approximate the celestial sphere as a plane centered on the boresite of the telescope
-
-        theta = self.obs_metadata._rotSkyPos
-        conversionFactor = numpy.degrees(radiansFromArcsec(detector.photParams.platescale))
-        dudx = numpy.cos(theta)*conversionFactor/numpy.cos(self._boreDec)
-        dudy = -numpy.sin(theta)*conversionFactor/numpy.cos(self._boreDec)
-        dvdx = numpy.sin(theta)*conversionFactor
-        dvdy = numpy.cos(theta)*conversionFactor
-
-        raOrigin = radiansFromArcsec(detector.xMin*numpy.cos(theta) - detector.yMin*numpy.sin(theta))/numpy.cos(self._boreDec)
-        decOrigin = radiansFromArcsec(detector.xMin*numpy.sin(theta) + detector.yMin*numpy.cos(theta))
-
-        ra0 = numpy.degrees(self._boreRA + raOrigin)
-        dec0 = numpy.degrees(self._boreDec + decOrigin)
-
-        wcs = galsim.AffineTransform(dudx, dudy, dvdx, dvdy, world_origin=galsim.PositionD(x=ra0, y=dec0))
-        return wcs
-
-
     def blankImage(self, detector=None):
         """
         Draw a blank image associated with a specific detector.  The image will have the correct size
@@ -657,13 +623,9 @@ class GalSimInterpreter(object):
         if detector.name in self.blankImageCache:
             return self.blankImageCache[detector.name].copy()
         else:
-            #set the size of the image
-            nx = int((detector.xMax - detector.xMin)/detector.photParams.platescale)
-            ny = int((detector.yMax - detector.yMin)/detector.photParams.platescale)
+            image = galsim.Image(detector.xMaxPix-detector.xMinPix, detector.yMaxPix-detector.yMinPix, \
+                                 wcs=detector.wcs)
 
-            wcs = self._createWCS(detector)
-
-            image = galsim.Image(nx, ny, wcs=wcs)
             self.blankImageCache[detector.name] = image
             return image.copy()
 
@@ -746,14 +708,13 @@ class GalSimInterpreter(object):
 
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
 
-                dx = xp - detector.xCenter
-                dy = yp - detector.yCenter
-                obj = centeredObj.shift(dx, dy)
+                obj = centeredObj.shift(arcsecFromRadians(ra-detector.raCenter), \
+                                        arcsecFromRadians(dec-detector.decCenter))
 
                 #convolve the object's shape profile with the spectrum
                 obj = obj*spectrum
                 localImage = self.blankImage(detector=detector)
-                localImage = obj.drawImage(bandpass=self.bandpasses[bandpassName], scale=detector.photParams.platescale,
+                localImage = obj.drawImage(bandpass=self.bandpasses[bandpassName], wcs=detector.wcs,
                                            method='phot', gain=detector.photParams.gain, image=localImage)
 
                 self.detectorImages[name] += localImage
