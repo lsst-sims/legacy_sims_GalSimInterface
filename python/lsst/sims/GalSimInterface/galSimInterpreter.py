@@ -13,10 +13,94 @@ import numpy
 import galsim
 from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 from lsst.sims.utils import arcsecFromRadians, radiansFromArcsec
-from lsst.sims.coordUtils import observedFromICRS
+from lsst.sims.coordUtils import observedFromICRS, raDecFromPixelCoordinates, \
+                                 calculatePixelCoordinates
 from lsst.sims.photUtils import LSSTdefaults
 
 __all__ = ["GalSimInterpreter", "GalSimDetector"]
+
+
+class GalSim_afw_WCS(galsim.wcs.CelestialWCS):
+
+    def __init__(self, afwDetector, afwCamera, obs_metadata, epoch):
+        tanSipWcs = tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
+
+        self.afwDetector = afwDetector
+        self.afwCamera = afwCamera
+        self.obs_metadata = obs_metadata
+        self.epoch = epoch
+
+        self.fitsHeader = tanSipWcs.getFitsMetadata()
+        self.keywordList = self.fitsHeader.getOrderedNames()
+
+        self.crpix1 = self.fitsHeader.get("CRPIX1")
+        self.crpix2 = self.fitsHeader.get("CRPIX2")
+
+        self.afw_crpix1 = self.crpix1
+        self.afw_crpix2 = self.crpix2
+
+        self.crval1 = self.fitsHeader.get("CRVAL1")
+        self.crval2 = self.fitsHeader.get("CRVAL2")
+
+        self.origin = galsim.PositionD(x=self.crpix1, y=self.crpix2)
+
+
+    def _radec(self, x, y):
+        """
+        Convert pixel coordinates into ra, dec coordinates.
+        x and y already have crpix1 and crpix2 subtracted from them.
+        Return ra, dec in radians.
+        """
+
+        chipNameList = [self.afwDetector.getName()]
+
+        if type(x) is numpy.ndarray:
+            chipNameList = chipNameList * len(x)
+
+        ra, dec = raDecFromPixelCoordinates(x + self.afw_crpix1, y + self.afw_crpix2, chipNameList,
+                                            camera=self.afwCamera,
+                                            obs_metadata=self.obs_metadata,
+                                            epoch=self.epoch)
+        if type(x) is numpy.ndarray:
+            return (ra, dec)
+        else:
+            return (ra[0], dec[0])
+
+
+    def _xy(self, ra, dec):
+        """
+        convert ra, dec in radians into x, y with crpix subtracted
+        """
+
+        chipNameList = [self.afwDetector.getName()]
+
+        if type(ra) is numpy.ndarray:
+            chipNameLIst = chipNameList * len(ra)
+
+        xx, yy = calculatePixelCoordiantes(ra=ra, dec=dec, chipNames=chipNameList,
+                                            obs_metadata=self.obs_metadata,
+                                            epoch=self.epoch,
+                                            camera = self.afwCamera)
+
+        if type(ra) is numpy.ndarray:
+            return (xx-self.crpix1, yy-self.crpix2)
+        else:
+            return (xx[0]-self.crpix1, yy-self.crpix2)
+
+
+    def _newOrigin(self, origin):
+        _newWcs = GalSim_afw_WCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch)
+        _newWcs.crpix1 = origin.x
+        _newWcs.crpix2 = origin.y
+        _newWcs.fitsHeader.set('CRPIX1', origin.x)
+        _newWcs.fitsHeader.set('CRPIX2', origin.y)
+        return _newWcs
+
+
+    def _writeHeader(self, header, bounds):
+        for key in self.keywordList:
+            header[key] = self.fitsHeader.get(key)
+
 
 
 class GalSimDetector(object):
