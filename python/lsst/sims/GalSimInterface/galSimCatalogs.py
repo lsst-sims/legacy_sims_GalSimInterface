@@ -289,6 +289,8 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
         images.
         """
         objectNames = self.column_by_name('uniqueId')
+        raObserved = self.column_by_name('raObserved')
+        decObserved = self.column_by_name('decObserved')
         xPupil = self.column_by_name('x_pupil')
         yPupil = self.column_by_name('y_pupil')
         halfLight = self.column_by_name('halfLightRadius')
@@ -308,9 +310,9 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
             self._initializeGalSimCatalog()
 
         output = []
-        for (name, xp, yp, hlr, minor, major, pa, ss, sn) in \
-            zip(objectNames, xPupil, yPupil, halfLight, minorAxis, majorAxis, positionAngle,
-            sedList, sindex):
+        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn) in \
+            zip(objectNames, raObserved, decObserved, xPupil, yPupil, halfLight, \
+                minorAxis, majorAxis, positionAngle, sedList, sindex):
 
             if ss is None or name in self.objectHasBeenDrawn:
                 #do not draw objects that have no SED or have already been drawn
@@ -333,7 +335,7 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
                 detectorsString = self.galSimInterpreter.drawObject(galSimType=self.galsim_type,
                                                   sindex=sn, minorAxis=minor,
                                                   majorAxis=major, positionAngle=pa, halfLightRadius=hlr,
-                                                  xPupil=xp, yPupil=yp, sed=ss)
+                                                  ra=ra, dec=dec, xPupil=xp, yPupil=yp, sed=ss)
 
                 output.append(detectorsString)
 

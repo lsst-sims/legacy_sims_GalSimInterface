@@ -405,9 +405,9 @@ class GalSimInterpreter(object):
         returns True (signifying that the astronomical object does cast light on the detector).  If not, this
         method returns False.
 
-        @param [in] xPupil the x pupil coordinate of the astronomical object in arc seconds
+        @param [in] xPupil the x pupil coordinate of the image's origin in arcseconds
 
-        @param [in] yPupil the y pupil coordinate of the astronomical object in arc seconds
+        @param [in] yPupil the y pupil coordinate of the image's origin in arcseconds
 
         @param [in] detector an instantiation of GalSimDetector.  This is the detector against
         which we will compare the object.
@@ -422,16 +422,19 @@ class GalSimInterpreter(object):
         if detector is None:
             return False
 
-        for (ix, iy) in zip(nonZeroPixels[0], nonZeroPixels[1]):
-            xx = xPupil + ix*imgScale #x pupil coordinate of object in arcseconds
-            yy = yPupil + iy*imgScale #y pupil coordinate of object in arcseconds
-            if xx<detector.xMax and xx>detector.xMin and yy<detector.yMax and yy>detector.yMin:
-                return True
+        xPupilList = radiansFromArcsec(numpy.array([xPupil + ix*imgScale for ix in nonZeroPixels[0]]))
+        yPupilList = radiansFromArcsec(numpy.array([yPupil + iy*imgScale for iy in nonZeroPixels[1]]))
 
-        return False
+        answer = detector.containsPupilCoordinates(xPupilList, yPupilList)
+
+        if True in answer:
+            return True
+        else:
+            return False
+
 
     def findAllDetectors(self, galSimType=None, xPupil=None,
-                   yPupil=None, halfLightRadius=None, minorAxis=None, majorAxis=None,
+                   yPupil=None, ra=None, dec=None, halfLightRadius=None, minorAxis=None, majorAxis=None,
                    positionAngle=None, sindex=None):
 
         """
@@ -447,6 +450,10 @@ class GalSimInterpreter(object):
         @param [in] xPupil is the x pupil coordinate of the object in radians
 
         @param [in] yPupil is the y pupil coordinate of the object in radians
+
+        @param [in] ra is the RA coordinate of the object in radians
+
+        @param [in] dec is the Dec coordinate of the object in radians
 
         @param [in] halfLightRadius is the half light radius of the object in radians
 
@@ -660,7 +667,7 @@ class GalSimInterpreter(object):
             self.blankImageCache[detector.name] = image
             return image.copy()
 
-    def drawObject(self, galSimType=None, sed=None, xPupil=None,
+    def drawObject(self, galSimType=None, sed=None, ra=None, dec=None, xPupil=None,
                    yPupil=None, halfLightRadius=None, minorAxis=None, majorAxis=None,
                    positionAngle=None, sindex=None):
         """
@@ -670,6 +677,10 @@ class GalSimInterpreter(object):
 
         @param [in] sed is the SED of the object (an instantiation of the Sed class defined in
         sims_photUtils/../../Sed.py
+
+        @param [in] ra is the observed RA coordinate of the object in radians
+
+        @param [in] dec is the observed Dec coordinate of the object in radians
 
         @param [in] xPupil is the x pupil coordinate of the object in radians
 
@@ -694,6 +705,7 @@ class GalSimInterpreter(object):
         detectorList, \
         centeredObjDict = self.findAllDetectors(galSimType=galSimType,
                                                 xPupil=xPupil, yPupil=yPupil,
+                                                ra=ra, dec=dec,
                                                 halfLightRadius=halfLightRadius,
                                                 minorAxis=minorAxis, majorAxis=majorAxis,
                                                 positionAngle=positionAngle, sindex=sindex)
