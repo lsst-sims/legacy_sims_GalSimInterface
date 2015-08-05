@@ -436,7 +436,9 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
                                                platescale=plateScale)
 
 
-                detector = GalSimDetector(dd, self.camera, photParams=params)
+                detector = GalSimDetector(dd, self.camera,
+                                          obs_metadata=self.obs_metdata, epoch=self.db_obj.epoch,
+                                          photParams=params)
 
                 detectors.append(detector)
 

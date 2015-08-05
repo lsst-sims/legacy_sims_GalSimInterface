@@ -23,6 +23,7 @@ __all__ = ["GalSimInterpreter", "GalSimDetector"]
 class GalSim_afw_WCS(galsim.wcs.CelestialWCS):
 
     def __init__(self, afwDetector, afwCamera, obs_metadata, epoch):
+
         tanSipWcs = tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
 
         self.afwDetector = afwDetector
@@ -108,7 +109,7 @@ class GalSimDetector(object):
     This class stores information about individual detectors for use by the GalSimInterpreter
     """
 
-    def __init__(self, afwDetector, afwCamera, photParams=None):
+    def __init__(self, afwDetector, afwCamera, obs_metadata, epoch, photParams=None):
         """
         @param [in] afwDetector is an instaniation of afw.cameraGeom.Detector
 
@@ -124,6 +125,13 @@ class GalSimDetector(object):
         if photParams is None:
             raise RuntimeError("You need to specify an instantiation of PhotometricParameters " +
                                "when constructing a GalSimDetector")
+
+        self.afwDetector = afwDetector
+        self.afwCamera = afwCamera
+        self.obs_metadata = obs_metadata
+        self.epoch = epoch
+
+        self.wcs = GalSim_afw_WCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch)
 
         self.name = afwDetector.getName()
         self.xCenter = None
@@ -149,6 +157,13 @@ class GalSimDetector(object):
         centerPixel = afwCamera.transform(centerPoint, self.pixelSystem).getPoint()
         self.xCenterPix = centerPixel.getX()
         self.yCenterPix = centerPixel.getY()
+
+        ra, dec = raDecFromPixelCoordinates([self.xCenterPix], [self.yCenterPix], [self.name],
+                                            camera=afwCamera, obs_metadata=obs_metadata,
+                                            epoch=epoch)
+
+        self.raCenter = ra[0]
+        self.decCenter = dec[0]
 
         cornerPointList = afwDetector.getCorners(FOCAL_PLANE)
         for cornerPoint in cornerPointList:
