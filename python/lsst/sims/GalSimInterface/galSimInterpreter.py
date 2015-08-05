@@ -11,16 +11,18 @@ GalSimInterpreter expects.
 import os
 import numpy
 import galsim
+import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 from lsst.sims.utils import arcsecFromRadians, radiansFromArcsec
 from lsst.sims.coordUtils import observedFromICRS, raDecFromPixelCoordinates, \
                                  calculatePixelCoordinates
 from lsst.sims.photUtils import LSSTdefaults
+from lsst.sims.GalSimInterface.wcsUtils import tanSipWcsFromDetector
 
 __all__ = ["GalSimInterpreter", "GalSimDetector"]
 
 
-class GalSim_afw_WCS(galsim.wcs.CelestialWCS):
+class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
     def __init__(self, afwDetector, afwCamera, obs_metadata, epoch):
 
@@ -90,7 +92,7 @@ class GalSim_afw_WCS(galsim.wcs.CelestialWCS):
 
 
     def _newOrigin(self, origin):
-        _newWcs = GalSim_afw_WCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch)
+        _newWcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch)
         _newWcs.crpix1 = origin.x
         _newWcs.crpix2 = origin.y
         _newWcs.fitsHeader.set('CRPIX1', origin.x)
@@ -126,26 +128,21 @@ class GalSimDetector(object):
             raise RuntimeError("You need to specify an instantiation of PhotometricParameters " +
                                "when constructing a GalSimDetector")
 
+        self.name = afwDetector.getName()
         self.afwDetector = afwDetector
         self.afwCamera = afwCamera
         self.obs_metadata = obs_metadata
         self.epoch = epoch
 
-        self.wcs = GalSim_afw_WCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch)
+        bbox = afwDetector.getBBox()
+        self.xMinPix = bbox.getMinX()
+        self.xMaxPix = bbox.getMaxX()
+        self.yMinPix = bbox.getMinY()
+        self.yMaxPix = bbox.getMaxY()
 
-        self.name = afwDetector.getName()
-        self.xCenter = None
-        self.yCenter = None
-        self.xCenterPix = None
-        self.yCenterPix = None
-        self.xMin = None
-        self.yMin = None
-        self.xMax = None
-        self.yMax = None
-        self.xMinPix = None
-        self.xMaxPix = None
-        self.yMinPix = None
-        self.yMaxPix = None
+        self.bbox = afwGeom.Box2D(bbox)
+
+        self.wcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch)
 
         self.pupilSystem = afwDetector.makeCameraSys(PUPIL)
         self.pixelSystem = afwDetector.makeCameraSys(PIXELS)
@@ -165,6 +162,10 @@ class GalSimDetector(object):
         self.raCenter = ra[0]
         self.decCenter = dec[0]
 
+        self.xMin = None
+        self.yMin = None
+        self.xMax = None
+        self.yMax = None
         cornerPointList = afwDetector.getCorners(FOCAL_PLANE)
         for cornerPoint in cornerPointList:
             cameraPoint = afwDetector.makeCameraPoint(cornerPoint, FOCAL_PLANE)
@@ -180,18 +181,6 @@ class GalSimDetector(object):
                 self.yMin = yy
             if self.yMax is None or yy>self.yMax:
                 self.yMax = yy
-
-            cameraPointPixel = afwCamera.transform(cameraPoint, self.pixelSystem).getPoint()
-            xx = cameraPointPixel.getX()
-            yy = cameraPointPixel.getY()
-            if self.xMinPix is None or xx<self.xMinPix:
-                self.xMinPix = xx
-            if self.xMaxPix is None or xx>self.xMaxPix:
-                self.xMaxPix = xx
-            if self.yMinPix is None or yy<self.yMinPix:
-                self.yMinPix = yy
-            if self.yMaxPix is None or yy>self.yMaxPix:
-                self.yMaxPix =yy
 
 
         self.photParams = photParams
@@ -209,6 +198,55 @@ class GalSimDetector(object):
 
         name = detectorName
         return name
+
+
+    def pixelCoordinatesFromRaDec(self, ra, dec):
+        """
+        Convert RA, Dec into pixel coordinates on this detector
+
+        @param [in] ra is a numpy array or a float indicating RA in radians
+
+        @param [in] dec is a numpy array or a float indicating Dec in radians
+
+        @param [out] xPix is a numpy array indicating the x pixel coordinate
+
+        @param [out] yPix is a numpy array indicating the y pixel coordinate
+        """
+
+        nameList = [self.name]
+        if type(ra) is numpy.ndarray:
+            nameList = nameList*len(ra)
+            _ra=ra
+            _dec=dec
+        else:
+            _ra = numpy.array([ra])
+            _dec = numpy.array([dec])
+
+        xPix, yPix = calculatePixelCoordinates(ra=ra, dec=dec, chipNames=nameList,
+                                               obs_metadata=self.obs_metadata,
+                                               epoch=self.epoch,
+                                               camera=self.afwCamera)
+
+        return xPix, yPix
+
+
+    def containsRaDec(self, ra, dec):
+        """
+        Does a given RA, Dec fall on this detector?
+
+        @param [in] ra is a numpy array or a float indicating RA in radians
+
+        @param [in] dec is a numpy array or a float indicating Dec in radians
+
+        @param [out] answer is an array of booleans indicating whether or not
+        the corresponding RA, Dec pair falls on this detector
+        """
+
+        xPix, yPix = self.pixelCoordinatesFromRaDec(ra, dec)
+        points = [afwGeom.Point2D(xx, yy) for xx, yy in zip(xPix, yPix)]
+        answer = [self.bbox.contains(pp) for pp in points]
+        return answer
+
 
 class GalSimInterpreter(object):
     """
