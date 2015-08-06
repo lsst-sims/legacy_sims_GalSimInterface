@@ -346,6 +346,18 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
 
         return numpy.array(output)
 
+
+    def setPSF(self, PSF):
+        """
+        Set the PSF of this GalSimCatalog after instantiation.
+
+        @param [in] PSF is an instantiation of a GalSimPSF class.
+        """
+        self.PSF=PSF
+        if self.galSimInterpreter is not None:
+            self.galSimInterpreter.setPSF(PSF=PSF)
+
+
     def copyGalSimInterpreter(self, otherCatalog):
         """
         Copy the camera, GalSimInterpreter, from another GalSim InstanceCatalog
