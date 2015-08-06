@@ -119,9 +119,10 @@ class GalSimHlrTest(unittest.TestCase):
 
 
     def testHalfLightRadiusOfImage(self):
-        catName = 'scratchSpace/hlr_test_Catalog.dat'
-        imageRoot = 'scratchSpace/hlr_test_Image'
-        dbFileName = 'scratchSpace/hlr_test_InputCatalog.dat'
+        scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
+        catName = os.path.join(scratchDir, 'hlr_test_Catalog.dat')
+        imageRoot = os.path.join(scratchDir, 'hlr_test_Image')
+        dbFileName = os.path.join(scratchDir, 'hlr_test_InputCatalog.dat')
 
         baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
         camera = ReturnCamera(baseDir)
