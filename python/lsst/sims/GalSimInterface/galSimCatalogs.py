@@ -308,7 +308,7 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
         #sims_photUtils/../../Sed.py
         sedList = self._calculateGalSimSeds()
 
-        if self.hasBeenInitialized is False:
+        if self.hasBeenInitialized is False and len(objectNames)>0:
             #This needs to be here in case, instead of writing the whole catalog with write_catalog(),
             #the user wishes to iterate through the catalog with InstanceCatalog.iter_catalog(),
             #which will not call write_header()
