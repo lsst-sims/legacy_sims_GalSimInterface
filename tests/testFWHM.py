@@ -71,7 +71,10 @@ class GalSimFwhmTest(unittest.TestCase):
         im = afwImage.ImageF(fileName).getArray()
         maxFlux = im.max()
 
-        maxPixel = numpy.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
+        # this looks backwards, but remember: the way numpy handles
+        # arrays, the first index indicates what row it is in (the y coordinate)
+        _maxPixel = numpy.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
+        maxPixel = numpy.array([_maxPixel[1], _maxPixel[0]])
 
         raMax, decMax = raDecFromPixelCoordinates([maxPixel[0]],
                                                   [maxPixel[1]],
@@ -87,13 +90,13 @@ class GalSimFwhmTest(unittest.TestCase):
             slope = numpy.tan(theta)
 
             if numpy.abs(slope<1.0):
-                xPixList = [ix for ix in range(0, im.shape[0]) \
-                                if int(slope*(ix-maxPixel[0]) + maxPixel[1])>=0 and int(slope*(ix-maxPixel[0])+maxPixel[1])<im.shape[1]]
+                xPixList = [ix for ix in range(0, im.shape[1]) \
+                                if int(slope*(ix-maxPixel[0]) + maxPixel[1])>=0 and int(slope*(ix-maxPixel[0])+maxPixel[1])<im.shape[0]]
 
                 yPixList = [int(slope*(ix-maxPixel[0])+maxPixel[1]) for ix in xPixList]
             else:
-                yPixList = [iy for iy in range(0, im.shape[1]) \
-                                if int((iy-maxPixel[1])/slope + maxPixel[0])>=0 and int((iy-maxPixel[1])/slope + maxPixel[0])<im.shape[0]]
+                yPixList = [iy for iy in range(0, im.shape[0]) \
+                                if int((iy-maxPixel[1])/slope + maxPixel[0])>=0 and int((iy-maxPixel[1])/slope + maxPixel[0])<im.shape[1]]
 
                 xPixList = [int((iy-maxPixel[1])/slope + maxPixel[0]) for iy in yPixList]
 
@@ -103,7 +106,7 @@ class GalSimFwhmTest(unittest.TestCase):
 
             distanceList = arcsecFromRadians(haversine(raList, decList, raMax[0], decMax[0]))
 
-            fluxList = numpy.array([im[ix][iy] for ix,iy in zip(xPixList, yPixList)])
+            fluxList = numpy.array([im[iy][ix] for ix,iy in zip(xPixList, yPixList)])
 
             distanceToLeft = None
             distanceToRight = None

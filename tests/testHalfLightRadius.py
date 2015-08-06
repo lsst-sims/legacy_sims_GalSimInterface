@@ -75,7 +75,8 @@ class GalSimHlrTest(unittest.TestCase):
         im = afwImage.ImageF(fileName).getArray()
         totalFlux = im.sum()
 
-        maxPixel = numpy.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
+        _maxPixel = numpy.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
+        maxPixel = numpy.array([_maxPixel[1], _maxPixel[0]])
 
         raMax, decMax = raDecFromPixelCoordinates([maxPixel[0]],
                                                   [maxPixel[1]],
@@ -86,8 +87,8 @@ class GalSimHlrTest(unittest.TestCase):
 
         activePoints = numpy.where(im>1.0e-10)
 
-        xPixList = activePoints[0]
-        yPixList = activePoints[1]
+        xPixList = activePoints[1] # this looks backwards, but remember: the way numpy handles
+        yPixList = activePoints[0] # arrays, the first index indicates what row it is in (the y coordinate)
         chipNameList = [detector.getName()]*len(xPixList)
 
 
@@ -98,7 +99,7 @@ class GalSimHlrTest(unittest.TestCase):
         distanceList = arcsecFromRadians(haversine(raList, decList, raMax[0], decMax[0]))
 
         dexContained = [ix for ix, dd in enumerate(distanceList) if dd<=hlr]
-        countedFlux = numpy.array([im[xPixList[dex]][yPixList[dex]] for dex in dexContained]).sum()
+        countedFlux = numpy.array([im[yPixList[dex]][xPixList[dex]] for dex in dexContained]).sum()
         return totalFlux, countedFlux
 
 
