@@ -331,7 +331,8 @@ class WcsTest(unittest.TestCase):
         maxDistance = self.evaluateTanWcs(xPixList, yPixList, self.camera[0], self.camera,
                                           self.obs, self.epoch)
 
-        self.assertTrue(maxDistance<0.001)
+        msg = 'maxError in tanWcs was %e ' % maxDistance
+        self.assertTrue(maxDistance<0.001, msg=msg)
 
 
     def testTanSipWcs(self):
@@ -359,7 +360,8 @@ class WcsTest(unittest.TestCase):
         maxDistanceTanSip = self.evaluateTanSipWcs(xPixList, yPixList, self.camera[0], self.camera,
                                                    self.obs, self.epoch)
 
-        self.assertTrue(maxDistanceTan-maxDistanceTanSip>1.0e-10)
+        msg = 'max error in TAN WCS %e; in TAN-SIP %e' % (maxDistanceTan, maxDistanceTanSip)
+        self.assertTrue(maxDistanceTan-maxDistanceTanSip>1.0e-10, msg=msg)
 
 
 def suite():
