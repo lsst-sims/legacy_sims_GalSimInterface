@@ -9,7 +9,6 @@ from lsst.sims.utils import haversine, arcsecFromRadians
 from lsst.sims.catalogs.generation.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimGalaxies, GalSimDetector
 from lsst.sims.coordUtils import observedFromICRS, raDecFromPixelCoordinates
-from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
