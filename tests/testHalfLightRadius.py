@@ -82,7 +82,7 @@ class GalSimHlrTest(unittest.TestCase):
                 outFile.write('%d %.9f %.9f %.9f\n' % (ix, rr, dd, hlr))
 
 
-    def get_half_light_radius(self, fileName, detector, camera, obs, epoch=2000.0):
+    def get_flux_in_half_light_radius(self, fileName, hlr, detector, camera, obs, epoch=2000.0):
 
         im = afwImage.ImageF(fileName).getArray()
         totalFlux = im.sum()
@@ -109,13 +109,9 @@ class GalSimHlrTest(unittest.TestCase):
 
         distanceList = arcsecFromRadians(haversine(raList, decList, raMax[0], decMax[0]))
 
-        for hlr in numpy.arange(0.1, distanceList.max(),0.1):
-            dexContained = [ix for ix, dd in enumerate(distanceList) if dd<=hlr]
-            countedFlux = numpy.array([im[xPixList[dex]][yPixList[dex]] for dex in dexContained]).sum()
-            if countedFlux>=0.5*totalFlux:
-                break
-
-        return hlr
+        dexContained = [ix for ix, dd in enumerate(distanceList) if dd<=hlr]
+        countedFlux = numpy.array([im[xPixList[dex]][yPixList[dex]] for dex in dexContained]).sum()
+        return totalFlux, countedFlux
 
 
     def testHalfLightRadiusOfImage(self):
@@ -151,10 +147,9 @@ class GalSimHlrTest(unittest.TestCase):
             cat.write_catalog(catName)
             cat.write_images(nameRoot=imageRoot)
 
-            hlrTest = self.get_half_light_radius(imageName, detector, camera, obs)
-
-            self.assertTrue(numpy.abs(hlrTest-hlr)<0.2)
-
+            totalFlux, hlrFlux = self.get_flux_in_half_light_radius(imageName, hlr, detector, camera, obs)
+            sigmaFlux = numpy.sqrt(0.5*totalFlux)
+            self.assertTrue(numpy.abs(hlrFlux-0.5*totalFlux)<3.0*sigmaFlux)
 
             if os.path.exists(catName):
                 os.unlink(catName)
