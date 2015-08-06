@@ -13,6 +13,8 @@ from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
+from  testUtils import get_center_of_detector
+
 class hlrFileDBObj(fileDBObject):
     idColKey = 'test_id'
     objectTypeId = 88
@@ -45,19 +47,6 @@ class hlrCat(GalSimGalaxies):
 
 
 class GalSimHlrTest(unittest.TestCase):
-
-    def get_center_of_detector(self, detector, camera, obs, epoch=2000.0):
-
-        pixelSystem = detector.makeCameraSys(PIXELS)
-        centerPoint = detector.getCenter(FOCAL_PLANE)
-        centerPixel = camera.transform(centerPoint, pixelSystem).getPoint()
-        xPix = centerPixel.getX()
-        yPix = centerPixel.getY()
-        ra, dec = raDecFromPixelCoordinates([xPix], [yPix], [detector.getName()],
-                                        camera=camera, obs_metadata=obs, epoch=epoch)
-
-        return ra[0], dec[0]
-
 
     def create_text_catalog(self, obs, raCenter, decCenter, hlr, file_name):
         if os.path.exists(file_name):
@@ -133,7 +122,7 @@ class GalSimHlrTest(unittest.TestCase):
                                   rotSkyPos = 33.0,
                                   mjd = 49250.0)
 
-        raCenter, decCenter = self.get_center_of_detector(detector, camera, obs)
+        raCenter, decCenter = get_center_of_detector(detector, camera, obs)
         hlrTestList = [1.0, 2.0, 3.0, 4.0]
 
         for hlr in hlrTestList:
