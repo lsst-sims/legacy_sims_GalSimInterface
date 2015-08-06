@@ -306,7 +306,7 @@ class GalSimInterpreter(object):
     into FITS images.
     """
 
-    def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None, noiseWrapper=None, epoch=None):
+    def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None, noiseWrapper=None, epoch=None, seed=None):
 
         """
         @param [in] obs_metadata is an instantiation of the ObservationMetaData class which
@@ -322,6 +322,10 @@ class GalSimInterpreter(object):
 
         @param [in] noiseWrapper is an instantiation of a NoiseAndBackgroundBase
         class which tells the interpreter how to add sky noise to its images.
+
+        @param [in] seed is an integer that will use to seed the random number generator
+        used when drawing images (if None, GalSim will automatically create a random number
+        generator seeded with the system clock)
         """
 
         self.obs_metadata = obs_metadata
@@ -329,6 +333,11 @@ class GalSimInterpreter(object):
         self.PSF = None
         self._LSSTdefaults = LSSTdefaults()
         self.noiseWrapper = noiseWrapper
+
+        if seed is not None:
+            self._rng = galsim.UniformDeviate(seed)
+        else:
+            self._rng = None
 
         if detectors is None:
             raise RuntimeError("Will not create images; you passed no detectors to the GalSimInterpreter")
@@ -527,7 +536,7 @@ class GalSimInterpreter(object):
                 #domains of each detector.  Use photon shooting rather than real space integration
                 #for reasons of speed.  A flux of 1000 photons ought to be enough to plot the true
                 #extent of the object, but this is just a guess.
-                centeredImage = centeredObj.drawImage(scale=testScale, method='phot', n_photons=1000)
+                centeredImage = centeredObj.drawImage(scale=testScale, method='phot', n_photons=1000, rng=self._rng)
                 xmax = testScale * (centeredImage.getXMax()/2) + xp
                 xmin = testScale * (-1*centeredImage.getXMax()/2) + xp
                 ymax = testScale * (centeredImage.getYMax()/2) + yp
@@ -721,7 +730,8 @@ class GalSimInterpreter(object):
                 localImage = self.blankImage(detector=detector)
                 localImage = obj.drawImage(bandpass=self.bandpasses[bandpassName], wcs=detector.wcs,
                                            method='phot', gain=detector.photParams.gain, image=localImage,
-                                           offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix))
+                                           offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix),
+                                           rng=self._rng)
 
                 self.detectorImages[name] += localImage
 

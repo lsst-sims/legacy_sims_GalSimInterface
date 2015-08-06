@@ -105,6 +105,8 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
     in the course of iterating over the InstanceCatalog.
     """
 
+    seed = 42
+
     #This is sort of a hack; it prevents findChipName in coordUtils from dying
     #if an object lands on multiple science chips.
     allow_multiple_chips = True
@@ -479,7 +481,8 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
                                              skySED=self.skySEDname)
 
             self.galSimInterpreter = GalSimInterpreter(obs_metadata=self.obs_metadata, epoch=self.db_obj.epoch, detectors=detectors,
-                                                       bandpassDict=self.bandpassDict, noiseWrapper=self.noise_and_background)
+                                                       bandpassDict=self.bandpassDict, noiseWrapper=self.noise_and_background,
+                                                       seed=self.seed)
 
             self.galSimInterpreter.setPSF(PSF=self.PSF)
 
