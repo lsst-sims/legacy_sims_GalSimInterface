@@ -314,6 +314,9 @@ class WcsTest(unittest.TestCase):
         in the undistorted TAN-PIXELS coordinate system.  Then, use sims_coordUtils
         to convert those pixel coordinates into RA and Dec.  Compare these to the
         RA and Dec returned by the WCS.  Demand agreement to witin 0.001 arcseconds.
+
+        Note: if you use a bigger camera, it is possible to have disagreements of
+        order a few milliarcseconds.
         """
 
         detector = self.camera[0]
