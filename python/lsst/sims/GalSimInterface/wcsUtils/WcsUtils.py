@@ -362,12 +362,12 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     crPixPoint = afwGeom.Point2D(crPix1[0], crPix2[0])
 
     fitsHeader = dafBase.PropertyList()
-    fitsHeader.set("RADECSYS", "ICRS")
+    fitsHeader.set("RADESYS", "ICRS")
     fitsHeader.set("EQUINOX", epoch)
     fitsHeader.set("CRVAL1", numpy.degrees(raPointing[0]))
     fitsHeader.set("CRVAL2", numpy.degrees(decPointing[0]))
-    fitsHeader.set("CRPIX1", crPix1[0])
-    fitsHeader.set("CRPIX2", crPix2[0])
+    fitsHeader.set("CRPIX1", crPix1[0]+1) # the +1 is because LSST uses 0-indexed images
+    fitsHeader.set("CRPIX2", crPix2[0]+1) # FITS files use 1-indexed images
     fitsHeader.set("CTYPE1", "RA---TAN")
     fitsHeader.set("CTYPE2", "DEC--TAN")
     fitsHeader.setDouble("CD1_1", coeffs[0])
