@@ -34,7 +34,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.epoch = epoch
 
         self.fitsHeader = tanSipWcs.getFitsMetadata()
-        self.keywordList = self.fitsHeader.getOrderedNames()
+        self.fitsHeader.set("EXTTYPE", "IMAGE")
 
         self.crpix1 = self.fitsHeader.get("CRPIX1")
         self.crpix2 = self.fitsHeader.get("CRPIX2")
@@ -101,9 +101,10 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
 
     def _writeHeader(self, header, bounds):
-        for key in self.keywordList:
+        for key in self.fitsHeader.getOrderedNames():
             header[key] = self.fitsHeader.get(key)
 
+        return header
 
 
 class GalSimDetector(object):
