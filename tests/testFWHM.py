@@ -12,7 +12,7 @@ from lsst.sims.coordUtils import observedFromICRS, raDecFromPixelCoordinates
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
-from  testUtils import get_center_of_detector
+from  testUtils import get_center_of_detector, create_text_catalog
 
 class fwhmFileDBObj(fileDBObject):
     idColKey = 'test_id'
@@ -23,7 +23,8 @@ class fwhmFileDBObj(fileDBObject):
     #sedFilename
 
     columns = [('raJ2000','ra*PI()/180.0', numpy.float),
-               ('decJ2000','dec*PI()/180.0', numpy.float)]
+               ('decJ2000','dec*PI()/180.0', numpy.float),
+               ('magNorm', 'mag_norm', numpy.float)]
 
 
 
@@ -38,34 +39,10 @@ class fwhmCat(GalSimStars):
                         ('properMotionDec', 0.0, numpy.float),
                         ('radialVelocity', 0.0, numpy.float),
                         ('parallax', 0.0, numpy.float),
-                        ('magNorm', 14.0, numpy.float)
                         ]
 
 
 class GalSimFwhmTest(unittest.TestCase):
-
-    def create_text_catalog(self, obs, raCenter, decCenter, file_name):
-        if os.path.exists(file_name):
-            os.unlink(file_name)
-
-        dxList = radiansFromArcsec(numpy.array([3.0]))
-        dyList = radiansFromArcsec(numpy.array([1.0]))
-
-        raPoint, decPoint = observedFromICRS(numpy.array([obs._unrefractedRA]),
-                                             numpy.array([obs._unrefractedDec]),
-                                             obs_metadata=obs, epoch=2000.0)
-
-        dx_center = obs._unrefractedRA-raPoint[0]
-        dy_center = obs._unrefractedDec-decPoint[0]
-
-        with open(file_name,'w') as outFile:
-            outFile.write('# test_id ra dec\n')
-            for ix, (dx, dy) in enumerate(zip(dxList, dyList)):
-                rr = numpy.degrees(raCenter+dx+dx_center)
-                dd = numpy.degrees(decCenter+dy+dy_center)
-
-                outFile.write('%d %.9f %.9f\n' % (ix, rr, dd))
-
 
     def verify_fwhm(self, fileName, fwhm, detector, camera, obs, epoch=2000.0):
         im = afwImage.ImageF(fileName).getArray()
@@ -152,11 +129,11 @@ class GalSimFwhmTest(unittest.TestCase):
                                   rotSkyPos = 33.0,
                                   mjd = 49250.0)
 
-        raCenter, decCenter = get_center_of_detector(detector, camera, obs)
         fwhmTestList = [0.5, 0.9, 1.3]
 
         for fwhm in fwhmTestList:
-            self.create_text_catalog(obs, raCenter, decCenter, dbFileName)
+            create_text_catalog(obs, dbFileName, numpy.array([3.0]), \
+                                numpy.array([1.0]), mag_norm=[14.0])
 
             db = fwhmFileDBObj(dbFileName, runtable='test')
 

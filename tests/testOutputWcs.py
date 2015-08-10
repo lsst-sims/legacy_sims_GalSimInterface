@@ -13,7 +13,7 @@ from lsst.sims.coordUtils import observedFromICRS, raDecFromPixelCoordinates
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
-from  testUtils import get_center_of_detector
+from  testUtils import get_center_of_detector, create_text_catalog
 
 class outputWcsFileDBObj(fileDBObject):
     idColKey = 'test_id'
@@ -45,29 +45,6 @@ class outputWcsCat(GalSimStars):
 
 class GalSimOutputWcsTest(unittest.TestCase):
 
-    def create_text_catalog(self, obs, raCenter, decCenter, file_name):
-        if os.path.exists(file_name):
-            os.unlink(file_name)
-
-        dxList = radiansFromArcsec(numpy.array([3.0]))
-        dyList = radiansFromArcsec(numpy.array([1.0]))
-
-        raPoint, decPoint = observedFromICRS(numpy.array([obs._unrefractedRA]),
-                                             numpy.array([obs._unrefractedDec]),
-                                             obs_metadata=obs, epoch=2000.0)
-
-        dx_center = obs._unrefractedRA-raPoint[0]
-        dy_center = obs._unrefractedDec-decPoint[0]
-
-        with open(file_name,'w') as outFile:
-            outFile.write('# test_id ra dec\n')
-            for ix, (dx, dy) in enumerate(zip(dxList, dyList)):
-                rr = numpy.degrees(raCenter+dx+dx_center)
-                dd = numpy.degrees(decCenter+dy+dy_center)
-
-                outFile.write('%d %.9f %.9f\n' % (ix, rr, dd))
-
-
     def testOutputWcsOfImage(self):
         scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
         catName = os.path.join(scratchDir, 'outputWcs_test_Catalog.dat')
@@ -97,9 +74,9 @@ class GalSimOutputWcsTest(unittest.TestCase):
                                       rotSkyPos = rotSkyPos,
                                       mjd = 49250.0)
 
-            raCenter, decCenter = get_center_of_detector(detector, camera, obs)
             fwhm = 0.7
-            self.create_text_catalog(obs, raCenter, decCenter, dbFileName)
+            create_text_catalog(obs, dbFileName, numpy.array([3.0]),
+                                numpy.array([1.0]))
 
             db = outputWcsFileDBObj(dbFileName, runtable='test')
 

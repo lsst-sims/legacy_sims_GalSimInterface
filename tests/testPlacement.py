@@ -11,6 +11,7 @@ from lsst.sims.coordUtils import calculatePixelCoordinates, raDecFromPixelCoordi
 from lsst.sims.photUtils import Sed, Bandpass
 from lsst.sims.catalogs.generation.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
+from testUtils import create_text_catalog
 
 class placementFileDBObj(fileDBObject):
     idColKey = 'test_id'
@@ -46,26 +47,7 @@ class placementCatalog(GalSimStars):
 class GalSimPlacementTest(unittest.TestCase):
 
     def setUp(self):
-        self.magNorm = 20.0
-
-    def create_text_catalog(self, obs, file_name, xDisplacement, yDisplacement):
-
-        if os.path.exists(file_name):
-            os.unlink(file_name)
-
-        dxList = radiansFromArcsec(xDisplacement)
-        dyList = radiansFromArcsec(yDisplacement)
-
-
-        with open(file_name,'w') as outFile:
-            outFile.write('# test_id ra dec mag_norm\n')
-            for ix, (dx, dy) in enumerate(zip(dxList, dyList)):
-
-                rr = numpy.degrees(obs._unrefractedRA+dx)
-                dd = numpy.degrees(obs._unrefractedDec+dy)
-
-                outFile.write('%d %.9f %.9f %f\n' % (ix, rr, dd, self.magNorm))
-
+        self.magNorm=20.0
 
     def check_placement(self, imageName, raList, decList, fwhmList,
                         countList, gain,
@@ -106,7 +88,6 @@ class GalSimPlacementTest(unittest.TestCase):
                                   )
 
             totalFlux = fluxArray.sum()
-            print totalFlux, cc, numpy.abs(totalFlux-cc)/countSigma
             self.assertTrue(numpy.abs(totalFlux-cc)<3.0*countSigma)
 
 
@@ -164,7 +145,8 @@ class GalSimPlacementTest(unittest.TestCase):
 
             xDisplacementList = numpy.random.random_sample(nSamples)*60.0-30.0
             yDisplacementList = numpy.random.random_sample(nSamples)*60.0-30.0
-            self.create_text_catalog(obs, dbFileName, xDisplacementList, yDisplacementList)
+            create_text_catalog(obs, dbFileName, xDisplacementList, yDisplacementList,
+                                mag_norm=[self.magNorm]*len(xDisplacementList))
             db = placementFileDBObj(dbFileName, runtable='test')
             cat = placementCatalog(db, obs_metadata=obs)
             if actualCounts is None:

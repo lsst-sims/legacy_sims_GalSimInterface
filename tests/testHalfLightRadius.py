@@ -12,7 +12,7 @@ from lsst.sims.coordUtils import observedFromICRS, raDecFromPixelCoordinates
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
-from  testUtils import get_center_of_detector
+from  testUtils import get_center_of_detector, create_text_catalog
 
 class hlrFileDBObj(fileDBObject):
     idColKey = 'test_id'
@@ -24,7 +24,8 @@ class hlrFileDBObj(fileDBObject):
 
     columns = [('raJ2000','ra*PI()/180.0', numpy.float),
                ('decJ2000','dec*PI()/180.0', numpy.float),
-               ('halfLightRadius', 'hlr*PI()/648000.0', numpy.float)]
+               ('halfLightRadius', 'hlr*PI()/648000.0', numpy.float),
+               ('magNorm', 'mag_norm', numpy.float)]
 
 
 
@@ -46,28 +47,6 @@ class hlrCat(GalSimGalaxies):
 
 
 class GalSimHlrTest(unittest.TestCase):
-
-    def create_text_catalog(self, obs, raCenter, decCenter, hlr, file_name):
-        if os.path.exists(file_name):
-            os.unlink(file_name)
-
-        dxList = radiansFromArcsec(numpy.array([3.0]))
-        dyList = radiansFromArcsec(numpy.array([1.0]))
-
-        raPoint, decPoint = observedFromICRS(numpy.array([obs._unrefractedRA]),
-                                             numpy.array([obs._unrefractedDec]),
-                                             obs_metadata=obs, epoch=2000.0)
-
-        dx_center = obs._unrefractedRA-raPoint[0]
-        dy_center = obs._unrefractedDec-decPoint[0]
-
-        with open(file_name,'w') as outFile:
-            outFile.write('# test_id ra dec hlr\n')
-            for ix, (dx, dy) in enumerate(zip(dxList, dyList)):
-                rr = numpy.degrees(raCenter+dx+dx_center)
-                dd = numpy.degrees(decCenter+dy+dy_center)
-
-                outFile.write('%d %.9f %.9f %.9f\n' % (ix, rr, dd, hlr))
 
 
     def get_flux_in_half_light_radius(self, fileName, hlr, detector, camera, obs, epoch=2000.0):
@@ -122,11 +101,11 @@ class GalSimHlrTest(unittest.TestCase):
                                   rotSkyPos = 33.0,
                                   mjd = 49250.0)
 
-        raCenter, decCenter = get_center_of_detector(detector, camera, obs)
         hlrTestList = [1.0, 2.0, 3.0, 4.0]
 
         for hlr in hlrTestList:
-            self.create_text_catalog(obs, raCenter, decCenter, hlr, dbFileName)
+            create_text_catalog(obs, dbFileName, numpy.array([3.0]), numpy.array([1.0]),
+                                hlr=[hlr])
 
             db = hlrFileDBObj(dbFileName, runtable='test')
 
