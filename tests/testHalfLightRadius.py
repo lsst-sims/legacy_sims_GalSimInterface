@@ -50,6 +50,30 @@ class GalSimHlrTest(unittest.TestCase):
 
 
     def get_flux_in_half_light_radius(self, fileName, hlr, detector, camera, obs, epoch=2000.0):
+        """
+        Read in a FITS image.  Return the total flux in that image as well as the flux contained
+        within a specified radius of the maximum pixel of the image.
+
+        @param [in] fileName is the name of the FITS file to be read in
+
+        @param [in] hlr is the half light radius to be tested (in arc seconds)
+
+        @param [in] detector is an instantiation of the afw.cameraGeom Detector
+        class characterizing the detector corresponding to this image
+
+        @param [in] camera is an instantiation of the afw.cameraGeom Camera class
+        characterizing the camera to which detector belongs
+
+        @param [in] obs is an instantiation of ObservationMetaData characterizing
+        the telescope pointing
+
+        @param [in] epoch is the epoch in Julian years of the equinox against which
+        RA and Dec are measured.
+
+        @param [out] totalFlux is the total number of counts in the images
+
+        @param [out] measuredHalfFlux is the measured flux within hlr of the maximum pixel
+        """
 
         im = afwImage.ImageF(fileName).getArray()
         totalFlux = im.sum()
@@ -78,11 +102,17 @@ class GalSimHlrTest(unittest.TestCase):
         distanceList = arcsecFromRadians(haversine(raList, decList, raMax[0], decMax[0]))
 
         dexContained = [ix for ix, dd in enumerate(distanceList) if dd<=hlr]
-        countedFlux = numpy.array([im[yPixList[dex]][xPixList[dex]] for dex in dexContained]).sum()
-        return totalFlux, countedFlux
+        measuredHalfFlux = numpy.array([im[yPixList[dex]][xPixList[dex]] for dex in dexContained]).sum()
+        return totalFlux, measuredHalfFlux
 
 
     def testHalfLightRadiusOfImage(self):
+        """
+        Test that GalSim is generating images of objects with the expected half light radius
+        by generating images with one object on them and comparing the total flux in the image
+        with the flux contained within the expected half light radius.  Raise an exception
+        if the deviation is greater than 3-sigma.
+        """
         scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
         catName = os.path.join(scratchDir, 'hlr_test_Catalog.dat')
         imageRoot = os.path.join(scratchDir, 'hlr_test_Image')

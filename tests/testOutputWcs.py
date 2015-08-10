@@ -46,6 +46,14 @@ class outputWcsCat(GalSimStars):
 class GalSimOutputWcsTest(unittest.TestCase):
 
     def testOutputWcsOfImage(self):
+        """
+        Test that, when GalSim generates an image, in encodes the WCS in a
+        way afw can read.  This is done by creating an image,then reading
+        it back in, getting its WCS, and comparing the pixel-to-sky conversion
+        both for the read WCS and the original afw.cameraGeom.detector.
+        Raise an exception if the median difference between the two is
+        greater than 0.01 arcseconds.
+        """
         scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
         catName = os.path.join(scratchDir, 'outputWcs_test_Catalog.dat')
         imageRoot = os.path.join(scratchDir, 'outputWcs_test_Image')

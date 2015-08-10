@@ -45,6 +45,34 @@ class fwhmCat(GalSimStars):
 class GalSimFwhmTest(unittest.TestCase):
 
     def verify_fwhm(self, fileName, fwhm, detector, camera, obs, epoch=2000.0):
+        """
+        Read in a FITS image with one object on it and verify that that object
+        has the expected Full Width at Half Maximum.  This is done by finding
+        the brightest pixel in the image, and then drawing 1-dimensional profiles
+        of the object centered on that pixel (but at different angles relative to
+        the axes of the image).  The code then walks along those profiles and keeps
+        track of the distance between the two points at which the flux is half of
+        the maximum.
+
+        @param [in] fileName is the name of the FITS image
+
+        @param [in] fwhm is the expected Full Width at Half Maximum in arcseconds
+
+        @param [in] detector is an instantiation of the afw.cameraGeom Detector
+        class characterizing the detector corresponding to this image
+
+        @param [in] camera is an instantiation of the afw.cameraGeom Camera class
+        characterizing the camera to which detector belongs
+
+        @param [in] obs is an instantiation of ObservationMetaData characterizing
+        the telescope pointing
+
+        @param [in] epoch is the epoch in Julian years of the equinox against which
+        RA and Dec are measured.
+
+        This method will raise an exception if the measured Full Width at Half Maximum
+        deviates from the expected value by more than ten percent.
+        """
         im = afwImage.ImageF(fileName).getArray()
         maxFlux = im.max()
 
@@ -110,6 +138,9 @@ class GalSimFwhmTest(unittest.TestCase):
 
 
     def testFwhmOfImage(self):
+        """
+        Test that GalSim generates images with the expected Full Width at Half Maximum.
+        """
         scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
         catName = os.path.join(scratchDir, 'fwhm_test_Catalog.dat')
         imageRoot = os.path.join(scratchDir, 'fwhm_test_Image')
