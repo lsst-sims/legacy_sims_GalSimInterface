@@ -781,8 +781,10 @@ class GalSimInterpreter(object):
         #create a Sersic profile
         centeredObj = galsim.Sersic(n=float(sindex), half_light_radius=float(halfLightRadius))
 
-        #turn the Sersic profile into an ellipse
-        centeredObj = centeredObj.shear(q=minorAxis/majorAxis, beta=positionAngle*galsim.radians)
+        # Turn the Sersic profile into an ellipse
+        # Subtract pi/2 from the position angle, because GalSim sets position angle=0
+        # aligned with East, rather than North
+        centeredObj = centeredObj.shear(q=minorAxis/majorAxis, beta=(positionAngle-0.5*numpy.pi)*galsim.radians)
         if self.PSF is not None:
             centeredObj = self.PSF.applyPSF(xPupil=xPupil, yPupil=yPupil, obj=centeredObj,
                                             bandpass=bandpass)
