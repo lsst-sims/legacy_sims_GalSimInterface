@@ -13,7 +13,7 @@ from lsst.sims.coordUtils import observedFromICRS, raDecFromPixelCoordinates
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
-from  testUtils import get_center_of_detector, create_text_catalog
+from  testUtils import create_text_catalog
 
 class outputWcsFileDBObj(fileDBObject):
     idColKey = 'test_id'
