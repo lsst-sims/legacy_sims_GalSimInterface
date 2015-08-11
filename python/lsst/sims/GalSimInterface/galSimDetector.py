@@ -119,6 +119,7 @@ class GalSimDetector(object):
             raise RuntimeError("You need to specify an instantiation of PhotometricParameters " +
                                "when constructing a GalSimDetector")
 
+        self._wcs = None #this will be created when it is actually called for
         self._name = afwDetector.getName()
         self._afwDetector = afwDetector
         self._afwCamera = afwCamera
@@ -132,8 +133,6 @@ class GalSimDetector(object):
         self._yMaxPix = bbox.getMaxY()
 
         self._bbox = afwGeom.Box2D(bbox)
-
-        self._wcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch)
 
         pupilSystem = afwDetector.makeCameraSys(PUPIL)
         pixelSystem = afwDetector.makeCameraSys(PIXELS)
@@ -497,6 +496,10 @@ class GalSimDetector(object):
     @property
     def wcs(self):
         """WCS corresponding to this detector"""
+        if self._wcs is None:
+            self._wcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, \
+                                             self.obs_metadata, self.epoch)
+
         return self._wcs
 
     @wcs.setter
