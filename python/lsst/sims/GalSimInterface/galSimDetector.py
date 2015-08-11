@@ -11,8 +11,29 @@ __all__ = ["GalSimDetector"]
 
 
 class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
+    """
+    This class uses methods from afw.geom and meas_astrom to
+    fit a TAN-SIP WCS to an afw.cameraGeom.Detector and then wrap
+    that WCS into something that GalSim can parse.
+
+    For documentation on the TAN-SIP WCS see
+
+    Shupe and Hook (2008)
+    http://fits.gsfc.nasa.gov/registry/sip/SIP_distortion_v1_0.pdf
+    """
 
     def __init__(self, afwDetector, afwCamera, obs_metadata, epoch):
+        """
+        @param [in] afwDetector is an instantiation of afw.cameraGeom.Detector
+
+        @param [in] afwCamera is an instantiation of afw.cameraGeom.Camera
+
+        @param [in] obs_metadata is an instantiation of ObservationMetaData
+        characterizing the telescope pointing
+
+        @param [in] epoch is the epoch in Julian years of the equinox against
+        which RA and Dec are measured
+        """
 
         tanSipWcs = tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
 
@@ -38,6 +59,8 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
     def _radec(self, x, y):
         """
+        This is a method required by the GalSim WCS API
+
         Convert pixel coordinates into ra, dec coordinates.
         x and y already have crpix1 and crpix2 subtracted from them.
         Return ra, dec in radians.
@@ -60,7 +83,9 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
     def _xy(self, ra, dec):
         """
-        convert ra, dec in radians into x, y with crpix subtracted
+        This is a method required by the GalSim WCS API
+
+        Convert ra, dec in radians into x, y in pixel space with crpix subtracted.
         """
 
         chipNameList = [self.afwDetector.getName()]
@@ -80,6 +105,17 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
 
     def _newOrigin(self, origin):
+        """
+        This is a method required by the GalSim WCS API.  It returns
+        a copy of self, but with the pixel-space origin translated to a new
+        position.
+
+        @param [in] origin is an instantiation of a galsim.PositionD representing
+        the a point in pixel space to which you want to move the origin of the WCS
+
+        @param [out] _newWcs is a WCS identical to self, but with the origin
+        in pixel space moved to the specified origin
+        """
         _newWcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch)
         _newWcs.crpix1 = origin.x
         _newWcs.crpix2 = origin.y
