@@ -18,7 +18,7 @@ from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, is_null
 from lsst.sims.catUtils.mixins import CameraCoords, AstrometryGalaxies, AstrometryStars, \
                                       EBVmixin
-from lsst.sims.GalSimInterface import GalSimInterpreter, GalSimDetector
+from lsst.sims.GalSimInterface import GalSimInterpreter, GalSimDetector, GalSimCelestialObject
 from lsst.sims.photUtils import Sed, Bandpass, PhotometryHardware, \
                                 PhotometricParameters, LSSTdefaults
 import lsst.afw.cameraGeom.testUtils as camTestUtils
@@ -336,11 +336,11 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
 
                 self.objectHasBeenDrawn.append(name)
 
+                gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp, \
+                                              hlr, minor, major, pa, sn)
+
                 #actually draw the object
-                detectorsString = self.galSimInterpreter.drawObject(galSimType=self.galsim_type,
-                                                  sindex=sn, minorAxis=minor,
-                                                  majorAxis=major, positionAngle=pa, halfLightRadius=hlr,
-                                                  ra=ra, dec=dec, xPupil=xp, yPupil=yp, sed=ss)
+                detectorsString = self.galSimInterpreter.drawObject(gsObj)
 
                 output.append(detectorsString)
 
