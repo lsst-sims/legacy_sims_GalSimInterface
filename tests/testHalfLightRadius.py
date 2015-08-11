@@ -25,7 +25,8 @@ class hlrFileDBObj(fileDBObject):
     columns = [('raJ2000','ra*PI()/180.0', numpy.float),
                ('decJ2000','dec*PI()/180.0', numpy.float),
                ('halfLightRadius', 'hlr*PI()/648000.0', numpy.float),
-               ('magNorm', 'mag_norm', numpy.float)]
+               ('magNorm', 'mag_norm', numpy.float),
+               ('positionAngle', 'pa*PI()/180.0', numpy.float)]
 
 
 
@@ -41,8 +42,7 @@ class hlrCat(GalSimGalaxies):
                        ('redshift', 0.0, float),
                        ('majorAxis', radiansFromArcsec(1.0), float),
                        ('minorAxis', radiansFromArcsec(1.0), float),
-                       ('sindex', 4.0, float),
-                       ('positionAngle', 0.0, float)]
+                       ('sindex', 4.0, float)]
 
 
 

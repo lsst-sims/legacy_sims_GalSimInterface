@@ -7,7 +7,8 @@ from lsst.sims.utils import radiansFromArcsec
 __all__ = ["create_text_catalog"]
 
 
-def create_text_catalog(obs, file_name, raDisplacement, decDisplacement, hlr=None, mag_norm=None):
+def create_text_catalog(obs, file_name, raDisplacement, decDisplacement, \
+                        hlr=None, mag_norm=None, pa=None):
     """
     Create a text file containing objects that can be read in by a fileDBObject class.
 
@@ -26,6 +27,8 @@ def create_text_catalog(obs, file_name, raDisplacement, decDisplacement, hlr=Non
     @param [in] hlr is an optional list of half light radii in arcseconds
 
     @param [in] mag_norm is an optional list of the objects' magnitude normalizations
+
+    @param [in] pa is an optional list of the objects' position angles in degrees
     """
 
     if os.path.exists(file_name):
@@ -40,14 +43,17 @@ def create_text_catalog(obs, file_name, raDisplacement, decDisplacement, hlr=Non
     if mag_norm is None:
         mag_norm = [21.0]*len(raDisplacement)
 
+    if pa is None:
+        pa = [0.0]*len(raDisplacement)
+
 
     with open(file_name,'w') as outFile:
-        outFile.write('# test_id ra dec hlr mag_norm\n')
+        outFile.write('# test_id ra dec hlr mag_norm pa\n')
 
-        for ix, (dx, dy, halfLight, magNorm) in \
-        enumerate(zip(raDisplacementList, decDisplacementList, hlr, mag_norm)):
+        for ix, (dx, dy, halfLight, magNorm, pp) in \
+        enumerate(zip(raDisplacementList, decDisplacementList, hlr, mag_norm, pa)):
 
             rr = numpy.degrees(obs._unrefractedRA+dx)
             dd = numpy.degrees(obs._unrefractedDec+dy)
 
-            outFile.write('%d %.9f %.9f %.9f %.9f\n' % (ix, rr, dd, halfLight, magNorm))
+            outFile.write('%d %.9f %.9f %.9f %.9f %.9f\n' % (ix, rr, dd, halfLight, magNorm, pp))
