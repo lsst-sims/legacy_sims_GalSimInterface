@@ -1,5 +1,6 @@
 setupRequired(GalSim)
 setupRequired(meas_astrom)
+setupRequired(afw)
 setupRequired(sims_utils)
 setupRequired(sims_coordUtils)
 setupRequired(sims_catalogs_generation)
