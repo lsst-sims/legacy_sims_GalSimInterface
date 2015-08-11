@@ -129,63 +129,56 @@ class GalSimDetector(object):
             raise RuntimeError("You need to specify an instantiation of PhotometricParameters " +
                                "when constructing a GalSimDetector")
 
-        self.name = afwDetector.getName()
-        self.afwDetector = afwDetector
-        self.afwCamera = afwCamera
-        self.obs_metadata = obs_metadata
-        self.epoch = epoch
+        self._name = afwDetector.getName()
+        self._afwDetector = afwDetector
+        self._afwCamera = afwCamera
+        self._obs_metadata = obs_metadata
+        self._epoch = epoch
 
         bbox = afwDetector.getBBox()
-        self.xMinPix = bbox.getMinX()
-        self.xMaxPix = bbox.getMaxX()
-        self.yMinPix = bbox.getMinY()
-        self.yMaxPix = bbox.getMaxY()
+        self._xMinPix = bbox.getMinX()
+        self._xMaxPix = bbox.getMaxX()
+        self._yMinPix = bbox.getMinY()
+        self._yMaxPix = bbox.getMaxY()
 
-        self.bbox = afwGeom.Box2D(bbox)
+        self._bbox = afwGeom.Box2D(bbox)
 
-        self.wcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch)
+        self._wcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch)
 
-        self.pupilSystem = afwDetector.makeCameraSys(PUPIL)
-        self.pixelSystem = afwDetector.makeCameraSys(PIXELS)
+        pupilSystem = afwDetector.makeCameraSys(PUPIL)
+        pixelSystem = afwDetector.makeCameraSys(PIXELS)
 
         centerPoint = afwDetector.getCenter(FOCAL_PLANE)
-        centerPupil = afwCamera.transform(centerPoint, self.pupilSystem).getPoint()
-        self.xCenter = arcsecFromRadians(centerPupil.getX())
-        self.yCenter = arcsecFromRadians(centerPupil.getY())
-        centerPixel = afwCamera.transform(centerPoint, self.pixelSystem).getPoint()
-        self.xCenterPix = centerPixel.getX()
-        self.yCenterPix = centerPixel.getY()
+        centerPupil = afwCamera.transform(centerPoint, pupilSystem).getPoint()
+        self._xCenterArcsec = arcsecFromRadians(centerPupil.getX())
+        self._yCenterArcsec = arcsecFromRadians(centerPupil.getY())
+        centerPixel = afwCamera.transform(centerPoint, pixelSystem).getPoint()
+        self._xCenterPix = centerPixel.getX()
+        self._yCenterPix = centerPixel.getY()
 
-        ra, dec = raDecFromPixelCoordinates([self.xCenterPix], [self.yCenterPix], [self.name],
-                                            camera=afwCamera, obs_metadata=obs_metadata,
-                                            epoch=epoch)
-
-        self.raCenter = ra[0]
-        self.decCenter = dec[0]
-
-        self.xMin = None
-        self.yMin = None
-        self.xMax = None
-        self.yMax = None
+        self._xMinArcsec = None
+        self._yMinArcsec = None
+        self._xMaxArcsec = None
+        self._yMaxArcsec = None
         cornerPointList = afwDetector.getCorners(FOCAL_PLANE)
         for cornerPoint in cornerPointList:
             cameraPoint = afwDetector.makeCameraPoint(cornerPoint, FOCAL_PLANE)
-            cameraPointPupil = afwCamera.transform(cameraPoint, self.pupilSystem).getPoint()
+            cameraPointPupil = afwCamera.transform(cameraPoint, pupilSystem).getPoint()
 
             xx = arcsecFromRadians(cameraPointPupil.getX())
             yy = arcsecFromRadians(cameraPointPupil.getY())
-            if self.xMin is None or xx<self.xMin:
-                self.xMin = xx
-            if self.xMax is None or xx>self.xMax:
-                self.xMax = xx
-            if self.yMin is None or yy<self.yMin:
-                self.yMin = yy
-            if self.yMax is None or yy>self.yMax:
-                self.yMax = yy
+            if self._xMinArcsec is None or xx<self._xMinArcsec:
+                self._xMinArcsec = xx
+            if self._xMaxArcsec is None or xx>self._xMaxArcsec:
+                self._xMaxArcsec = xx
+            if self._yMinArcsec is None or yy<self._yMinArcsec:
+                self._yMinArcsec = yy
+            if self._yMaxArcsec is None or yy>self._yMaxArcsec:
+                self._yMaxArcsec = yy
 
 
-        self.photParams = photParams
-        self.fileName = self._getFileName()
+        self._photParams = photParams
+        self._fileName = self._getFileName()
 
 
     def _getFileName(self):
@@ -224,9 +217,9 @@ class GalSimDetector(object):
             decLocal = numpy.array([dec])
 
         xPix, yPix = calculatePixelCoordinates(ra=raLocal, dec=decLocal, chipNames=nameList,
-                                               obs_metadata=self.obs_metadata,
-                                               epoch=self.epoch,
-                                               camera=self.afwCamera)
+                                               obs_metadata=self._obs_metadata,
+                                               epoch=self._epoch,
+                                               camera=self._afwCamera)
 
         return xPix, yPix
 
@@ -247,7 +240,7 @@ class GalSimDetector(object):
         @param [out] yPix is a numpy array indicating the y pixel coordinate
         """
 
-        nameList = [self.name]
+        nameList = [self._name]
         if type(xPupil) is numpy.ndarray:
             nameList = nameList*len(xPupil)
             xp = xPupil
@@ -257,9 +250,9 @@ class GalSimDetector(object):
             yp = numpy.array([yPupil])
 
         xPix, yPix = calculatePixelCoordinates(xPupil=xp, yPupil=yp, chipNames=nameList,
-                                               obs_metadata=self.obs_metadata,
-                                               epoch=self.epoch,
-                                               camera=self.afwCamera)
+                                               obs_metadata=self._obs_metadata,
+                                               epoch=self._epoch,
+                                               camera=self._afwCamera)
 
         return xPix, yPix
 
@@ -278,7 +271,7 @@ class GalSimDetector(object):
 
         xPix, yPix = self.pixelCoordinatesFromRaDec(ra, dec)
         points = [afwGeom.Point2D(xx, yy) for xx, yy in zip(xPix, yPix)]
-        answer = [self.bbox.contains(pp) for pp in points]
+        answer = [self._bbox.contains(pp) for pp in points]
         return answer
 
 
@@ -297,8 +290,229 @@ class GalSimDetector(object):
         """
         xPix, yPix = self.pixelCoordinatesFromPupilCoordinates(xPupil, yPupil)
         points = [afwGeom.Point2D(xx, yy) for xx, yy in zip(xPix, yPix)]
-        answer = [self.bbox.contains(pp) for pp in points]
+        answer = [self._bbox.contains(pp) for pp in points]
         return answer
+
+
+    @property
+    def xMinPix(self):
+        """Minimum x pixel coordinate of the detector"""
+        return self._xMinPix
+
+    @xMinPix.setter
+    def xMinPix(self, value):
+        raise RuntimeError("You should not be setting xMinPix on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def xMaxPix(self):
+        """Maximum x pixel coordinate of the detector"""
+        return self._xMaxPix
+
+    @xMaxPix.setter
+    def xMaxPix(self, value):
+        raise RuntimeError("You should not be setting xMaxPix on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def yMinPix(self):
+        """Minimum y pixel coordinate of the detector"""
+        return self._yMinPix
+
+    @yMinPix.setter
+    def yMinPix(self, value):
+        raise RuntimeError("You should not be setting yMinPix on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def yMaxPix(self):
+        """Maximum y pixel coordinate of the detector"""
+        return self._yMaxPix
+
+    @yMaxPix.setter
+    def yMaxPix(self, value):
+        raise RuntimeError("You should not be setting yMaxPix on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def xCenterPix(self):
+        """Center x pixel coordinate of the detector"""
+        return self._xCenterPix
+
+    @xCenterPix.setter
+    def xCenterPix(self, value):
+        raise RuntimeError("You should not be setting xCenterPix on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def yCenterPix(self):
+        """Center y pixel coordinate of the detector"""
+        return self._yCenterPix
+
+    @yCenterPix.setter
+    def yCenterPix(self, value):
+        raise RuntimeError("You should not be setting yCenterPix on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def xMaxArcsec(self):
+        """Maximum x pupil coordinate of the detector in arcseconds"""
+        return self._xMaxArcsec
+
+    @xMaxArcsec.setter
+    def xMaxArcsec(self, value):
+        raise RuntimeError("You should not be setting xMaxArcsec on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def xMinArcsec(self):
+        """Minimum x pupil coordinate of the detector in arcseconds"""
+        return self._xMinArcsec
+
+    @xMinArcsec.setter
+    def xMinArcsec(self, value):
+        raise RuntimeError("You should not be setting xMinArcsec on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def yMaxArcsec(self):
+        """Maximum y pupil coordinate of the detector in arcseconds"""
+        return self._yMaxArcsec
+
+    @yMaxArcsec.setter
+    def yMaxArcsec(self, value):
+        raise RuntimeError("You should not be setting yMaxArcsec on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def yMinArcsec(self):
+        """Minimum y pupil coordinate of the detector in arcseconds"""
+        return self._yMinArcsec
+
+    @yMinArcsec.setter
+    def yMinArcsec(self, value):
+        raise RuntimeError("You should not be setting yMinArcsec on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def xCenterArcsec(self):
+        """Center x pupil coordinate of the detector in arcseconds"""
+        return self._xCenterArcsec
+
+
+    @xCenterArcsec.setter
+    def xCenterArcsec(self, value):
+        raise RuntimeError("You should not be setting xCenterArcsec on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def yCenterArcsec(self):
+        """Center y pupil coordinate of the detector in arcseconds"""
+        return self._yCenterArcsec
+
+    @yCenterArcsec.setter
+    def yCenterArcsec(self, value):
+        raise RuntimeError("You should not be setting yCenterArcsec on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def epoch(self):
+        """Epoch of the equinox against which RA and Dec are measured in Julian years"""
+        return self._epoch
+
+    @epoch.setter
+    def epoch(self, value):
+        raise RuntimeError("You should not be setting epoch on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def obs_metadata(self):
+        """ObservationMetaData instantiation describing the telescope pointing"""
+        return self._obs_metadata
+
+    @obs_metadata.setter
+    def obs_metadata(self, value):
+        raise RuntimeError("You should not be setting obs_metadata on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def name(self):
+        """Name of the detector"""
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        raise RuntimeError("You should not be setting name on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def photParams(self):
+        """PhotometricParameters instantiation characterizing the detector"""
+        return self._photParams
+
+    @photParams.setter
+    def photParams(self, value):
+        raise RuntimeError("You should not be setting photParams on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def fileName(self):
+        """Name of the FITS file corresponding to this detector"""
+        return self._fileName
+
+    @fileName.setter
+    def fileName(self, value):
+        raise RuntimeError("You should not be setting fileName on the fly; "  \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def afwCamera(self):
+        """afw.cameraGeom.Camera instantiation corresponding to this detector"""
+        return self._afwCamera
+
+    @afwCamera.setter
+    def afwCamera(self, value):
+        raise RuntimeError("You should not be setting afwCamera on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def afwDetector(self):
+        """afw.cameraGeom.Detector instantiation corresponding to this detector"""
+        return self._afwDetector
+
+    @afwDetector.setter
+    def afwDetector(self, value):
+        raise RuntimeError("You should not be setting afwDetector on the fly; " \
+                           + "just instantiate a new GalSimDetector")
+
+
+    @property
+    def wcs(self):
+        """WCS corresponding to this detector"""
+        return self._wcs
+
+    @wcs.setter
+    def wcs(self, value):
+        raise RuntimeError("You should not be setting wcs on the fly; " \
+                           + "just instantiate a new GalSimDetector")
 
 
 class GalSimInterpreter(object):
@@ -522,19 +736,19 @@ class GalSimInterpreter(object):
                 viableDetectors = []
                 for dd in self.detectors:
                     xOverLaps = False
-                    if xmax > dd.xMin and xmax < dd.xMax:
+                    if xmax > dd.xMinArcsec and xmax < dd.xMaxArcsec:
                         xOverLaps = True
-                    elif xmin > dd.xMin and xmin < dd.xMax:
+                    elif xmin > dd.xMinArcsec and xmin < dd.xMaxArcsec:
                         xOverLaps = True
-                    elif xmin < dd.xMin and xmax > dd.xMax:
+                    elif xmin < dd.xMinArcsec and xmax > dd.xMaxArcsec:
                         xOverLaps = True
 
                     yOverLaps = False
-                    if ymax > dd.yMin and ymax < dd.yMax:
+                    if ymax > dd.yMinArcsec and ymax < dd.yMaxArcsec:
                         yOverLaps = True
-                    elif ymin > dd.yMin and ymin < dd.yMax:
+                    elif ymin > dd.yMinArcsec and ymin < dd.yMaxArcsec:
                         yOverLaps = True
-                    elif ymin < dd.yMin and ymax > dd.yMax:
+                    elif ymin < dd.yMinArcsec and ymax > dd.yMaxArcsec:
                         yOverLaps = True
 
                     if xOverLaps and yOverLaps and dd not in outputList:
@@ -557,19 +771,19 @@ class GalSimInterpreter(object):
                     #find all of the detectors that overlap with the bounds of the active pixels.
                     for dd in viableDetectors:
                         xOverLaps = False
-                        if xmax > dd.xMin and xmax < dd.xMax:
+                        if xmax > dd.xMinArcsec and xmax < dd.xMaxArcsec:
                             xOverLaps = True
-                        elif xmin > dd.xMin and xmin < dd.xMax:
+                        elif xmin > dd.xMinArcsec and xmin < dd.xMaxArcsec:
                             xOverLaps = True
-                        elif xmin < dd.xMin and xmax > dd.xMax:
+                        elif xmin < dd.xMinArcsec and xmax > dd.xMaxArcsec:
                             xOverLaps = True
 
                         yOverLaps = False
-                        if ymax > dd.yMin and ymax < dd.yMax:
+                        if ymax > dd.yMinArcsec and ymax < dd.yMaxArcsec:
                             yOverLaps = True
-                        elif ymin > dd.yMin and ymin < dd.yMax:
+                        elif ymin > dd.yMinArcsec and ymin < dd.yMaxArcsec:
                             yOverLaps = True
-                        elif ymin < dd.yMin and ymax > dd.yMax:
+                        elif ymin < dd.yMinArcsec and ymax > dd.yMaxArcsec:
                             yOverLaps = True
 
                         #specifically test that these overlapping detectors do contain active pixels

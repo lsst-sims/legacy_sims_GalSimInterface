@@ -405,8 +405,8 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
 
         for detector in self.galSimInterpreter.detectors:
             file_handle.write('#detector;%s;%f;%f;%f;%f;%f;%f;%f\n' %
-                                 (detector.name, detector.xCenter, detector.yCenter, detector.xMin,
-                                  detector.xMax, detector.yMin, detector.yMax, detector.photParams.platescale))
+                                 (detector.name, detector.xCenterArcsec, detector.yCenterArcsec, detector.xMinArcsec,
+                                  detector.xMaxArcsec, detector.yMinArcsec, detector.yMaxArcsec, detector.photParams.platescale))
 
         InstanceCatalog.write_header(self, file_handle)
 
