@@ -29,7 +29,7 @@ def create_text_catalog(obs, file_name, raDisplacement, decDisplacement, hlr=Non
     """
 
     if os.path.exists(file_name):
-        raise RuntimeError("file %s already exists; create_text_catalog will not overwrite it" % file_name)
+        os.unlink(file_name)
 
     raDisplacementList = radiansFromArcsec(raDisplacement)
     decDisplacementList = radiansFromArcsec(decDisplacement)
