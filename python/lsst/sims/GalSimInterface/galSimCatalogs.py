@@ -12,8 +12,8 @@ GalSimStars
 
 import numpy
 import os
-import eups
 import copy
+import lsst.utils
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, is_null
 from lsst.sims.catUtils.mixins import CameraCoords, AstrometryGalaxies, AstrometryStars, \
@@ -127,10 +127,10 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
     #column contain both ':' and ','
     delimiter = ';'
 
-    sedDir = eups.productDir('sims_sed_library')
+    sedDir = lsst.utils.getPackageDir('sims_sed_library')
 
     bandpassNames = ['u', 'g', 'r', 'i', 'z', 'y']
-    bandpassDir = os.path.join(eups.productDir('throughputs'), 'baseline')
+    bandpassDir = os.path.join(lsst.utils.getPackageDir('throughputs'), 'baseline')
     bandpassRoot = 'filter_'
     componentList = ['detector.dat', 'm1.dat', 'm2.dat', 'm3.dat',
                      'lens1.dat', 'lens2.dat', 'lens3.dat']
