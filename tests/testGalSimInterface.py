@@ -7,7 +7,9 @@ import galsim
 from collections import OrderedDict
 import lsst.utils
 import lsst.utils.tests as utilsTests
+from lsst.sims.utils import arcsecFromRadians, radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
+from lsst.sims.coordUtils import calculatePixelCoordinates
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
 from lsst.sims.catalogs.generation.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
@@ -286,14 +288,14 @@ class GalSimInterfaceTest(unittest.TestCase):
             for line in lines:
                 if line[0] != '#':
                     gg = line.split(';')
-                    sedName = gg[5]
-                    magNorm = float(gg[11])
-                    redshift = float(gg[12])
-                    internalAv = float(gg[13])
-                    internalRv = float(gg[14])
-                    galacticAv = float(gg[15])
-                    galacticRv = float(gg[16])
-                    listOfFileNames = gg[17].split('//')
+                    sedName = gg[7]
+                    magNorm = float(gg[13])
+                    redshift = float(gg[14])
+                    internalAv = float(gg[15])
+                    internalRv = float(gg[16])
+                    galacticAv = float(gg[17])
+                    galacticRv = float(gg[18])
+                    listOfFileNames = gg[19].split('//')
                     alreadyWritten = []
 
                     for name in listOfFileNames:
@@ -743,13 +745,15 @@ class GalSimInterfaceTest(unittest.TestCase):
         controlImages = {}
         for i, line in enumerate(results):
             galSimType = line[0]
-            xPupil = line[3]
-            yPupil = line[4]
-            majorAxis = line[6]
-            minorAxis = line[7]
-            sindex = line[8]
-            halfLightRadius = line[9]
-            positionAngle = line[10]
+            xPupil = line[5]
+            yPupil = line[6]
+
+
+            majorAxis = line[8]
+            minorAxis = line[9]
+            sindex = line[10]
+            halfLightRadius = line[11]
+            positionAngle = line[12]
             if firstLine:
                 sedList = cat._calculateGalSimSeds()
                 for detector in cat.galSimInterpreter.detectors:
@@ -764,13 +768,20 @@ class GalSimInterfaceTest(unittest.TestCase):
                 bandpass = cat.galSimInterpreter.bandpasses[bp]
                 for detector in cat.galSimInterpreter.detectors:
                     centeredObj = cat.galSimInterpreter.PSF.applyPSF(xPupil=xPupil, yPupil=yPupil, bandpass=bandpass)
-                    dx = xPupil - detector.xCenter
-                    dy = yPupil - detector.yCenter
-                    obj = centeredObj.shift(dx, dy)
-                    obj = obj*spectrum
+
+                    xPix, yPix = calculatePixelCoordinates(xPupil=numpy.array([radiansFromArcsec(xPupil)]),
+                                                           yPupil=numpy.array([radiansFromArcsec(yPupil)]),
+                                                           chipNames = [detector.name],
+                                                           camera = detector.afwCamera,
+                                                           obs_metadata=obs_metadata, epoch=2000.0)
+
+                    dx = xPix[0] - detector.xCenterPix
+                    dy = yPix[0] - detector.yCenterPix
+                    obj = centeredObj*spectrum
                     localImage = cat.galSimInterpreter.blankImage(detector=detector)
-                    localImage = obj.drawImage(bandpass=bandpass, scale=detector.photParams.platescale, method='phot',
-                                               gain=detector.photParams.gain, image=localImage)
+                    localImage = obj.drawImage(bandpass=bandpass, wcs=detector.wcs, method='phot',
+                                               gain=detector.photParams.gain, image=localImage,
+                                               offset=galsim.PositionD(dx, dy))
 
                     controlImages['placementControl_' + \
                                   cat.galSimInterpreter._getFileName(detector=detector, bandpassName=bp)] += \

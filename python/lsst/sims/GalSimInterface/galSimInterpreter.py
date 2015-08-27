@@ -11,63 +11,11 @@ GalSimInterpreter expects.
 import os
 import numpy
 import galsim
-from lsst.sims.utils import arcsecFromRadians
-from lsst.sims.photUtils import LSSTdefaults
+from lsst.sims.utils import radiansFromArcsec
+from lsst.sims.coordUtils import calculatePixelCoordinates
 
-__all__ = ["GalSimInterpreter", "GalSimDetector"]
+__all__ = ["GalSimInterpreter"]
 
-class GalSimDetector(object):
-    """
-    This class stores information about individual detectors for use by the GalSimInterpreter
-    """
-
-    def __init__(self, name=None, xCenter=None, yCenter=None,
-                 xMin=None, xMax=None, yMin=None, yMax=None,
-                 photParams=None):
-        """
-        @param [in] name is a string denoting the name of the detector (this should be the
-        same name that will be returned by the astrometry method findChipName())
-
-        @param [in] xCenter is the x pupil coordinate of the center of the detector in arcseconds
-
-        @param [in] yCenter is the y pupil coordinate of the center of the detector in arcseconds
-
-        @param [in] xMin, xMax, yMin, yMax are the corresponding minimum and maximum values of the
-        pupil coordinates on this detector in arcseconds
-
-        @param [in] photParams is an instantiation of the PhotometricParameters class that carries
-        details about the photometric response of the telescope.
-
-        This class will generate its own internal variable self.fileName which is
-        the name of the detector as it will appear in the output FITS files
-        """
-
-        if photParams is None:
-            raise RuntimeError("You need to specify an instantiation of PhotometricParameters " +
-                               "when constructing a GalSimDetector")
-
-        self.name = name
-        self.xCenter = xCenter
-        self.yCenter = yCenter
-        self.xMin = xMin
-        self.xMax = xMax
-        self.yMin = yMin
-        self.yMax = yMax
-        self.photParams = photParams
-        self.fileName = self._getFileName()
-
-
-    def _getFileName(self):
-        """
-        Format the name of the detector to add to the name of the FITS file
-        """
-        detectorName = self.name
-        detectorName = detectorName.replace(',','_')
-        detectorName = detectorName.replace(':','_')
-        detectorName = detectorName.replace(' ','_')
-
-        name = detectorName
-        return name
 
 class GalSimInterpreter(object):
     """
@@ -75,7 +23,7 @@ class GalSimInterpreter(object):
     into FITS images.
     """
 
-    def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None, noiseWrapper=None):
+    def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None, noiseWrapper=None, epoch=None, seed=None):
 
         """
         @param [in] obs_metadata is an instantiation of the ObservationMetaData class which
@@ -91,12 +39,21 @@ class GalSimInterpreter(object):
 
         @param [in] noiseWrapper is an instantiation of a NoiseAndBackgroundBase
         class which tells the interpreter how to add sky noise to its images.
+
+        @param [in] seed is an integer that will use to seed the random number generator
+        used when drawing images (if None, GalSim will automatically create a random number
+        generator seeded with the system clock)
         """
 
         self.obs_metadata = obs_metadata
+        self.epoch = epoch
         self.PSF = None
-        self._LSSTdefaults = LSSTdefaults()
         self.noiseWrapper = noiseWrapper
+
+        if seed is not None:
+            self._rng = galsim.UniformDeviate(seed)
+        else:
+            self._rng = None
 
         if detectors is None:
             raise RuntimeError("Will not create images; you passed no detectors to the GalSimInterpreter")
@@ -111,6 +68,7 @@ class GalSimInterpreter(object):
                                   #returning a deep copy
 
         self.setBandpasses(bandpassDict=bandpassDict)
+
 
     def setBandpasses(self, bandpassDict):
         """
@@ -172,9 +130,9 @@ class GalSimInterpreter(object):
         returns True (signifying that the astronomical object does cast light on the detector).  If not, this
         method returns False.
 
-        @param [in] xPupil the x pupil coordinate of the astronomical object in arc seconds
+        @param [in] xPupil the x pupil coordinate of the image's origin in arcseconds
 
-        @param [in] yPupil the y pupil coordinate of the astronomical object in arc seconds
+        @param [in] yPupil the y pupil coordinate of the image's origin in arcseconds
 
         @param [in] detector an instantiation of GalSimDetector.  This is the detector against
         which we will compare the object.
@@ -189,17 +147,18 @@ class GalSimInterpreter(object):
         if detector is None:
             return False
 
-        for (ix, iy) in zip(nonZeroPixels[0], nonZeroPixels[1]):
-            xx = xPupil + ix*imgScale #x pupil coordinate of object in arcseconds
-            yy = yPupil + iy*imgScale #y pupil coordinate of object in arcseconds
-            if xx<detector.xMax and xx>detector.xMin and yy<detector.yMax and yy>detector.yMin:
-                return True
+        xPupilList = radiansFromArcsec(numpy.array([xPupil + ix*imgScale for ix in nonZeroPixels[0]]))
+        yPupilList = radiansFromArcsec(numpy.array([yPupil + iy*imgScale for iy in nonZeroPixels[1]]))
 
-        return False
+        answer = detector.containsPupilCoordinates(xPupilList, yPupilList)
 
-    def findAllDetectors(self, galSimType=None, xPupil=None,
-                   yPupil=None, halfLightRadius=None, minorAxis=None, majorAxis=None,
-                   positionAngle=None, sindex=None):
+        if True in answer:
+            return True
+        else:
+            return False
+
+
+    def findAllDetectors(self, gsObject):
 
         """
         Find all of the detectors on which a given astronomical object casts light.
@@ -209,21 +168,8 @@ class GalSimInterpreter(object):
         domains of the detectors in the camera.  Any detectors which overlap these
         'active' pixels are considered illumined by the object.
 
-        @param [in] galSimType is a string denoting the type of object (i.e. 'sersic' or 'pointSource')
-
-        @param [in] xPupil is the x pupil coordinate of the object in radians
-
-        @param [in] yPupil is the y pupil coordinate of the object in radians
-
-        @param [in] halfLightRadius is the half light radius of the object in radians
-
-        @param [in] minorAxis is the semi-minor axis of the object in radians
-
-        @param [in] majorAxis is the semi-major axis of the object in radians
-
-        @param [in] positionAngle is the position angle of the object in radians
-
-        @param [in] sindex is the Sersic index of the object's profile
+        @param [in] gsObject is an instantiation of the GalSimCelestialObject class
+        carrying information about the object whose image is to be drawn
 
         @param [out] outputString is a string indicating which chips the object illumines
         (suitable for the GalSim InstanceCatalog classes)
@@ -243,8 +189,6 @@ class GalSimInterpreter(object):
         outputString = ''
         outputList = []
         centeredObjDict = {}
-        xp = arcsecFromRadians(xPupil)
-        yp = arcsecFromRadians(yPupil)
         centeredObj = None
         testScale = 0.1
 
@@ -253,12 +197,7 @@ class GalSimInterpreter(object):
                 #create a GalSim Object centered on the chip.  Re-create it for each bandpass if
                 #it is convolved with a wavelength-dependent PSF
 
-                centeredObj = self.createCenteredObject(galSimType=galSimType,
-                                                        xPupil=xPupil, yPupil=yPupil,
-                                                        bandpassName=bandpassName,
-                                                        sindex=sindex, halfLightRadius=halfLightRadius,
-                                                        positionAngle=positionAngle,
-                                                        minorAxis=minorAxis, majorAxis=majorAxis)
+                centeredObj = self.createCenteredObject(gsObject, bandpassName=bandpassName)
 
             #for output; to be used by self.drawObject()
             centeredObjDict[bandpassName] = centeredObj
@@ -287,30 +226,30 @@ class GalSimInterpreter(object):
                 #domains of each detector.  Use photon shooting rather than real space integration
                 #for reasons of speed.  A flux of 1000 photons ought to be enough to plot the true
                 #extent of the object, but this is just a guess.
-                centeredImage = centeredObj.drawImage(scale=testScale, method='phot', n_photons=1000)
-                xmax = testScale * (centeredImage.getXMax()/2) + xp
-                xmin = testScale * (-1*centeredImage.getXMax()/2) + xp
-                ymax = testScale * (centeredImage.getYMax()/2) + yp
-                ymin = testScale *(-1*centeredImage.getYMin()/2) + yp
+                centeredImage = centeredObj.drawImage(scale=testScale, method='phot', n_photons=1000, rng=self._rng)
+                xmax = testScale * (centeredImage.getXMax()/2) + gsObject.xPupilArcsec
+                xmin = testScale * (-1*centeredImage.getXMax()/2) + gsObject.xPupilArcsec
+                ymax = testScale * (centeredImage.getYMax()/2) + gsObject.yPupilArcsec
+                ymin = testScale *(-1*centeredImage.getYMin()/2) + gsObject.yPupilArcsec
 
                 #first assemble a list of detectors which have any hope
                 #of overlapping the test image
                 viableDetectors = []
                 for dd in self.detectors:
                     xOverLaps = False
-                    if xmax > dd.xMin and xmax < dd.xMax:
+                    if xmax > dd.xMinArcsec and xmax < dd.xMaxArcsec:
                         xOverLaps = True
-                    elif xmin > dd.xMin and xmin < dd.xMax:
+                    elif xmin > dd.xMinArcsec and xmin < dd.xMaxArcsec:
                         xOverLaps = True
-                    elif xmin < dd.xMin and xmax > dd.xMax:
+                    elif xmin < dd.xMinArcsec and xmax > dd.xMaxArcsec:
                         xOverLaps = True
 
                     yOverLaps = False
-                    if ymax > dd.yMin and ymax < dd.yMax:
+                    if ymax > dd.yMinArcsec and ymax < dd.yMaxArcsec:
                         yOverLaps = True
-                    elif ymin > dd.yMin and ymin < dd.yMax:
+                    elif ymin > dd.yMinArcsec and ymin < dd.yMaxArcsec:
                         yOverLaps = True
-                    elif ymin < dd.yMin and ymax > dd.yMax:
+                    elif ymin < dd.yMinArcsec and ymax > dd.yMaxArcsec:
                         yOverLaps = True
 
                     if xOverLaps and yOverLaps and dd not in outputList:
@@ -325,33 +264,33 @@ class GalSimInterpreter(object):
                     activePixels = numpy.where(centeredImage.array>maxPixel*0.001)
 
                     #Find the bounds of those active pixels in pixel coordinates
-                    xmin = testScale * (activePixels[0].min() - centeredImage.getXMax()/2) + xp
-                    xmax = testScale * (activePixels[0].max() - centeredImage.getXMax()/2) + xp
-                    ymin = testScale * (activePixels[1].min() - centeredImage.getYMax()/2) + yp
-                    ymax = testScale * (activePixels[1].max() - centeredImage.getYMax()/2) + yp
+                    xmin = testScale * (activePixels[0].min() - centeredImage.getXMax()/2) + gsObject.xPupilArcsec
+                    xmax = testScale * (activePixels[0].max() - centeredImage.getXMax()/2) + gsObject.xPupilArcsec
+                    ymin = testScale * (activePixels[1].min() - centeredImage.getYMax()/2) + gsObject.yPupilArcsec
+                    ymax = testScale * (activePixels[1].max() - centeredImage.getYMax()/2) + gsObject.yPupilArcsec
 
                     #find all of the detectors that overlap with the bounds of the active pixels.
                     for dd in viableDetectors:
                         xOverLaps = False
-                        if xmax > dd.xMin and xmax < dd.xMax:
+                        if xmax > dd.xMinArcsec and xmax < dd.xMaxArcsec:
                             xOverLaps = True
-                        elif xmin > dd.xMin and xmin < dd.xMax:
+                        elif xmin > dd.xMinArcsec and xmin < dd.xMaxArcsec:
                             xOverLaps = True
-                        elif xmin < dd.xMin and xmax > dd.xMax:
+                        elif xmin < dd.xMinArcsec and xmax > dd.xMaxArcsec:
                             xOverLaps = True
 
                         yOverLaps = False
-                        if ymax > dd.yMin and ymax < dd.yMax:
+                        if ymax > dd.yMinArcsec and ymax < dd.yMaxArcsec:
                             yOverLaps = True
-                        elif ymin > dd.yMin and ymin < dd.yMax:
+                        elif ymin > dd.yMinArcsec and ymin < dd.yMaxArcsec:
                             yOverLaps = True
-                        elif ymin < dd.yMin and ymax > dd.yMax:
+                        elif ymin < dd.yMinArcsec and ymax > dd.yMaxArcsec:
                             yOverLaps = True
 
                         #specifically test that these overlapping detectors do contain active pixels
                         if xOverLaps and yOverLaps:
-                            if self._doesObjectImpingeOnDetector(xPupil=xp - centeredImage.getXMax()*testScale/2.0,
-                                                                 yPupil=yp - centeredImage.getYMax()*testScale/2.0,
+                            if self._doesObjectImpingeOnDetector(xPupil=gsObject.xPupilArcsec - centeredImage.getXMax()*testScale/2.0,
+                                                                 yPupil=gsObject.yPupilArcsec - centeredImage.getYMax()*testScale/2.0,
                                                                  detector=dd, imgScale=centeredImage.scale,
                                                                  nonZeroPixels=activePixels):
 
@@ -364,6 +303,7 @@ class GalSimInterpreter(object):
             outputString = None
 
         return outputString, outputList, centeredObjDict
+
 
     def blankImage(self, detector=None):
         """
@@ -382,37 +322,19 @@ class GalSimInterpreter(object):
         if detector.name in self.blankImageCache:
             return self.blankImageCache[detector.name].copy()
         else:
-            #set the size of the image
-            nx = int((detector.xMax - detector.xMin)/detector.photParams.platescale)
-            ny = int((detector.yMax - detector.yMin)/detector.photParams.platescale)
-            image = galsim.Image(nx, ny, scale=detector.photParams.platescale)
+            image = galsim.Image(detector.xMaxPix-detector.xMinPix+1, detector.yMaxPix-detector.yMinPix+1, \
+                                 wcs=detector.wcs)
+
             self.blankImageCache[detector.name] = image
             return image.copy()
 
-    def drawObject(self, galSimType=None, sed=None, xPupil=None,
-                   yPupil=None, halfLightRadius=None, minorAxis=None, majorAxis=None,
-                   positionAngle=None, sindex=None):
+    def drawObject(self, gsObject):
         """
         Draw an astronomical object on all of the relevant FITS files.
 
-        @param [in] galSimType is a string, either 'pointSource' or 'sersic' denoting the shape of the object
-
-        @param [in] sed is the SED of the object (an instantiation of the Sed class defined in
-        sims_photUtils/../../Sed.py
-
-        @param [in] xPupil is the x pupil coordinate of the object in radians
-
-        @param [in] yPupil is the y pupil coordinate of the object in radians
-
-        @param [in] halfLightRadius is the halfLightRadius of the object in radians
-
-        @param [in] minorAxis is the semi-minor axis of the object in radians
-
-        @param [in] majorAxis is the semi-major axis of the object in radians
-
-        @param [in] positionAngle is the position angle of the object in radians
-
-        @param [in] sindex is the sersic index of the object
+        @param [in] gsObject is an instantiation of the GalSimCelestialObject
+        class carrying all of the information for the object whose image
+        is to be drawn
 
         @param [out] outputString is a string denoting which detectors the astronomical
         object illumines, suitable for output in the GalSim InstanceCatalog
@@ -421,13 +343,9 @@ class GalSimInterpreter(object):
         #find the detectors which the astronomical object illumines
         outputString, \
         detectorList, \
-        centeredObjDict = self.findAllDetectors(galSimType=galSimType,
-                                                xPupil=xPupil, yPupil=yPupil,
-                                                halfLightRadius=halfLightRadius,
-                                                minorAxis=minorAxis, majorAxis=majorAxis,
-                                                positionAngle=positionAngle, sindex=sindex)
+        centeredObjDict = self.findAllDetectors(gsObject)
 
-        if sed is None or len(detectorList) == 0:
+        if gsObject.sed is None or len(detectorList) == 0:
             #there is nothing to draw
             return outputString
 
@@ -446,9 +364,7 @@ class GalSimInterpreter(object):
                                                                               seeing=self.obs_metadata.seeing[bandpassName],
                                                                               photParams=detector.photParams)
 
-        xp = arcsecFromRadians(xPupil)
-        yp = arcsecFromRadians(yPupil)
-        spectrum = galsim.SED(spec = lambda ll: numpy.interp(ll, sed.wavelen, sed.flambda),
+        spectrum = galsim.SED(spec = lambda ll: numpy.interp(ll, gsObject.sed.wavelen, gsObject.sed.flambda),
                               flux_type='flambda')
 
         for bandpassName in self.bandpasses:
@@ -463,27 +379,33 @@ class GalSimInterpreter(object):
 
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
 
-                dx = xp - detector.xCenter
-                dy = yp - detector.yCenter
-                obj = centeredObj.shift(dx, dy)
+                xPix, yPix = calculatePixelCoordinates(xPupil=numpy.array([gsObject.xPupilRadians]),
+                                                       yPupil=numpy.array([gsObject.yPupilRadians]),
+                                                       chipNames=[detector.name],
+                                                       camera=detector.afwCamera,
+                                                       obs_metadata=detector.obs_metadata,
+                                                       epoch=detector.epoch)
+
+                obj = centeredObj.copy()
 
                 #convolve the object's shape profile with the spectrum
                 obj = obj*spectrum
                 localImage = self.blankImage(detector=detector)
-                localImage = obj.drawImage(bandpass=self.bandpasses[bandpassName], scale=detector.photParams.platescale,
-                                           method='phot', gain=detector.photParams.gain, image=localImage)
+                localImage = obj.drawImage(bandpass=self.bandpasses[bandpassName], wcs=detector.wcs,
+                                           method='phot', gain=detector.photParams.gain, image=localImage,
+                                           offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix),
+                                           rng=self._rng)
 
                 self.detectorImages[name] += localImage
 
         return outputString
 
-    def drawPointSource(self, xPupil=None, yPupil=None, bandpass=None):
+    def drawPointSource(self, gsObject, bandpass=None):
         """
         Draw an image of a point source.
 
-        @param [in] xPupil is the x pupil coordinate of the object in arc seconds
-
-        @param [in] yPupil is the y pupil coordinate of the objec tin arc seconds
+        @param [in] gsObject is an instantiation of the GalSimCelestialObject class
+        carrying information about the object whose image is to be drawn
 
         @param [in] bandpass is an instantiation of the galsim.Bandpass class characterizing
         the bandpass over which we are integrating (in case the PSF is wavelength dependent)
@@ -492,67 +414,42 @@ class GalSimInterpreter(object):
         if self.PSF is None:
             raise RuntimeError("Cannot draw a point source in GalSim without a PSF")
 
-        return self.PSF.applyPSF(xPupil=xPupil, yPupil=yPupil, bandpass=bandpass)
+        return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec, bandpass=bandpass)
 
-    def drawSersic(self, xPupil=None, yPupil=None, sindex=None, minorAxis=None,
-                   majorAxis=None, positionAngle=None, halfLightRadius=None, bandpass=None):
+    def drawSersic(self, gsObject, bandpass=None):
         """
         Draw the image of a Sersic profile.
 
-        @param [in] xPupil is the x pupil coordinate of the object in arc seconds
-
-        @param [in] yPupil is the y pupil coordinate of the object in arc seconds
-
-        @param [in] sindex is the Sersic index of the object
-
-        @param [in] minorAxis is the semi-minor axis of the object in any units (we only care
-        about the ratio of the semi-minor to semi-major axes)
-
-        @param [in] majorAxis is the semi-major axis of the object in the same units
-        as minorAxis
-
-        @param [in] halfLightRadius is the half light radius of the object in arc seconds
+        @param [in] gsObject is an instantiation of the GalSimCelestialObject class
+        carrying information about the object whose image is to be drawn
 
         @param [in] bandpass is an instantiation of the galsim.Bandpass class characterizing
         the bandpass over which we are integrating (in case the PSF is wavelength dependent)
         """
 
         #create a Sersic profile
-        centeredObj = galsim.Sersic(n=float(sindex), half_light_radius=float(halfLightRadius))
+        centeredObj = galsim.Sersic(n=float(gsObject.sindex), half_light_radius=float(gsObject.halfLightRadiusArcsec))
 
-        #turn the Sersic profile into an ellipse
-        centeredObj = centeredObj.shear(q=minorAxis/majorAxis, beta=positionAngle*galsim.radians)
+        # Turn the Sersic profile into an ellipse
+        # Subtract pi/2 from the position angle, because GalSim sets position angle=0
+        # aligned with East, rather than North
+        centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians, \
+                                        beta=(gsObject.positionAngleRadians-0.5*numpy.pi)*galsim.radians)
         if self.PSF is not None:
-            centeredObj = self.PSF.applyPSF(xPupil=xPupil, yPupil=yPupil, obj=centeredObj,
+            centeredObj = self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec, obj=centeredObj,
                                             bandpass=bandpass)
 
         return centeredObj
 
-    def createCenteredObject(self, galSimType=None, xPupil=None, yPupil=None, bandpassName=None, sindex=None,
-                             halfLightRadius=None, positionAngle=None, minorAxis=None, majorAxis=None):
-
+    def createCenteredObject(self, gsObject, bandpassName=None):
         """
         Create a centered GalSim Object (i.e. if we were just to draw this object as an image,
         the object would be centered on the frame)
 
-        @param [in] galSimType is a string denoting the profile of the object (e.g. 'sersic' or 'pointSource')
-        If this is a type we have not yet implemented, this method will return None
-
-        @param [in] xPupil is the x pupil coordinate of the object in radians
-
-        @param [in] yPupil is the y pupil coordinate of the object in radians
+        @param [in] gsObject is an instantiation of the GalSimCelestialObject class
+        carrying information about the object whose image is to be drawn
 
         @param [in] bandpassName is the tag indicating the bandpass (i.e. 'u', 'g', 'r', 'i', 'z', or 'y')
-
-        @param [in] sindex is the Sersic index of the object
-
-        @param [in] halfLightRadius is the half light radius of the object in radians
-
-        @param [in] positionAngle is the position angle of the object in radians
-
-        @param [in] minorAxis is the semi-minor axis of the object in radians
-
-        @param [in] majorAxis is the semi-major axis of the object in radians
 
         @param [out] a GalSim Object suitable to base an image off of (but centered on the frame)
 
@@ -560,21 +457,15 @@ class GalSimInterpreter(object):
         of point sources
         """
 
-        xp = arcsecFromRadians(xPupil)
-        yp = arcsecFromRadians(yPupil)
-        hlr = arcsecFromRadians(halfLightRadius)
-        if galSimType == 'sersic':
-            centeredObj = self.drawSersic(xPupil=xp, yPupil=yp,
-                                          bandpass=self.bandpasses[bandpassName],
-                                          sindex=sindex, halfLightRadius=hlr,
-                                          positionAngle=positionAngle,
-                                          minorAxis=minorAxis, majorAxis=majorAxis)
-        elif galSimType == 'pointSource':
-            centeredObj = self.drawPointSource(xPupil=xp, yPupil=yp,
-                                               bandpass=self.bandpasses[bandpassName])
+        if gsObject.galSimType == 'sersic':
+            centeredObj = self.drawSersic(gsObject,
+                                          bandpass=self.bandpasses[bandpassName])
+
+        elif gsObject.galSimType == 'pointSource':
+            centeredObj = self.drawPointSource(gsObject, bandpass=self.bandpasses[bandpassName])
         else:
             print "Apologies: the GalSimInterpreter does not yet have a method to draw "
-            print objectParams['galSimType']
+            print gsObject.galSimType
             print " objects\n"
             centeredObj = None
 
