@@ -434,7 +434,7 @@ class GalSimInterpreter(object):
         # Subtract pi/2 from the position angle, because GalSim sets position angle=0
         # aligned with East, rather than North
         centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians, \
-                                        beta=(gsObject.positionAngleRadians-0.5*numpy.pi)*galsim.radians)
+                                        beta=(0.5*numpy.pi-gsObject.positionAngleRadians)*galsim.radians)
         if self.PSF is not None:
             centeredObj = self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec, obj=centeredObj,
                                             bandpass=bandpass)
