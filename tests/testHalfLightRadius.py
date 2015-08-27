@@ -147,7 +147,7 @@ class GalSimHlrTest(unittest.TestCase):
 
             totalFlux, hlrFlux = self.get_flux_in_half_light_radius(imageName, hlr, detector, camera, obs)
             sigmaFlux = numpy.sqrt(0.5*totalFlux/cat.photParams.gain) #divide by gain because Poisson stats apply to photons
-            self.assertTrue(numpy.abs(hlrFlux-0.5*totalFlux)<3.0*sigmaFlux)
+            self.assertTrue(numpy.abs(hlrFlux-0.5*totalFlux)<4.0*sigmaFlux)
 
             if os.path.exists(catName):
                 os.unlink(catName)
