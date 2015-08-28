@@ -101,15 +101,15 @@ class GalSimPositionAngleTest(unittest.TestCase):
 
         # find the angle between the (1,1) vector in pixel space and the
         # north axis of the image
-        theta = numpy.arctan2(raCenterP1[0]-raCenter[0], decCenterP1[0]-decCenter[0])
+        theta = numpy.arctan2(-1.0*(raCenterP1[0]-raCenter[0]), decCenterP1[0]-decCenter[0])
 
         # rotate the (1,1) vector in pixel space so that it is pointing
         # along the north axis
         north = numpy.array([numpy.cos(theta)-numpy.sin(theta), numpy.cos(theta)+numpy.sin(theta)])
         north = north/numpy.sqrt(north[0]*north[0]+north[1]*north[1])
 
-        # find the east axis of the image
-        east = numpy.array([north[1], -1.0*north[0]])
+        # find the west axis of the image
+        west = numpy.array([north[1], -1.0*north[0]])
 
         # now find the covariance matrix of the x, y  pixel space distribution
         # of flux on the image
@@ -140,7 +140,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
         # return the angle between the north axis of the image
         # and the semi-major axis of the object
         cosTheta = numpy.dot(majorAxis, north)
-        sinTheta = numpy.dot(majorAxis, east)
+        sinTheta = numpy.dot(majorAxis, west)
         theta = numpy.arctan2(sinTheta, cosTheta)
 
         return numpy.degrees(theta)
@@ -185,7 +185,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
                                     numpy.random.random_sample(1)*20.0-10.0,
                                     numpy.random.random_sample(1)*20.0-10.0,
                                     pa=[pa],
-                                    mag_norm=[18.0])
+                                    mag_norm=[17.0])
 
                 db = paFileDBObj(dbFileName, runtable='test')
 
@@ -206,7 +206,6 @@ class GalSimPositionAngleTest(unittest.TestCase):
                                                   pa-360.0-paTest,
                                                   pa+360.0-paTest
                                                   ])).min()
-
                 self.assertTrue(deviation<2.0)
 
                 if os.path.exists(catName):
