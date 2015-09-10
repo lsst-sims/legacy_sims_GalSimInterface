@@ -6,7 +6,7 @@ import lsst.afw.geom as afwGeom
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData, haversine, arcsecFromRadians
 from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import observedFromICRS, raDecFromPixelCoordinates
+from lsst.sims.coordUtils import _observedFromICRS, _raDecFromPixelCoordinates
 from lsst.sims.GalSimInterface.wcsUtils import tanWcsFromDetector, tanSipWcsFromDetector
 
 
@@ -20,7 +20,7 @@ class WcsTest(unittest.TestCase):
                                        mjd=49250.0, rotSkyPos=0.0)
         self.epoch = 2000.0
 
-        self.raPointing, self.decPointing = observedFromICRS(numpy.array([self.obs._unrefractedRA]),
+        self.raPointing, self.decPointing = _observedFromICRS(numpy.array([self.obs._unrefractedRA]),
                                                              numpy.array([self.obs._unrefractedDec]),
                                                              obs_metadata=self.obs,
                                                              epoch=self.epoch)
@@ -60,7 +60,7 @@ class WcsTest(unittest.TestCase):
         xPixList = numpy.array(xPixList)
         yPixList = numpy.array(yPixList)
 
-        raTest, decTest = raDecFromPixelCoordinates(xPixList, yPixList,
+        raTest, decTest = _raDecFromPixelCoordinates(xPixList, yPixList,
                                                     [detector.getName()]*len(xPixList),
                                                     camera=self.camera, obs_metadata=self.obs,
                                                     epoch=self.epoch)
@@ -113,7 +113,7 @@ class WcsTest(unittest.TestCase):
         xPixList = numpy.array(xPixList)
         yPixList = numpy.array(yPixList)
 
-        raTest, decTest = raDecFromPixelCoordinates(xPixList, yPixList,
+        raTest, decTest = _raDecFromPixelCoordinates(xPixList, yPixList,
                                                     [detector.getName()]*len(xPixList),
                                                     camera=self.camera, obs_metadata=self.obs,
                                                     epoch=self.epoch)

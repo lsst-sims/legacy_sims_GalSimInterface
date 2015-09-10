@@ -7,7 +7,7 @@ from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRadians, haversine
 from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import calculatePixelCoordinates, raDecFromPixelCoordinates
+from lsst.sims.coordUtils import calculatePixelCoordinates, _raDecFromPixelCoordinates
 from lsst.sims.photUtils import Sed, Bandpass
 from lsst.sims.catalogs.generation.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
@@ -111,7 +111,7 @@ class GalSimPlacementTest(unittest.TestCase):
             countSigma = numpy.sqrt(cc/gain)
 
             imNameList = [detector.getName()]*len(imXList)
-            raImList, decImList = raDecFromPixelCoordinates(imXList, imYList,
+            raImList, decImList = _raDecFromPixelCoordinates(imXList, imYList,
                                                             imNameList,
                                                             camera=camera,
                                                             obs_metadata=obs,

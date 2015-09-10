@@ -1,7 +1,6 @@
 import os
 import numpy
 from lsst.afw.cameraGeom import PIXELS, FOCAL_PLANE
-from lsst.sims.coordUtils import raDecFromPixelCoordinates
 from lsst.sims.utils import radiansFromArcsec
 
 __all__ = ["create_text_catalog"]

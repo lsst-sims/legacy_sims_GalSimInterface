@@ -1,5 +1,5 @@
 import numpy
-from lsst.sims.coordUtils import raDecFromPixelCoordinates, observedFromICRS, \
+from lsst.sims.coordUtils import _raDecFromPixelCoordinates, _observedFromICRS, \
                                  calculatePixelCoordinates
 from lsst.afw.cameraGeom import PUPIL, PIXELS, TAN_PIXELS, FOCAL_PLANE
 import lsst.afw.geom as afwGeom
@@ -84,13 +84,13 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
             nameList.append(afwDetector.getName())
 
 
-    raList, decList = raDecFromPixelCoordinates(xPixList, yPixList, nameList,
+    raList, decList = _raDecFromPixelCoordinates(xPixList, yPixList, nameList,
                                                 camera=afwCamera,
                                                 obs_metadata=obs_metadata,
                                                 epoch=epoch,
                                                 includeDistortion=False)
 
-    raPointing, decPointing = observedFromICRS(numpy.array([obs_metadata._unrefractedRA]),
+    raPointing, decPointing = _observedFromICRS(numpy.array([obs_metadata._unrefractedRA]),
                                                numpy.array([obs_metadata._unrefractedDec]),
                                                obs_metadata=obs_metadata, epoch=epoch)
 

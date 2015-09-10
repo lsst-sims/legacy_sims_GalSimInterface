@@ -3,7 +3,7 @@ import numpy
 import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 from lsst.sims.utils import arcsecFromRadians, radiansFromArcsec
-from lsst.sims.coordUtils import raDecFromPixelCoordinates, \
+from lsst.sims.coordUtils import _raDecFromPixelCoordinates, \
                                  calculatePixelCoordinates
 from lsst.sims.GalSimInterface.wcsUtils import tanSipWcsFromDetector
 
@@ -71,7 +71,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         if type(x) is numpy.ndarray:
             chipNameList = chipNameList * len(x)
 
-        ra, dec = raDecFromPixelCoordinates(x + self.afw_crpix1, y + self.afw_crpix2, chipNameList,
+        ra, dec = _raDecFromPixelCoordinates(x + self.afw_crpix1, y + self.afw_crpix2, chipNameList,
                                             camera=self.afwCamera,
                                             obs_metadata=self.obs_metadata,
                                             epoch=self.epoch)

@@ -7,7 +7,7 @@ import lsst.afw.image as afwImage
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec
 from lsst.sims.catalogs.generation.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimGalaxies
-from lsst.sims.coordUtils import raDecFromPixelCoordinates
+from lsst.sims.coordUtils import _raDecFromPixelCoordinates
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
@@ -85,7 +85,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
         xCenterPix = numpy.array([im.shape[1]/2])
         yCenterPix = numpy.array([im.shape[0]/2])
 
-        raCenter, decCenter = raDecFromPixelCoordinates(xCenterPix, yCenterPix,
+        raCenter, decCenter = _raDecFromPixelCoordinates(xCenterPix, yCenterPix,
                                                        [afwDetector.getName()],
                                                        camera=afwCamera,
                                                        obs_metadata=obs_metadata,
@@ -93,7 +93,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
 
         xCenterP1 = xCenterPix+1
         yCenterP1 = yCenterPix+1
-        raCenterP1,decCenterP1 = raDecFromPixelCoordinates(xCenterP1, yCenterP1,
+        raCenterP1,decCenterP1 = _raDecFromPixelCoordinates(xCenterP1, yCenterP1,
                                                           [afwDetector.getName()],
                                                           camera=afwCamera,
                                                           obs_metadata=obs_metadata,

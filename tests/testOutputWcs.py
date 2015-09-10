@@ -9,7 +9,7 @@ from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRa
 from lsst.sims.utils import haversine, arcsecFromRadians
 from lsst.sims.catalogs.generation.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, GalSimDetector, SNRdocumentPSF
-from lsst.sims.coordUtils import observedFromICRS, raDecFromPixelCoordinates
+from lsst.sims.coordUtils import _raDecFromPixelCoordinates
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
@@ -123,7 +123,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
             decImage = numpy.radians(numpy.array(decImage))
 
             raControl, \
-            decControl = raDecFromPixelCoordinates(
+            decControl = _raDecFromPixelCoordinates(
                                                    xxTestList, yyTestList,
                                                    [detector.getName()]*len(xxTestList),
                                                    camera=camera, obs_metadata=obs,
