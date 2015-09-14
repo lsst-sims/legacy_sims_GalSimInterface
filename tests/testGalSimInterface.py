@@ -37,6 +37,9 @@ class testGalaxyCatalog(GalSimGalaxies):
     column_outputs.append('galacticRv')
     column_outputs.append('fitsFiles')
 
+    PSF = SNRdocumentPSF()
+
+
 class testStarCatalog(GalSimStars):
     """
     Wraps the GalSimStars class.  Adds columns to the output
