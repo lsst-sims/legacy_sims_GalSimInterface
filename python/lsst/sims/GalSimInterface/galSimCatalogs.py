@@ -376,11 +376,6 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
         self.camera = otherCatalog.camera
         self.galSimInterpreter = otherCatalog.galSimInterpreter
 
-        #set the PSF to the current PSF; in this way, compound FITS files do not
-        #have to have the same PSF for all types of objects (though I'm not sure
-        #that is actually physical)
-        self.galSimInterpreter.setPSF(self.PSF)
-
     def write_header(self, file_handle):
         """
         This method adds to the InstanceCatalog.write_header() method.
