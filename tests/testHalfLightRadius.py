@@ -8,7 +8,7 @@ from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRa
 from lsst.sims.utils import haversine, arcsecFromRadians
 from lsst.sims.catalogs.generation.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimGalaxies, GalSimDetector
-from lsst.sims.coordUtils import _raDecFromPixelCoordinates
+from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
@@ -81,12 +81,12 @@ class GalSimHlrTest(unittest.TestCase):
         _maxPixel = numpy.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
         maxPixel = numpy.array([_maxPixel[1], _maxPixel[0]])
 
-        raMax, decMax = _raDecFromPixelCoordinates([maxPixel[0]],
-                                                  [maxPixel[1]],
-                                                  [detector.getName()],
-                                                  camera=camera,
-                                                  obs_metadata=obs,
-                                                  epoch=epoch)
+        raMax, decMax = _raDecFromPixelCoords(maxPixel[0:1],
+                                              maxPixel[1:2],
+                                              [detector.getName()],
+                                              camera=camera,
+                                              obs_metadata=obs,
+                                              epoch=epoch)
 
         activePoints = numpy.where(im>1.0e-10)
 
@@ -95,7 +95,7 @@ class GalSimHlrTest(unittest.TestCase):
         chipNameList = [detector.getName()]*len(xPixList)
 
 
-        raList, decList = _raDecFromPixelCoordinates(xPixList, yPixList, chipNameList,
+        raList, decList = _raDecFromPixelCoords(xPixList, yPixList, chipNameList,
                                                 camera=camera, obs_metadata=obs,
                                                 epoch=epoch)
 

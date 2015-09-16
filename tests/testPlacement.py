@@ -7,7 +7,7 @@ from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRadians, haversine
 from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import calculatePixelCoordinates, _raDecFromPixelCoordinates
+from lsst.sims.coordUtils import _pixelCoordsFromRaDec, _raDecFromPixelCoords
 from lsst.sims.photUtils import Sed, Bandpass
 from lsst.sims.catalogs.generation.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
@@ -100,22 +100,22 @@ class GalSimPlacementTest(unittest.TestCase):
         imYList = activePixels[0]
 
         nameList = [detector.getName()]*len(raList)
-        xPixList, yPixList = calculatePixelCoordinates(ra=raList, dec=decList,
-                                                       chipNames=nameList,
-                                                       camera=camera,
-                                                       obs_metadata=obs,
-                                                       epoch=epoch)
+        xPixList, yPixList = _pixelCoordsFromRaDec(raList, decList,
+                                                   chipNames=nameList,
+                                                   camera=camera,
+                                                   obs_metadata=obs,
+                                                   epoch=epoch)
 
         for rr, dd, xx, yy, fwhm, cc in \
         zip(raList, decList, xPixList, yPixList, fwhmList, countList):
             countSigma = numpy.sqrt(cc/gain)
 
             imNameList = [detector.getName()]*len(imXList)
-            raImList, decImList = _raDecFromPixelCoordinates(imXList, imYList,
-                                                            imNameList,
-                                                            camera=camera,
-                                                            obs_metadata=obs,
-                                                            epoch=epoch)
+            raImList, decImList = _raDecFromPixelCoords(imXList, imYList,
+                                                        imNameList,
+                                                        camera=camera,
+                                                        obs_metadata=obs,
+                                                        epoch=epoch)
 
             distanceList = arcsecFromRadians(haversine(raImList, decImList, rr, dd))
 

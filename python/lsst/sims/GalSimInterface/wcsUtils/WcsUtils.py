@@ -1,6 +1,6 @@
 import numpy
-from lsst.sims.coordUtils import _raDecFromPixelCoordinates, _observedFromICRS, \
-                                 calculatePixelCoordinates
+from lsst.sims.coordUtils import _raDecFromPixelCoords, _observedFromICRS, \
+                                 _pixelCoordsFromRaDec
 from lsst.afw.cameraGeom import PUPIL, PIXELS, TAN_PIXELS, FOCAL_PLANE
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
@@ -84,20 +84,22 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
             nameList.append(afwDetector.getName())
 
 
-    raList, decList = _raDecFromPixelCoordinates(xPixList, yPixList, nameList,
-                                                camera=afwCamera,
-                                                obs_metadata=obs_metadata,
-                                                epoch=epoch,
-                                                includeDistortion=False)
+    raList, decList = _raDecFromPixelCoords(numpy.array(xPixList),
+                                            numpy.array(yPixList),
+                                            nameList,
+                                            camera=afwCamera,
+                                            obs_metadata=obs_metadata,
+                                            epoch=epoch,
+                                            includeDistortion=False)
 
     raPointing, decPointing = _observedFromICRS(numpy.array([obs_metadata._unrefractedRA]),
                                                numpy.array([obs_metadata._unrefractedDec]),
                                                obs_metadata=obs_metadata, epoch=epoch)
 
-    crPix1, crPix2 = calculatePixelCoordinates(ra=raPointing, dec=decPointing,
-                                               chipNames=[afwDetector.getName()], camera=afwCamera,
-                                               obs_metadata=obs_metadata, epoch=epoch,
-                                               includeDistortion=False)
+    crPix1, crPix2 = _pixelCoordsFromRaDec(raPointing, decPointing,
+                                           chipNames=[afwDetector.getName()], camera=afwCamera,
+                                           obs_metadata=obs_metadata, epoch=epoch,
+                                           includeDistortion=False)
 
     lonList, latList = _nativeLonLatFromRaDec(raList, decList, raPointing[0], decPointing[0])
 

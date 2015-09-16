@@ -3,8 +3,9 @@ import numpy
 import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 from lsst.sims.utils import arcsecFromRadians, radiansFromArcsec
-from lsst.sims.coordUtils import _raDecFromPixelCoordinates, \
-                                 calculatePixelCoordinates
+from lsst.sims.coordUtils import _raDecFromPixelCoords, \
+                                 _pixelCoordsFromRaDec, \
+                                 pixelCoordsFromPupilCoords
 from lsst.sims.GalSimInterface.wcsUtils import tanSipWcsFromDetector
 
 __all__ = ["GalSimDetector"]
@@ -71,10 +72,11 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         if type(x) is numpy.ndarray:
             chipNameList = chipNameList * len(x)
 
-        ra, dec = _raDecFromPixelCoordinates(x + self.afw_crpix1, y + self.afw_crpix2, chipNameList,
-                                            camera=self.afwCamera,
-                                            obs_metadata=self.obs_metadata,
-                                            epoch=self.epoch)
+        ra, dec = _raDecFromPixelCoords(x + self.afw_crpix1, y + self.afw_crpix2, chipNameList,
+                                        camera=self.afwCamera,
+                                        obs_metadata=self.obs_metadata,
+                                        epoch=self.epoch)
+
         if type(x) is numpy.ndarray:
             return (ra, dec)
         else:
@@ -241,10 +243,10 @@ class GalSimDetector(object):
             raLocal = numpy.array([ra])
             decLocal = numpy.array([dec])
 
-        xPix, yPix = calculatePixelCoordinates(ra=raLocal, dec=decLocal, chipNames=nameList,
-                                               obs_metadata=self._obs_metadata,
-                                               epoch=self._epoch,
-                                               camera=self._afwCamera)
+        xPix, yPix = _pixelCoordsFromRaDec(raLocal, decLocal, chipNames=nameList,
+                                           obs_metadata=self._obs_metadata,
+                                           epoch=self._epoch,
+                                           camera=self._afwCamera)
 
         return xPix, yPix
 
@@ -274,10 +276,8 @@ class GalSimDetector(object):
             xp = numpy.array([xPupil])
             yp = numpy.array([yPupil])
 
-        xPix, yPix = calculatePixelCoordinates(xPupil=xp, yPupil=yp, chipNames=nameList,
-                                               obs_metadata=self._obs_metadata,
-                                               epoch=self._epoch,
-                                               camera=self._afwCamera)
+        xPix, yPix = pixelCoordsFromPupilCoords(xp, yp, chipNames=nameList,
+                                                camera=self._afwCamera)
 
         return xPix, yPix
 

@@ -7,7 +7,7 @@ import lsst.afw.image as afwImage
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec
 from lsst.sims.catalogs.generation.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimGalaxies
-from lsst.sims.coordUtils import _raDecFromPixelCoordinates
+from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
@@ -85,19 +85,19 @@ class GalSimPositionAngleTest(unittest.TestCase):
         xCenterPix = numpy.array([im.shape[1]/2])
         yCenterPix = numpy.array([im.shape[0]/2])
 
-        raCenter, decCenter = _raDecFromPixelCoordinates(xCenterPix, yCenterPix,
+        raCenter, decCenter = _raDecFromPixelCoords(xCenterPix, yCenterPix,
+                                                    [afwDetector.getName()],
+                                                    camera=afwCamera,
+                                                    obs_metadata=obs_metadata,
+                                                    epoch=epoch)
+
+        xCenterP1 = xCenterPix+1
+        yCenterP1 = yCenterPix+1
+        raCenterP1,decCenterP1 = _raDecFromPixelCoords(xCenterP1, yCenterP1,
                                                        [afwDetector.getName()],
                                                        camera=afwCamera,
                                                        obs_metadata=obs_metadata,
                                                        epoch=epoch)
-
-        xCenterP1 = xCenterPix+1
-        yCenterP1 = yCenterPix+1
-        raCenterP1,decCenterP1 = _raDecFromPixelCoordinates(xCenterP1, yCenterP1,
-                                                          [afwDetector.getName()],
-                                                          camera=afwCamera,
-                                                          obs_metadata=obs_metadata,
-                                                          epoch=epoch)
 
         # find the angle between the (1,1) vector in pixel space and the
         # north axis of the image

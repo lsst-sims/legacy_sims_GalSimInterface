@@ -6,7 +6,7 @@ import lsst.afw.geom as afwGeom
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData, haversine, arcsecFromRadians
 from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import _observedFromICRS, _raDecFromPixelCoordinates
+from lsst.sims.coordUtils import _observedFromICRS, _raDecFromPixelCoords
 from lsst.sims.GalSimInterface.wcsUtils import tanWcsFromDetector, tanSipWcsFromDetector
 
 
@@ -60,10 +60,10 @@ class WcsTest(unittest.TestCase):
         xPixList = numpy.array(xPixList)
         yPixList = numpy.array(yPixList)
 
-        raTest, decTest = _raDecFromPixelCoordinates(xPixList, yPixList,
-                                                    [detector.getName()]*len(xPixList),
-                                                    camera=self.camera, obs_metadata=self.obs,
-                                                    epoch=self.epoch)
+        raTest, decTest = _raDecFromPixelCoords(xPixList, yPixList,
+                                                [detector.getName()]*len(xPixList),
+                                                camera=self.camera, obs_metadata=self.obs,
+                                                epoch=self.epoch)
 
         distanceList = arcsecFromRadians(haversine(raTest, decTest, wcsRa, wcsDec))
         maxDistance = distanceList.max()
@@ -113,10 +113,10 @@ class WcsTest(unittest.TestCase):
         xPixList = numpy.array(xPixList)
         yPixList = numpy.array(yPixList)
 
-        raTest, decTest = _raDecFromPixelCoordinates(xPixList, yPixList,
-                                                    [detector.getName()]*len(xPixList),
-                                                    camera=self.camera, obs_metadata=self.obs,
-                                                    epoch=self.epoch)
+        raTest, decTest = _raDecFromPixelCoords(xPixList, yPixList,
+                                                [detector.getName()]*len(xPixList),
+                                                camera=self.camera, obs_metadata=self.obs,
+                                                epoch=self.epoch)
 
         tanDistanceList = arcsecFromRadians(haversine(raTest, decTest, tanWcsRa, tanWcsDec))
         tanSipDistanceList = arcsecFromRadians(haversine(raTest, decTest, tanSipWcsRa, tanSipWcsDec))

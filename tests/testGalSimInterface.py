@@ -9,7 +9,7 @@ import lsst.utils
 import lsst.utils.tests as utilsTests
 from lsst.sims.utils import arcsecFromRadians, radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
-from lsst.sims.coordUtils import calculatePixelCoordinates
+from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
 from lsst.sims.catalogs.generation.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
@@ -772,11 +772,10 @@ class GalSimInterfaceTest(unittest.TestCase):
                 for detector in cat.galSimInterpreter.detectors:
                     centeredObj = cat.galSimInterpreter.PSF.applyPSF(xPupil=xPupil, yPupil=yPupil, bandpass=bandpass)
 
-                    xPix, yPix = calculatePixelCoordinates(xPupil=numpy.array([radiansFromArcsec(xPupil)]),
-                                                           yPupil=numpy.array([radiansFromArcsec(yPupil)]),
-                                                           chipNames = [detector.name],
-                                                           camera = detector.afwCamera,
-                                                           obs_metadata=obs_metadata, epoch=2000.0)
+                    xPix, yPix = pixelCoordsFromPupilCoords(numpy.array([radiansFromArcsec(xPupil)]),
+                                                            numpy.array([radiansFromArcsec(yPupil)]),
+                                                            chipNames = [detector.name],
+                                                            camera = detector.afwCamera)
 
                     dx = xPix[0] - detector.xCenterPix
                     dy = yPix[0] - detector.yCenterPix
