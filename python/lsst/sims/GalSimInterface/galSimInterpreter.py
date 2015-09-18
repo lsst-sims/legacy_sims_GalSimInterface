@@ -12,7 +12,7 @@ import os
 import numpy
 import galsim
 from lsst.sims.utils import radiansFromArcsec
-from lsst.sims.coordUtils import calculatePixelCoordinates
+from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
 
 __all__ = ["GalSimInterpreter"]
 
@@ -379,12 +379,10 @@ class GalSimInterpreter(object):
 
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
 
-                xPix, yPix = calculatePixelCoordinates(xPupil=numpy.array([gsObject.xPupilRadians]),
-                                                       yPupil=numpy.array([gsObject.yPupilRadians]),
-                                                       chipNames=[detector.name],
-                                                       camera=detector.afwCamera,
-                                                       obs_metadata=detector.obs_metadata,
-                                                       epoch=detector.epoch)
+                xPix, yPix = pixelCoordsFromPupilCoords(numpy.array([gsObject.xPupilRadians]),
+                                                        numpy.array([gsObject.yPupilRadians]),
+                                                        chipNames=[detector.name],
+                                                        camera=detector.afwCamera)
 
                 obj = centeredObj.copy()
 

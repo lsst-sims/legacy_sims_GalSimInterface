@@ -7,8 +7,8 @@ import lsst.utils.tests as utilsTests
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.photUtils import PhotometricParameters
 from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import observedFromICRS, raDecFromPixelCoordinates, \
-                                 pupilCoordinatesFromPixelCoordinates
+from lsst.sims.coordUtils import _observedFromICRS, _raDecFromPixelCoords, \
+                                 pupilCoordsFromPixelCoords
 from lsst.sims.GalSimInterface import GalSimDetector
 
 class GalSimDetectorTest(unittest.TestCase):
@@ -32,7 +32,7 @@ class GalSimDetectorTest(unittest.TestCase):
                                        rotSkyPos=rotSkyPos)
 
         raPointing, \
-        decPointing = observedFromICRS(numpy.array([numpy.radians(ra)]),
+        decPointing = _observedFromICRS(numpy.array([numpy.radians(ra)]),
                                        numpy.array([numpy.radians(dec)]),
                                        obs_metadata=self.obs,
                                        epoch=self.epoch)
@@ -79,11 +79,11 @@ class GalSimDetectorTest(unittest.TestCase):
         xPixList = numpy.array(xPixList)
         yPixList = numpy.array(yPixList)
 
-        raList, decList = raDecFromPixelCoordinates(xPixList, yPixList,
-                                                    nameList,
-                                                    camera=self.camera,
-                                                    obs_metadata=self.obs,
-                                                    epoch=self.epoch)
+        raList, decList = _raDecFromPixelCoords(xPixList, yPixList,
+                                                nameList,
+                                                camera=self.camera,
+                                                obs_metadata=self.obs,
+                                                epoch=self.epoch)
 
         testAnswer = gsdet.containsRaDec(raList, decList)
 
@@ -130,11 +130,9 @@ class GalSimDetectorTest(unittest.TestCase):
         yPixList = numpy.array(yPixList)
 
         xPupilList, yPupilList = \
-               pupilCoordinatesFromPixelCoordinates(xPixList, yPixList,
-                                                    nameList,
-                                                    camera=self.camera,
-                                                    obs_metadata=self.obs,
-                                                    epoch=self.epoch)
+               pupilCoordsFromPixelCoords(xPixList, yPixList,
+                                          nameList,
+                                          camera=self.camera)
 
 
         testAnswer = gsdet.containsPupilCoordinates(xPupilList, yPupilList)

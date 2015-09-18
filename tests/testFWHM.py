@@ -8,7 +8,7 @@ from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRa
 from lsst.sims.utils import haversine, arcsecFromRadians
 from lsst.sims.catalogs.generation.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, GalSimDetector, SNRdocumentPSF
-from lsst.sims.coordUtils import observedFromICRS, raDecFromPixelCoordinates
+from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
@@ -81,12 +81,12 @@ class GalSimFwhmTest(unittest.TestCase):
         _maxPixel = numpy.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
         maxPixel = numpy.array([_maxPixel[1], _maxPixel[0]])
 
-        raMax, decMax = raDecFromPixelCoordinates([maxPixel[0]],
-                                                  [maxPixel[1]],
-                                                  [detector.getName()],
-                                                  camera=camera,
-                                                  obs_metadata=obs,
-                                                  epoch=epoch)
+        raMax, decMax = _raDecFromPixelCoords(maxPixel[:1],
+                                              maxPixel[1:2],
+                                              [detector.getName()],
+                                              camera=camera,
+                                              obs_metadata=obs,
+                                              epoch=epoch)
 
         half_flux=0.5*maxFlux
 
@@ -95,19 +95,21 @@ class GalSimFwhmTest(unittest.TestCase):
             slope = numpy.tan(theta)
 
             if numpy.abs(slope<1.0):
-                xPixList = [ix for ix in range(0, im.shape[1]) \
-                                if int(slope*(ix-maxPixel[0]) + maxPixel[1])>=0 and int(slope*(ix-maxPixel[0])+maxPixel[1])<im.shape[0]]
+                xPixList = numpy.array([ix for ix in range(0, im.shape[1]) \
+                                if int(slope*(ix-maxPixel[0]) + maxPixel[1])>=0 and \
+                                int(slope*(ix-maxPixel[0])+maxPixel[1])<im.shape[0]])
 
-                yPixList = [int(slope*(ix-maxPixel[0])+maxPixel[1]) for ix in xPixList]
+                yPixList = numpy.array([int(slope*(ix-maxPixel[0])+maxPixel[1]) for ix in xPixList])
             else:
-                yPixList = [iy for iy in range(0, im.shape[0]) \
-                                if int((iy-maxPixel[1])/slope + maxPixel[0])>=0 and int((iy-maxPixel[1])/slope + maxPixel[0])<im.shape[1]]
+                yPixList = numpy.array([iy for iy in range(0, im.shape[0]) \
+                                if int((iy-maxPixel[1])/slope + maxPixel[0])>=0 and \
+                                int((iy-maxPixel[1])/slope + maxPixel[0])<im.shape[1]])
 
-                xPixList = [int((iy-maxPixel[1])/slope + maxPixel[0]) for iy in yPixList]
+                xPixList = numpy.array([int((iy-maxPixel[1])/slope + maxPixel[0]) for iy in yPixList])
 
             chipNameList = [detector.getName()]*len(xPixList)
-            raList, decList = raDecFromPixelCoordinates(xPixList, yPixList, chipNameList,
-                                                        camera=camera, obs_metadata=obs, epoch=epoch)
+            raList, decList = _raDecFromPixelCoords(xPixList, yPixList, chipNameList,
+                                                    camera=camera, obs_metadata=obs, epoch=epoch)
 
             distanceList = arcsecFromRadians(haversine(raList, decList, raMax[0], decMax[0]))
 
