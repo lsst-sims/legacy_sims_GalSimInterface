@@ -19,7 +19,7 @@ from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, is_nul
 from lsst.sims.catUtils.mixins import CameraCoords, AstrometryGalaxies, AstrometryStars, \
                                       EBVmixin
 from lsst.sims.GalSimInterface import GalSimInterpreter, GalSimDetector, GalSimCelestialObject
-from lsst.sims.photUtils import Sed, Bandpass, PhotometryHardware, \
+from lsst.sims.photUtils import Sed, Bandpass, BandpassDict, \
                                 PhotometricParameters, LSSTdefaults
 import lsst.afw.cameraGeom.testUtils as camTestUtils
 import lsst.afw.geom as afwGeom
@@ -27,7 +27,7 @@ from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 
 __all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars"]
 
-class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
+class GalSimBase(InstanceCatalog, CameraCoords):
     """
     The catalog classes in this file use the InstanceCatalog infrastructure to construct
     FITS images for each detector-filter combination on a simulated camera.  This is done by
@@ -81,9 +81,6 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
 
         atomTransmissionName is the name of the file in bandpass_directory that contains the
         atmostpheric transmissivity, e.g. 'atmos.dat'
-
-        skySEDname is the name of the file in bandpass_directory that contains the sky emission
-        SED, e.g. 'darksky.dat'
 
     4) Telescope parameters such as exposure time, area, and gain are stored in the
     GalSim InstanceCatalog member variable photParams, which is an instantiation of
@@ -140,7 +137,6 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
     componentList = ['detector.dat', 'm1.dat', 'm2.dat', 'm3.dat',
                      'lens1.dat', 'lens2.dat', 'lens3.dat']
     atmoTransmissionName = 'atmos.dat'
-    skySEDname = 'darksky.dat'
 
     #This member variable will define a PSF to convolve with the sources.
     #See the classes PSFbase and DoubleGaussianPSF in
@@ -456,7 +452,7 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
 
                 detectors.append(detector)
 
-            if self.bandpassDict is None:
+            if not hasattr(self, 'bandpassDict'):
                 if self.noise_and_background is not None:
                     if self.obs_metadata.m5 is None:
                         raise RuntimeError('WARNING  in GalSimCatalog; you did not specify m5 in your '+
@@ -480,12 +476,11 @@ class GalSimBase(InstanceCatalog, CameraCoords, PhotometryHardware):
                                                  'bandpass has: %s \n' % self.bandpassNames.__repr__() +
                                                  'seeing has: %s ' % self.obs_metadata.seeing.keys().__repr__())
 
-                self.loadBandpassesFromFiles(bandpassNames=self.bandpassNames,
+                self.bandpassDict, hardwareDict = BandpassDict.loadBandpassesFromFiles(bandpassNames=self.bandpassNames,
                                              filedir=self.bandpassDir,
                                              bandpassRoot=self.bandpassRoot,
                                              componentList=self.componentList,
-                                             atmoTransmission=self.atmoTransmissionName,
-                                             skySED=self.skySEDname)
+                                             atmoTransmission=os.path.join(self.bandpassDir, self.atmoTransmissionName))
 
             self.galSimInterpreter = GalSimInterpreter(obs_metadata=self.obs_metadata, epoch=self.db_obj.epoch, detectors=detectors,
                                                        bandpassDict=self.bandpassDict, noiseWrapper=self.noise_and_background,
