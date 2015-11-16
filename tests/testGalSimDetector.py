@@ -79,7 +79,7 @@ class GalSimDetectorTest(unittest.TestCase):
         testAnswer = gsdet.containsRaDec(raList, decList)
 
         for c, t in zip(correctAnswer, testAnswer):
-            self.assertTrue(c is t)
+            self.assertIs(c, t)
 
 
     def testContainsPupilCoordinates(self):
@@ -129,7 +129,7 @@ class GalSimDetectorTest(unittest.TestCase):
         testAnswer = gsdet.containsPupilCoordinates(xPupilList, yPupilList)
 
         for c, t in zip(correctAnswer, testAnswer):
-            self.assertTrue(c is t)
+            self.assertIs(c, t)
 
 def suite():
     utilsTests.init()
