@@ -71,7 +71,7 @@ class WcsTest(unittest.TestCase):
     def testTanSipWcs(self):
         """
         Test that tanSipWcsFromDetector works by fitting a TAN WCS and a TAN-SIP WCS to
-        the a detector with distortions and verifying that the TAN-SIP WCS better approximates
+        a detector with distortions and verifying that the TAN-SIP WCS better approximates
         the truth.
         """
 
