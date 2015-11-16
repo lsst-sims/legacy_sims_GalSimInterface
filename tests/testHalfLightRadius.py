@@ -89,6 +89,7 @@ class GalSimHlrTest(unittest.TestCase):
                                               epoch=epoch)
 
         activePoints = numpy.where(im>1.0e-10)
+        self.assertGreater(len(activePoints), 0)
 
         xPixList = activePoints[1] # this looks backwards, but remember: the way numpy handles
         yPixList = activePoints[0] # arrays, the first index indicates what row it is in (the y coordinate)
@@ -124,8 +125,8 @@ class GalSimHlrTest(unittest.TestCase):
         detName = detector.getName()
         imageName = '%s_%s_u.fits' % (imageRoot, detName)
 
-        obs = ObservationMetaData(unrefractedRA = 75.0,
-                                  unrefractedDec = -12.0,
+        obs = ObservationMetaData(pointingRA = 75.0,
+                                  pointingDec = -12.0,
                                   boundType = 'circle',
                                   boundLength = 4.0,
                                   rotSkyPos = 33.0,
@@ -146,6 +147,7 @@ class GalSimHlrTest(unittest.TestCase):
             cat.write_images(nameRoot=imageRoot)
 
             totalFlux, hlrFlux = self.get_flux_in_half_light_radius(imageName, hlr, detector, camera, obs)
+            self.assertGreater(totalFlux, 1000.0) # make sure the image is not blank
             sigmaFlux = numpy.sqrt(0.5*totalFlux/cat.photParams.gain) #divide by gain because Poisson stats apply to photons
             self.assertTrue(numpy.abs(hlrFlux-0.5*totalFlux)<4.0*sigmaFlux)
 
