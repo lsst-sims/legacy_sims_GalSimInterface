@@ -1,6 +1,5 @@
 import numpy
-from lsst.sims.coordUtils import _raDecFromPixelCoords, _observedFromICRS, \
-                                 _pixelCoordsFromRaDec
+from lsst.sims.coordUtils import _pixelCoordsFromRaDec, _raDecFromPixelCoords
 from lsst.afw.cameraGeom import PUPIL, PIXELS, TAN_PIXELS, FOCAL_PLANE
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
@@ -92,16 +91,15 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
                                             epoch=epoch,
                                             includeDistortion=False)
 
-    raPointing, decPointing = _observedFromICRS(numpy.array([obs_metadata._unrefractedRA]),
-                                               numpy.array([obs_metadata._unrefractedDec]),
-                                               obs_metadata=obs_metadata, epoch=epoch)
-
-    crPix1, crPix2 = _pixelCoordsFromRaDec(raPointing, decPointing,
+    crPix1, crPix2 = _pixelCoordsFromRaDec(numpy.array([obs_metadata._pointingRA]),
+                                           numpy.array([obs_metadata._pointingDec]),
                                            chipNames=[afwDetector.getName()], camera=afwCamera,
                                            obs_metadata=obs_metadata, epoch=epoch,
                                            includeDistortion=False)
 
-    lonList, latList = _nativeLonLatFromRaDec(raList, decList, raPointing[0], decPointing[0])
+    lonList, latList = _nativeLonLatFromRaDec(raList, decList,
+                                              obs_metadata._pointingRA,
+                                              obs_metadata._pointingDec)
 
     #convert from native longitude and latitude to intermediate world coordinates
     #according to equations (12), (13), (54) and (55) of
@@ -135,14 +133,16 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
 
     coeffs = numpy.linalg.solve(aMatrix, bVector)
 
-    crValPoint = afwGeom.Point2D(numpy.degrees(raPointing[0]), numpy.degrees(decPointing[0]))
+    crValPoint = afwGeom.Point2D(obs_metadata.pointingRA,
+                                 obs_metadata.pointingDec)
+
     crPixPoint = afwGeom.Point2D(crPix1[0], crPix2[0])
 
     fitsHeader = dafBase.PropertyList()
     fitsHeader.set("RADESYS", "ICRS")
     fitsHeader.set("EQUINOX", epoch)
-    fitsHeader.set("CRVAL1", numpy.degrees(raPointing[0]))
-    fitsHeader.set("CRVAL2", numpy.degrees(decPointing[0]))
+    fitsHeader.set("CRVAL1", obs_metadata.pointingRA)
+    fitsHeader.set("CRVAL2", obs_metadata.pointingDec)
     fitsHeader.set("CRPIX1", crPix1[0]+1) # the +1 is because LSST uses 0-indexed images
     fitsHeader.set("CRPIX2", crPix2[0]+1) # FITS files use 1-indexed images
     fitsHeader.set("CTYPE1", "RA---TAN")
