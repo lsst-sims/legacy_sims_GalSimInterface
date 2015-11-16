@@ -65,7 +65,7 @@ class WcsTest(unittest.TestCase):
         maxDistance = distanceList.max()
 
         msg = 'maxError in tanWcs was %e ' % maxDistance
-        self.assertTrue(maxDistance<0.001, msg=msg)
+        self.assertLess(maxDistance, 0.001, msg=msg)
 
 
     def testTanSipWcs(self):
@@ -121,8 +121,8 @@ class WcsTest(unittest.TestCase):
         maxDistanceTanSip = tanSipDistanceList.max()
 
         msg = 'max error in TAN WCS %e; in TAN-SIP %e' % (maxDistanceTan, maxDistanceTanSip)
-        self.assertTrue(maxDistanceTanSip<0.001, msg=msg)
-        self.assertTrue(maxDistanceTan-maxDistanceTanSip>1.0e-10, msg=msg)
+        self.assertLess(maxDistanceTanSip, 0.001, msg=msg)
+        self.assertGreater(maxDistanceTan-maxDistanceTanSip, 1.0e-10, msg=msg)
 
 
 def suite():
