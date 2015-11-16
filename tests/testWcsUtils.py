@@ -6,7 +6,7 @@ import lsst.afw.geom as afwGeom
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData, haversine, arcsecFromRadians
 from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import _observedFromICRS, _raDecFromPixelCoords
+from lsst.sims.coordUtils import _raDecFromPixelCoords
 from lsst.sims.GalSimInterface.wcsUtils import tanWcsFromDetector, tanSipWcsFromDetector
 
 
@@ -15,15 +15,11 @@ class WcsTest(unittest.TestCase):
     def setUp(self):
         baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
         self.camera = ReturnCamera(baseDir)
-        self.obs = ObservationMetaData(unrefractedRA=25.0, unrefractedDec=-10.0,
+        self.obs = ObservationMetaData(pointingRA=25.0, pointingDec=-10.0,
                                        boundType='circle', boundLength=1.0,
                                        mjd=49250.0, rotSkyPos=0.0)
         self.epoch = 2000.0
 
-        self.raPointing, self.decPointing = _observedFromICRS(numpy.array([self.obs._unrefractedRA]),
-                                                             numpy.array([self.obs._unrefractedDec]),
-                                                             obs_metadata=self.obs,
-                                                             epoch=self.epoch)
 
     def testTanWcs(self):
         """
