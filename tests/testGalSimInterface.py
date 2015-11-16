@@ -459,8 +459,8 @@ class GalSimInterfaceTest(unittest.TestCase):
         seeing = [0.6, 0.5, 0.7]
         bandpassNames = ['x', 'y', 'z']
         obs_metadata = ObservationMetaData(
-                       unrefractedRA=self.obs_metadata.unrefractedRA,
-                       unrefractedDec=self.obs_metadata.unrefractedDec,
+                       pointingRA=self.obs_metadata.pointingRA,
+                       pointingDec=self.obs_metadata.pointingDec,
                        rotSkyPos=self.obs_metadata.rotSkyPos,
                        mjd=self.obs_metadata.mjd,
                        bandpassName=bandpassNames,
@@ -486,8 +486,8 @@ class GalSimInterfaceTest(unittest.TestCase):
         seeing = [0.6, 0.5, 0.7]
         bandpassNames = ['x', 'y', 'z']
         obs_metadata = ObservationMetaData(
-                       unrefractedRA=self.obs_metadata.unrefractedRA,
-                       unrefractedDec=self.obs_metadata.unrefractedDec,
+                       pointingRA=self.obs_metadata.pointingRA,
+                       pointingDec=self.obs_metadata.pointingDec,
                        rotSkyPos=self.obs_metadata.rotSkyPos,
                        mjd=self.obs_metadata.mjd,
                        bandpassName=bandpassNames,
