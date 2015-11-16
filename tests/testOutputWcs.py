@@ -136,7 +136,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
 
             medianError = numpy.median(errorList)
             msg = 'medianError was %e' % medianError
-            self.assertTrue(medianError<0.01, msg=msg)
+            self.assertLess(medianError, 0.01, msg=msg)
 
             if os.path.exists(catName):
                 os.unlink(catName)
