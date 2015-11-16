@@ -34,8 +34,8 @@ obsMD = OpSim3_61DBObject()
 raw_obs_metadata = obsMD.getObservationMetaData(88625744, 0.05, makeCircBounds = True)
 
 defaults = LSSTdefaults()
-obs_metadata = ObservationMetaData(unrefractedRA=raw_obs_metadata.unrefractedRA,
-                                   unrefractedDec=raw_obs_metadata.unrefractedDec,
+obs_metadata = ObservationMetaData(pointingRA=raw_obs_metadata.pointingRA,
+                                   pointingDec=raw_obs_metadata.pointingDec,
                                    boundType='circle',
                                    boundLength=0.05,
                                    mjd=raw_obs_metadata.mjd,
