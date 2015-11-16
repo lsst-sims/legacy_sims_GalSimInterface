@@ -306,7 +306,7 @@ class GalSimInterfaceTest(unittest.TestCase):
                         #guard against objects being written on one
                         #chip more than once
                         msg = '%s was written on %s more than once' % (sedName, name)
-                        self.assertTrue(name not in alreadyWritten, msg=msg)
+                        self.assertNotIn(name, alreadyWritten, msg=msg)
                         alreadyWritten.append(name)
 
                         #loop over all of the detectors on which an object fell
@@ -340,14 +340,14 @@ class GalSimInterfaceTest(unittest.TestCase):
                     if catalog.noise_and_background is not None and catalog.noise_and_background.addBackground:
                         msg += 'background per pixel %e pixels %e %s' % (backgroundCounts[ff[-6]], galsimPixels[ff],ff)
 
-                    self.assertTrue(numpy.abs(controlCounts[ff] - galsimCounts[ff]) < 0.05*controlCounts[ff],
+                    self.assertLess(numpy.abs(controlCounts[ff] - galsimCounts[ff]), 0.05*controlCounts[ff],
                                     msg=msg)
                 elif galsimCounts[ff] > 0.001:
                     unDrawnDetectors += 1
 
             #to make sure we did not neglect more than one detector
-            self.assertTrue(unDrawnDetectors<2)
-            self.assertTrue(drawnDetectors>0)
+            self.assertLess(unDrawnDetectors, 2)
+            self.assertGreater(drawnDetectors, 0)
 
 
     def compareCatalogs(self, cleanCatalog, noisyCatalog, gain, readnoise):
@@ -403,12 +403,12 @@ class GalSimInterfaceTest(unittest.TestCase):
 
             if totalMean>=100.0:
                 countedImages += 1
-                self.assertTrue(numpy.abs(totalVar-1.0) < 0.05)
+                self.assertLess(numpy.abs(totalVar-1.0), 0.05)
 
             os.unlink(noisyName)
             os.unlink(cleanName)
 
-        self.assertTrue(countedImages>0)
+        self.assertGreater(countedImages, 0)
 
 
     def testGalaxyBulges(self):
@@ -615,10 +615,10 @@ class GalSimInterfaceTest(unittest.TestCase):
         varADU = varElectrons/(gain*gain)
 
         msg = 'background %e mean %e ' % (background, mean)
-        self.assertTrue(numpy.abs(background/mean - 1.0) < 0.05, msg=msg)
+        self.assertLess(numpy.abs(background/mean - 1.0), 0.05, msg=msg)
 
         msg = 'var %e varADU %e ; ratio %e ; background %e' % (var, varADU, var/varADU, background)
-        self.assertTrue(numpy.abs(var/varADU - 1.0) < 0.05, msg=msg)
+        self.assertLess(numpy.abs(var/varADU - 1.0), 0.05, msg=msg)
 
 
     def testMultipleImages(self):
@@ -799,7 +799,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         for testName in testNames:
             controlName = testName.replace('Test', 'Control')
             msg = '%s has no counterpart ' % testName
-            self.assertTrue(controlName in controlImages, msg=msg)
+            self.assertIn(controlName, controlImages, msg=msg)
 
         #make sure that the test and control images agree to some tolerance
         ignored = 0
@@ -815,7 +815,7 @@ class GalSimInterfaceTest(unittest.TestCase):
                 msg = '%s: controlFlux = %e, testFlux = %e' % (controlName, controlFlux, testFlux)
                 if controlFlux>1000.0:
                     #the randomness of photon shooting means that faint images won't agree
-                    self.assertTrue(numpy.abs(controlFlux/testFlux - 1.0)<0.1, msg=msg)
+                    self.assertLess(numpy.abs(controlFlux/testFlux - 1.0), 0.1, msg=msg)
                 else:
                     ignored += 1
             else:
@@ -823,10 +823,10 @@ class GalSimInterfaceTest(unittest.TestCase):
                 #have zero flux (because no star fell on them)
                 zeroFlux += 1
                 msg = '%s has flux %e but was not written by catalog' % (controlName, controlFlux)
-                self.assertTrue(controlFlux<1.0, msg=msg)
+                self.assertLess(controlFlux, 1.0, msg=msg)
 
-        self.assertTrue(ignored<len(testNames)/2)
-        self.assertTrue(zeroFlux>0)
+        self.assertLess(ignored, len(testNames)/2)
+        self.assertGreater(zeroFlux, 0)
 
         for testName in testNames:
             if os.path.exists(testName):
@@ -864,31 +864,31 @@ class GalSimInterfaceTest(unittest.TestCase):
         midP1 = image(xCenter+halfDex+1, yCenter)
         midM1 = image(xCenter+halfDex-1, yCenter)
         msg = '%e is not > %e ' % (midM1, 0.5*maxValue)
-        self.assertTrue(midM1 > 0.5*maxValue, msg=msg)
+        self.assertGreater(midM1, 0.5*maxValue, msg=msg)
         msg = '%e is not < %e ' % (midP1, 0.5*maxValue)
-        self.assertTrue(midP1 < 0.5*maxValue, msg=msg)
+        self.assertLess(midP1, 0.5*maxValue, msg=msg)
 
         midValue = image(xCenter-halfDex, yCenter)
         midP1 = image(xCenter-halfDex-1, yCenter)
         midM1 = image(xCenter-halfDex+1, yCenter)
         msg = '%e is not > %e ' % (midM1, 0.5*maxValue)
-        self.assertTrue(midM1 > 0.5*maxValue, msg=msg)
+        self.assertGreater(midM1, 0.5*maxValue, msg=msg)
         msg = '%e is not < %e ' % (midP1, 0.5*maxValue)
-        self.assertTrue(midP1 < 0.5*maxValue, msg=msg)
+        self.assertLess(midP1, 0.5*maxValue, msg=msg)
 
         midP1 = image(xCenter, yCenter+halfDex+1)
         midM1 = image(xCenter, yCenter+halfDex-1)
         msg = '%e is not > %e ' % (midM1, 0.5*maxValue)
-        self.assertTrue(midM1 > 0.5*maxValue, msg=msg)
+        self.assertGreater(midM1, 0.5*maxValue, msg=msg)
         msg = '%e is not < %e ' % (midP1, 0.5*maxValue)
-        self.assertTrue(midP1 < 0.5*maxValue, msg=msg)
+        self.assertLess(midP1, 0.5*maxValue, msg=msg)
 
         midP1 = image(xCenter, yCenter-halfDex-1)
         midM1 = image(xCenter, yCenter-halfDex+1)
         msg = '%e is not > %e ' % (midM1, 0.5*maxValue)
-        self.assertTrue(midM1 > 0.5*maxValue, msg=msg)
+        self.assertGreater(midM1, 0.5*maxValue, msg=msg)
         msg = '%e is not < %e ' % (midP1, 0.5*maxValue)
-        self.assertTrue(midP1 < 0.5*maxValue, msg=msg)
+        self.assertLess(midP1, 0.5*maxValue, msg=msg)
 
 
 def suite():
