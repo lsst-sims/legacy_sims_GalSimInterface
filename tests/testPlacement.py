@@ -126,7 +126,7 @@ class GalSimPlacementTest(unittest.TestCase):
                                   )
 
             totalFlux = fluxArray.sum()
-            self.assertTrue(numpy.abs(totalFlux-cc)<3.0*countSigma)
+            self.assertLess(numpy.abs(totalFlux-cc), 3.0*countSigma)
 
 
 
