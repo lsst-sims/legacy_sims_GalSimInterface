@@ -207,7 +207,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
                                                   pa-360.0-paTest,
                                                   pa+360.0-paTest
                                                   ])).min()
-                self.assertTrue(deviation<2.0)
+                self.assertLess(deviation, 2.0)
 
                 if os.path.exists(catName):
                     os.unlink(catName)
