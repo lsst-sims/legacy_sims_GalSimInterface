@@ -75,8 +75,8 @@ class GalSimOutputWcsTest(unittest.TestCase):
         for raPointing, decPointing, rotSkyPos in \
         zip(pointingRaList, pointingDecList, rotSkyPosList):
 
-            obs = ObservationMetaData(unrefractedRA = raPointing,
-                                      unrefractedDec = decPointing,
+            obs = ObservationMetaData(pointingRA = raPointing,
+                                      pointingDec = decPointing,
                                       boundType = 'circle',
                                       boundLength = 4.0,
                                       rotSkyPos = rotSkyPos,
