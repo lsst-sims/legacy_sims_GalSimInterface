@@ -79,6 +79,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
 
         im = afwImage.ImageF(imageName).getArray()
         activePixels = numpy.where(im>1.0e-10)
+        self.assertGreater(len(activePixels), 0)
         xPixList = activePixels[1]
         yPixList = activePixels[0]
 
@@ -173,8 +174,8 @@ class GalSimPositionAngleTest(unittest.TestCase):
 
                 imageName = '%s_%s_u.fits' % (imageRoot, detName)
 
-                obs = ObservationMetaData(unrefractedRA = 75.0,
-                                          unrefractedDec = -12.0,
+                obs = ObservationMetaData(pointingRA = 75.0,
+                                          pointingDec = -12.0,
                                           boundType = 'circle',
                                           boundLength = 4.0,
                                           rotSkyPos = rotSkyPos,
