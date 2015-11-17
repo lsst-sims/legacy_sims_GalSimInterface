@@ -75,8 +75,8 @@ class GalSimOutputWcsTest(unittest.TestCase):
         for raPointing, decPointing, rotSkyPos in \
         zip(pointingRaList, pointingDecList, rotSkyPosList):
 
-            obs = ObservationMetaData(unrefractedRA = raPointing,
-                                      unrefractedDec = decPointing,
+            obs = ObservationMetaData(pointingRA = raPointing,
+                                      pointingDec = decPointing,
                                       boundType = 'circle',
                                       boundLength = 4.0,
                                       rotSkyPos = rotSkyPos,
@@ -136,7 +136,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
 
             medianError = numpy.median(errorList)
             msg = 'medianError was %e' % medianError
-            self.assertTrue(medianError<0.01, msg=msg)
+            self.assertLess(medianError, 0.01, msg=msg)
 
             if os.path.exists(catName):
                 os.unlink(catName)

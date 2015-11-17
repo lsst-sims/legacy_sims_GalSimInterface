@@ -1,7 +1,7 @@
 import os
 import numpy
 from lsst.afw.cameraGeom import PIXELS, FOCAL_PLANE
-from lsst.sims.utils import radiansFromArcsec
+from lsst.sims.utils import radiansFromArcsec, icrsFromObserved
 
 __all__ = ["create_text_catalog"]
 
@@ -52,7 +52,9 @@ def create_text_catalog(obs, file_name, raDisplacement, decDisplacement, \
         for ix, (dx, dy, halfLight, magNorm, pp) in \
         enumerate(zip(raDisplacementList, decDisplacementList, hlr, mag_norm, pa)):
 
-            rr = numpy.degrees(obs._unrefractedRA+dx)
-            dd = numpy.degrees(obs._unrefractedDec+dy)
+            rr_obs = numpy.degrees(obs._pointingRA+dx)
+            dd_obs = numpy.degrees(obs._pointingDec+dy)
 
-            outFile.write('%d %.9f %.9f %.9f %.9f %.9f\n' % (ix, rr, dd, halfLight, magNorm, pp))
+            rr, dd = icrsFromObserved(numpy.array([rr_obs]), numpy.array([dd_obs]), obs_metadata=obs, epoch=2000.0)
+
+            outFile.write('%d %.9f %.9f %.9f %.9f %.9f\n' % (ix, rr[0], dd[0], halfLight, magNorm, pp))

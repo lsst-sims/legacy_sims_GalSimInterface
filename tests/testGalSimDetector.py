@@ -7,7 +7,7 @@ import lsst.utils.tests as utilsTests
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.photUtils import PhotometricParameters
 from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import _observedFromICRS, _raDecFromPixelCoords, \
+from lsst.sims.coordUtils import _raDecFromPixelCoords, \
                                  pupilCoordsFromPixelCoords
 from lsst.sims.GalSimInterface import GalSimDetector
 
@@ -24,21 +24,12 @@ class GalSimDetectorTest(unittest.TestCase):
         self.epoch = 2000.0
         mjd = 49250.0
         rotSkyPos = 45.0
-        self.obs = ObservationMetaData(unrefractedRA=ra,
-                                       unrefractedDec=dec,
+        self.obs = ObservationMetaData(pointingRA=ra,
+                                       pointingDec=dec,
                                        boundType='circle',
                                        boundLength=1.0,
                                        mjd=mjd,
                                        rotSkyPos=rotSkyPos)
-
-        raPointing, \
-        decPointing = _observedFromICRS(numpy.array([numpy.radians(ra)]),
-                                       numpy.array([numpy.radians(dec)]),
-                                       obs_metadata=self.obs,
-                                       epoch=self.epoch)
-
-        self.ra = raPointing[0]
-        self.dec = decPointing[0]
 
 
     def testContainsRaDec(self):
@@ -88,7 +79,7 @@ class GalSimDetectorTest(unittest.TestCase):
         testAnswer = gsdet.containsRaDec(raList, decList)
 
         for c, t in zip(correctAnswer, testAnswer):
-            self.assertTrue(c is t)
+            self.assertIs(c, t)
 
 
     def testContainsPupilCoordinates(self):
@@ -138,7 +129,7 @@ class GalSimDetectorTest(unittest.TestCase):
         testAnswer = gsdet.containsPupilCoordinates(xPupilList, yPupilList)
 
         for c, t in zip(correctAnswer, testAnswer):
-            self.assertTrue(c is t)
+            self.assertIs(c, t)
 
 def suite():
     utilsTests.init()

@@ -6,7 +6,7 @@ import lsst.afw.geom as afwGeom
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData, haversine, arcsecFromRadians
 from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import _observedFromICRS, _raDecFromPixelCoords
+from lsst.sims.coordUtils import _raDecFromPixelCoords
 from lsst.sims.GalSimInterface.wcsUtils import tanWcsFromDetector, tanSipWcsFromDetector
 
 
@@ -15,15 +15,11 @@ class WcsTest(unittest.TestCase):
     def setUp(self):
         baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
         self.camera = ReturnCamera(baseDir)
-        self.obs = ObservationMetaData(unrefractedRA=25.0, unrefractedDec=-10.0,
+        self.obs = ObservationMetaData(pointingRA=25.0, pointingDec=-10.0,
                                        boundType='circle', boundLength=1.0,
                                        mjd=49250.0, rotSkyPos=0.0)
         self.epoch = 2000.0
 
-        self.raPointing, self.decPointing = _observedFromICRS(numpy.array([self.obs._unrefractedRA]),
-                                                             numpy.array([self.obs._unrefractedDec]),
-                                                             obs_metadata=self.obs,
-                                                             epoch=self.epoch)
 
     def testTanWcs(self):
         """
@@ -69,13 +65,13 @@ class WcsTest(unittest.TestCase):
         maxDistance = distanceList.max()
 
         msg = 'maxError in tanWcs was %e ' % maxDistance
-        self.assertTrue(maxDistance<0.001, msg=msg)
+        self.assertLess(maxDistance, 0.001, msg=msg)
 
 
     def testTanSipWcs(self):
         """
         Test that tanSipWcsFromDetector works by fitting a TAN WCS and a TAN-SIP WCS to
-        the a detector with distortions and verifying that the TAN-SIP WCS better approximates
+        a detector with distortions and verifying that the TAN-SIP WCS better approximates
         the truth.
         """
 
@@ -125,8 +121,8 @@ class WcsTest(unittest.TestCase):
         maxDistanceTanSip = tanSipDistanceList.max()
 
         msg = 'max error in TAN WCS %e; in TAN-SIP %e' % (maxDistanceTan, maxDistanceTanSip)
-        self.assertTrue(maxDistanceTanSip<0.001, msg=msg)
-        self.assertTrue(maxDistanceTan-maxDistanceTanSip>1.0e-10, msg=msg)
+        self.assertLess(maxDistanceTanSip, 0.001, msg=msg)
+        self.assertGreater(maxDistanceTan-maxDistanceTanSip, 1.0e-10, msg=msg)
 
 
 def suite():

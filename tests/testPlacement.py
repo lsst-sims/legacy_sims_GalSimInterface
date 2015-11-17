@@ -126,7 +126,7 @@ class GalSimPlacementTest(unittest.TestCase):
                                   )
 
             totalFlux = fluxArray.sum()
-            self.assertTrue(numpy.abs(totalFlux-cc)<3.0*countSigma)
+            self.assertLess(numpy.abs(totalFlux-cc), 3.0*countSigma)
 
 
 
@@ -180,8 +180,8 @@ class GalSimPlacementTest(unittest.TestCase):
         zip(pointingRaList, pointingDecList, rotSkyPosList, fwhmList):
 
 
-            obs = ObservationMetaData(unrefractedRA=pointingRA,
-                                      unrefractedDec=pointingDec,
+            obs = ObservationMetaData(pointingRA=pointingRA,
+                                      pointingDec=pointingDec,
                                       boundType='circle',
                                       boundLength=4.0,
                                       mjd=49250.0,
@@ -214,6 +214,9 @@ class GalSimPlacementTest(unittest.TestCase):
 
             objRaList = numpy.array(objRaList)
             objDecList = numpy.array(objDecList)
+
+            self.assertGreater(len(objRaList), 0) # make sure we aren't testing
+                                                  # an empty catalog/image
 
             self.check_placement(imageName, objRaList, objDecList,
                                 [fwhm]*len(objRaList),

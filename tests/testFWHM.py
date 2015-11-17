@@ -75,6 +75,7 @@ class GalSimFwhmTest(unittest.TestCase):
         """
         im = afwImage.ImageF(fileName).getArray()
         maxFlux = im.max()
+        self.assertGreater(maxFlux, 100.0) # make sure the image is not blank
 
         # this looks backwards, but remember: the way numpy handles
         # arrays, the first index indicates what row it is in (the y coordinate)
@@ -136,7 +137,7 @@ class GalSimFwhmTest(unittest.TestCase):
             bb = distanceList[ix] - mm * fluxList[ix]
             distanceToRight = mm*half_flux + bb
 
-            self.assertTrue(numpy.abs(distanceToLeft+distanceToRight-fwhm) < 0.1*fwhm)
+            self.assertLess(numpy.abs(distanceToLeft+distanceToRight-fwhm), 0.1*fwhm)
 
 
     def testFwhmOfImage(self):
@@ -155,8 +156,8 @@ class GalSimFwhmTest(unittest.TestCase):
         detName = detector.getName()
         imageName = '%s_%s_u.fits' % (imageRoot, detName)
 
-        obs = ObservationMetaData(unrefractedRA = 75.0,
-                                  unrefractedDec = -12.0,
+        obs = ObservationMetaData(pointingRA = 75.0,
+                                  pointingDec = -12.0,
                                   boundType = 'circle',
                                   boundLength = 4.0,
                                   rotSkyPos = 33.0,
