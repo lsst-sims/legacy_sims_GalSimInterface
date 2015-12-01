@@ -361,7 +361,7 @@ class GalSimInterpreter(object):
                         self.detectorImages[name] = self.noiseWrapper.addNoiseAndBackground(self.detectorImages[name],
                                                                               bandpass=self.catSimBandpasses[bandpassName],
                                                                               m5=self.obs_metadata.m5[bandpassName],
-                                                                              seeing=self.obs_metadata.seeing[bandpassName],
+                                                                              FWHMeff=self.obs_metadata.seeing[bandpassName],
                                                                               photParams=detector.photParams)
 
         spectrum = galsim.SED(spec = lambda ll: numpy.interp(ll, gsObject.sed.wavelen, gsObject.sed.flambda),

@@ -146,7 +146,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         defaults = LSSTdefaults()
         cls.bandpassNameList = ['u', 'g', 'r', 'i', 'z', 'y']
         cls.m5 = defaults._m5.values()
-        cls.seeing = defaults._seeing.values()
+        cls.seeing = defaults._FWHMeff.values()
         cls.obs_metadata = makePhoSimTestDB(filename=cls.dbName, size=1,
                                             displacedRA=displacedRA,
                                             displacedDec=displacedDec,
@@ -276,7 +276,7 @@ class GalSimInterfaceTest(unittest.TestCase):
             backgroundCounts = {}
             for filterName in bandpassDict.keys():
                 cts = calcSkyCountsPerPixelForM5(catalog.obs_metadata.m5[filterName], bandpassDict[filterName],
-                                             catalog.photParams, seeing=catalog.obs_metadata.seeing[filterName])
+                                             catalog.photParams, FWHMeff=catalog.obs_metadata.seeing[filterName])
 
                 backgroundCounts[filterName] = cts
 
@@ -371,7 +371,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         backgroundCounts = {}
         for filterName in noisyBandpassDict.keys():
             cts = calcSkyCountsPerPixelForM5(noisyCatalog.obs_metadata.m5[filterName], noisyBandpassDict[filterName],
-                                         noisyCatalog.photParams, seeing=noisyCatalog.obs_metadata.seeing[filterName])
+                                         noisyCatalog.photParams, FWHMeff=noisyCatalog.obs_metadata.seeing[filterName])
 
             backgroundCounts[filterName] = cts
 
@@ -590,11 +590,11 @@ class GalSimInterfaceTest(unittest.TestCase):
         m5 = 24.5
         bandpass = Bandpass()
         bandpass.readThroughput(os.path.join(lsst.utils.getPackageDir('throughputs'),'baseline','total_r.dat'))
-        background = calcSkyCountsPerPixelForM5(m5, bandpass, seeing=lsstDefaults.seeing('r'),
+        background = calcSkyCountsPerPixelForM5(m5, bandpass, FWHMeff=lsstDefaults.FWHMeff('r'),
                                             photParams=photParams)
 
         noisyImage = noise.addNoiseAndBackground(img, bandpass, m5=m5,
-                                                 seeing=lsstDefaults.seeing('r'),
+                                                 FWHMeff=lsstDefaults.FWHMeff('r'),
                                                  photParams=photParams)
 
         mean = 0.0

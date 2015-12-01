@@ -73,7 +73,7 @@ class NoiseAndBackgroundBase(object):
 
 
     def addNoiseAndBackground(self, image, bandpass=None, m5=None,
-                              seeing=None,
+                              FWHMeff=None,
                               photParams=None):
         """
         This method actually adds the sky background and noise to an image.
@@ -88,7 +88,7 @@ class NoiseAndBackgroundBase(object):
         @param [in] bandpass is a CatSim bandpass object (not a GalSim bandpass
         object) characterizing the filter through which the image is being taken.
 
-        @param [in] seeing is the seeing in arcseconds
+        @param [in] FWHMeff is the FWHMeff in arcseconds
 
         @param [in] photParams is an instantiation of the
         PhotometricParameters class that carries details about the
@@ -99,7 +99,7 @@ class NoiseAndBackgroundBase(object):
 
 
         #calculate the sky background to be added to each pixel
-        skyCounts = calcSkyCountsPerPixelForM5(m5, bandpass, seeing=seeing, photParams=photParams)
+        skyCounts = calcSkyCountsPerPixelForM5(m5, bandpass, FWHMeff=FWHMeff, photParams=photParams)
 
         image = image.copy()
 
