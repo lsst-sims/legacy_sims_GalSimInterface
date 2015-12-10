@@ -5,8 +5,8 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 import lsst.afw.image.utils as afwImageUtils
 import lsst.daf.base as dafBase
-import lsst.meas.astrom as measAstrom
-from lsst.sims.utils import _nativeLonLatFromRaDec
+from lsst.sims.GalSimInterface.wcsUtils import approximateWcs
+from lsst.sims.utils import _nativeLonLatFromPointing
 
 __all__ = ["tanWcsFromDetector", "tanSipWcsFromDetector"]
 
@@ -76,12 +76,13 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
 
     dx = 0.5*(xTanPixMax-xTanPixMin)
     dy = 0.5*(yTanPixMax-yTanPixMin)
+    dxPix = xTanPixMax-xTanPixMin
+    dyPix = yTanPixMax-yTanPixMin
     for xx in numpy.arange(xTanPixMin, xTanPixMax+0.5*dx, dx):
-        for yy in numpy.arange(yTanPixMin, yTanPixMax+0.5*dx, dx):
+        for yy in numpy.arange(yTanPixMin, yTanPixMax+0.5*dyPix, dx):
             xPixList.append(xx)
             yPixList.append(yy)
             nameList.append(afwDetector.getName())
-
 
     raList, decList = _raDecFromPixelCoords(numpy.array(xPixList),
                                             numpy.array(yPixList),
@@ -97,7 +98,9 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
                                            obs_metadata=obs_metadata, epoch=epoch,
                                            includeDistortion=False)
 
-    lonList, latList = _nativeLonLatFromRaDec(raList, decList, obs_metadata)
+    lonList, latList = _nativeLonLatFromPointing(raList, decList,
+                                                 obs_metadata._pointingRA,
+                                                 obs_metadata._pointingDec)
 
     #convert from native longitude and latitude to intermediate world coordinates
     #according to equations (12), (13), (54) and (55) of
@@ -201,10 +204,13 @@ def tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch,
     mockExposure.setDetector(afwDetector)
 
     distortedWcs = afwImageUtils.getDistortedWcs(mockExposure.getInfo())
-    tanSipWcs = measAstrom.approximateWcs(distortedWcs, bbox,
+    tanSipWcs = approximateWcs(distortedWcs, bbox,
                                           order=order,
                                           skyTolerance=skyToleranceArcSec*afwGeom.arcseconds,
-                                          pixelTolerance=pixelTolerance)
+                                          pixelTolerance=pixelTolerance,
+                                          detector=afwDetector,
+                                          camera=afwCamera,
+                                          obs_metadata=obs_metadata)
 
     return tanSipWcs
 

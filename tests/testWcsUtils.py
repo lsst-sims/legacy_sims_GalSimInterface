@@ -9,63 +9,29 @@ from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 from lsst.sims.GalSimInterface.wcsUtils import tanWcsFromDetector, tanSipWcsFromDetector
 
+try:
+    from lsst.obs.lsstSim import LsstSimMapper
+    _USE_LSST_CAMERA = True
+except:
+    _USE_LSST_CAMERA = False
 
 class WcsTest(unittest.TestCase):
 
-    def setUp(self):
-        baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
-        self.camera = ReturnCamera(baseDir)
-        self.obs = ObservationMetaData(pointingRA=25.0, pointingDec=-10.0,
+    @classmethod
+    def setUpClass(cls):
+
+        if _USE_LSST_CAMERA:
+            cls.camera = LsstSimMapper().camera
+            cls.detector = cls.camera['R:1,1 S:2,2']
+        else:
+            baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
+            cls.camera = ReturnCamera(baseDir)
+            cls.detector = cls.camera[0]
+
+        cls.obs = ObservationMetaData(pointingRA=25.0, pointingDec=-10.0,
                                        boundType='circle', boundLength=1.0,
                                        mjd=49250.0, rotSkyPos=0.0)
-        self.epoch = 2000.0
-
-
-    def testTanWcs(self):
-        """
-        Test method to return a Tan WCS by generating a bunch of pixel coordinates
-        in the undistorted TAN-PIXELS coordinate system.  Then, use sims_coordUtils
-        to convert those pixel coordinates into RA and Dec.  Compare these to the
-        RA and Dec returned by the WCS.  Demand agreement to witin 0.001 arcseconds.
-
-        Note: if you use a bigger camera, it is possible to have disagreements of
-        order a few milliarcseconds.
-        """
-
-        detector = self.camera[0]
-
-        xPixList = []
-        yPixList = []
-
-        tanWcs = tanWcsFromDetector(detector, self.camera, self.obs, self.epoch)
-        wcsRa = []
-        wcsDec = []
-        for xx in numpy.arange(0.0, 4001.0, 1000.0):
-            for yy in numpy.arange(0.0, 4001.0, 1000.0):
-                xPixList.append(xx)
-                yPixList.append(yy)
-
-                pt = afwGeom.Point2D(xx ,yy)
-                skyPt = tanWcs.pixelToSky(pt).getPosition()
-                wcsRa.append(skyPt.getX())
-                wcsDec.append(skyPt.getY())
-
-        wcsRa = numpy.radians(numpy.array(wcsRa))
-        wcsDec = numpy.radians(numpy.array(wcsDec))
-
-        xPixList = numpy.array(xPixList)
-        yPixList = numpy.array(yPixList)
-
-        raTest, decTest = _raDecFromPixelCoords(xPixList, yPixList,
-                                                [detector.getName()]*len(xPixList),
-                                                camera=self.camera, obs_metadata=self.obs,
-                                                epoch=self.epoch)
-
-        distanceList = arcsecFromRadians(haversine(raTest, decTest, wcsRa, wcsDec))
-        maxDistance = distanceList.max()
-
-        msg = 'maxError in tanWcs was %e ' % maxDistance
-        self.assertLess(maxDistance, 0.001, msg=msg)
+        cls.epoch = 2000.0
 
 
     def testTanSipWcs(self):
@@ -75,9 +41,9 @@ class WcsTest(unittest.TestCase):
         the truth.
         """
 
-        detector = self.camera[0]
-        tanWcs = tanWcsFromDetector(detector, self.camera, self.obs, self.epoch)
-        tanSipWcs = tanSipWcsFromDetector(detector, self.camera, self.obs, self.epoch)
+
+        tanWcs = tanWcsFromDetector(self.detector, self.camera, self.obs, self.epoch)
+        tanSipWcs = tanSipWcsFromDetector(self.detector, self.camera, self.obs, self.epoch)
 
         tanWcsRa = []
         tanWcsDec = []
@@ -86,8 +52,8 @@ class WcsTest(unittest.TestCase):
 
         xPixList = []
         yPixList = []
-        for xx in numpy.arange(0.0, 4001.0, 1000.0):
-            for yy in numpy.arange(0.0, 4001.0, 1000.0):
+        for xx in numpy.arange(0.0, 4001.0, 100.0):
+            for yy in numpy.arange(0.0, 4001.0, 100.0):
                 xPixList.append(xx)
                 yPixList.append(yy)
 
@@ -110,7 +76,7 @@ class WcsTest(unittest.TestCase):
         yPixList = numpy.array(yPixList)
 
         raTest, decTest = _raDecFromPixelCoords(xPixList, yPixList,
-                                                [detector.getName()]*len(xPixList),
+                                                [self.detector.getName()]*len(xPixList),
                                                 camera=self.camera, obs_metadata=self.obs,
                                                 epoch=self.epoch)
 
@@ -120,8 +86,8 @@ class WcsTest(unittest.TestCase):
         maxDistanceTan = tanDistanceList.max()
         maxDistanceTanSip = tanSipDistanceList.max()
 
-        msg = 'max error in TAN WCS %e; in TAN-SIP %e' % (maxDistanceTan, maxDistanceTanSip)
-        self.assertLess(maxDistanceTanSip, 0.001, msg=msg)
+        msg = 'max error in TAN WCS %e arcsec; in TAN-SIP %e arcsec' % (maxDistanceTan, maxDistanceTanSip)
+        self.assertLess(maxDistanceTanSip, 0.01, msg=msg)
         self.assertGreater(maxDistanceTan-maxDistanceTanSip, 1.0e-10, msg=msg)
 
 
