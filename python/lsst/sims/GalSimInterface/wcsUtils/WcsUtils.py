@@ -97,9 +97,7 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
                                            obs_metadata=obs_metadata, epoch=epoch,
                                            includeDistortion=False)
 
-    lonList, latList = _nativeLonLatFromRaDec(raList, decList,
-                                              obs_metadata._pointingRA,
-                                              obs_metadata._pointingDec)
+    lonList, latList = _nativeLonLatFromRaDec(raList, decList, obs_metadata)
 
     #convert from native longitude and latitude to intermediate world coordinates
     #according to equations (12), (13), (54) and (55) of
