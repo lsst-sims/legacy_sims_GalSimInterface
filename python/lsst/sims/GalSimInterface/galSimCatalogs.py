@@ -112,13 +112,13 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     #do not land on any detectors
     cannot_be_null = ['sedFilepath', 'fitsFiles']
 
-    column_outputs = ['galSimType', 'uniqueId', 'raObserved', 'decObserved',
+    column_outputs = ['galSimType', 'uniqueId', 'raICRS', 'decICRS',
                       'chipName', 'x_pupil', 'y_pupil', 'sedFilepath',
                       'majorAxis', 'minorAxis', 'sindex', 'halfLightRadius',
                       'positionAngle','fitsFiles']
 
-    transformations = {'raObserved':numpy.degrees,
-                       'decObserved':numpy.degrees,
+    transformations = {'raICRS':numpy.degrees,
+                       'decICRS':numpy.degrees,
                        'x_pupil':arcsecFromRadians,
                        'y_pupil':arcsecFromRadians,
                        'halfLightRadius':arcsecFromRadians}
