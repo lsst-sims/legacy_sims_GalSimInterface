@@ -21,9 +21,11 @@ class GalSimCelestialObject(object):
         @param [in] sed is the SED of the object (an instantiation of the Sed class defined in
         sims_photUtils/../../Sed.py
 
-        @param [in] ra is the observed RA coordinate of the object in radians
+        @param [in] ra is the RA coordinate of the object in radians
+        (ICRS)
 
-        @param [in] dec is the observed Dec coordinate of the object in radians
+        @param [in] dec is the Dec coordinate of the object in radians
+        (ICRS)
 
         @param [in] xPupil is the x pupil coordinate of the object in radians
 
