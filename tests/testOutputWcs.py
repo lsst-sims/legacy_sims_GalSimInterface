@@ -66,7 +66,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
         detName = detector.getName()
         imageName = '%s_%s_u.fits' % (imageRoot, detName)
 
-        nSamples = 5
+        nSamples = 3
         numpy.random.seed(42)
         pointingRaList = numpy.random.random_sample(nSamples)*360.0
         pointingDecList = numpy.random.random_sample(nSamples)*180.0 - 90.0
