@@ -165,11 +165,12 @@ class GalSimFwhmTest(unittest.TestCase):
                                   rotSkyPos = 33.0,
                                   mjd = 49250.0)
 
-        for fwhm in (0.5, 1.3):
-            create_text_catalog(obs, dbFileName, numpy.array([3.0]), \
-                                numpy.array([1.0]), mag_norm=[14.0])
+        create_text_catalog(obs, dbFileName, numpy.array([3.0]), \
+                            numpy.array([1.0]), mag_norm=[14.0])
 
-            db = fwhmFileDBObj(dbFileName, runtable='test')
+        db = fwhmFileDBObj(dbFileName, runtable='test')
+
+        for fwhm in (0.5, 1.3):
 
             cat = fwhmCat(db, obs_metadata=obs)
             cat.camera = camera
@@ -185,11 +186,13 @@ class GalSimFwhmTest(unittest.TestCase):
 
             if os.path.exists(catName):
                 os.unlink(catName)
-            if os.path.exists(dbFileName):
-                os.unlink(dbFileName)
+
             if os.path.exists(imageName):
                 os.unlink(imageName)
 
+
+        if os.path.exists(dbFileName):
+            os.unlink(dbFileName)
 
 
 
