@@ -708,7 +708,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         """
         Test that GalSimInterpreter puts objects on the right detectors.
 
-        Do so by creating a catalog of 10 closely-packed stars.  Draw test FITS
+        Do so by creating a catalog of 3 closely-packed stars.  Draw test FITS
         images of them using the GalSim Catalog infrastructure.  Draw control FITS
         images of the detectors in the camera, paranoidly including every star
         in every control image (GalSim contains code such that it will not
