@@ -91,7 +91,9 @@ class GalSimFwhmTest(unittest.TestCase):
 
         half_flux=0.5*maxFlux
 
-        for theta in numpy.arange(0.0, 2.0*numpy.pi, 0.21*numpy.pi):
+        # only need to consider orientations between 0 and pi because the objects
+        # will be circularly symmetric (and FWHM is a circularly symmetric measure, anyway)
+        for theta in numpy.arange(0.0, numpy.pi, 0.3*numpy.pi):
 
             slope = numpy.tan(theta)
 
