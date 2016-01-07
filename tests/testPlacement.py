@@ -167,7 +167,7 @@ class GalSimPlacementTest(unittest.TestCase):
         a_int, b_int = controlSed.setupCCMab()
         controlSed.addCCMDust(a_int, b_int, A_v=0.1, R_v=3.1)
 
-        nSamples = 5
+        nSamples = 3
         numpy.random.seed(42)
         pointingRaList = numpy.random.random_sample(nSamples)*360.0
         pointingDecList = numpy.random.random_sample(nSamples)*180.0 - 90.0
