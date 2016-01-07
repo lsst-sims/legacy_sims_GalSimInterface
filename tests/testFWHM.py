@@ -178,7 +178,6 @@ class GalSimFwhmTest(unittest.TestCase):
             psf = SNRdocumentPSF(fwhm=fwhm)
             cat.setPSF(psf)
 
-
             cat.write_catalog(catName)
             cat.write_images(nameRoot=imageRoot)
 
