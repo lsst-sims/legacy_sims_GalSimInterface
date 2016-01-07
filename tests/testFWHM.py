@@ -165,9 +165,7 @@ class GalSimFwhmTest(unittest.TestCase):
                                   rotSkyPos = 33.0,
                                   mjd = 49250.0)
 
-        fwhmTestList = [0.5, 0.9, 1.3]
-
-        for fwhm in fwhmTestList:
+        for fwhm in (0.5, 1.3):
             create_text_catalog(obs, dbFileName, numpy.array([3.0]), \
                                 numpy.array([1.0]), mag_norm=[14.0])
 
