@@ -138,6 +138,10 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                      'lens1.dat', 'lens2.dat', 'lens3.dat']
     atmoTransmissionName = 'atmos.dat'
 
+    # allowed_chips is a list of the names of the detectors we actually want to draw.
+    # If 'None', then all chips are drawn.
+    allowed_chips = None
+
     #This member variable will define a PSF to convolve with the sources.
     #See the classes PSFbase and DoubleGaussianPSF in
     #galSimUtilities.py for more information
@@ -420,37 +424,38 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             detectors = []
 
             for dd in self.camera:
-                cs = dd.makeCameraSys(PUPIL)
-                centerPupil = self.camera.transform(dd.getCenter(FOCAL_PLANE),cs).getPoint()
-                centerPixel = dd.getCenter(PIXELS).getPoint()
+                if self.allowed_chips is None or dd.getName() in self.allowed_chips:
+                    cs = dd.makeCameraSys(PUPIL)
+                    centerPupil = self.camera.transform(dd.getCenter(FOCAL_PLANE),cs).getPoint()
+                    centerPixel = dd.getCenter(PIXELS).getPoint()
 
-                translationPixel = afwGeom.Point2D(centerPixel.getX()+1, centerPixel.getY()+1)
-                translationPupil = self.camera.transform(
-                                        dd.makeCameraPoint(translationPixel, PIXELS), cs).getPoint()
+                    translationPixel = afwGeom.Point2D(centerPixel.getX()+1, centerPixel.getY()+1)
+                    translationPupil = self.camera.transform(
+                                            dd.makeCameraPoint(translationPixel, PIXELS), cs).getPoint()
 
-                plateScale = numpy.sqrt(numpy.power(translationPupil.getX()-centerPupil.getX(),2)+
-                                        numpy.power(translationPupil.getY()-centerPupil.getY(),2))/numpy.sqrt(2.0)
+                    plateScale = numpy.sqrt(numpy.power(translationPupil.getX()-centerPupil.getX(),2)+
+                                            numpy.power(translationPupil.getY()-centerPupil.getY(),2))/numpy.sqrt(2.0)
 
-                plateScale = 3600.0*numpy.degrees(plateScale)
+                    plateScale = 3600.0*numpy.degrees(plateScale)
 
-                #make a detector-custom photParams that copies all of the quantities
-                #in the catalog photParams, except the platescale, which is
-                #calculated above
-                params = PhotometricParameters(exptime=self.photParams.exptime,
-                                               nexp=self.photParams.nexp,
-                                               effarea=self.photParams.effarea,
-                                               gain=self.photParams.gain,
-                                               readnoise=self.photParams.readnoise,
-                                               darkcurrent=self.photParams.darkcurrent,
-                                               othernoise=self.photParams.othernoise,
-                                               platescale=plateScale)
+                    #make a detector-custom photParams that copies all of the quantities
+                    #in the catalog photParams, except the platescale, which is
+                    #calculated above
+                    params = PhotometricParameters(exptime=self.photParams.exptime,
+                                                   nexp=self.photParams.nexp,
+                                                   effarea=self.photParams.effarea,
+                                                   gain=self.photParams.gain,
+                                                   readnoise=self.photParams.readnoise,
+                                                   darkcurrent=self.photParams.darkcurrent,
+                                                   othernoise=self.photParams.othernoise,
+                                                   platescale=plateScale)
 
 
-                detector = GalSimDetector(dd, self.camera,
-                                          obs_metadata=self.obs_metadata, epoch=self.db_obj.epoch,
-                                          photParams=params)
+                    detector = GalSimDetector(dd, self.camera,
+                                              obs_metadata=self.obs_metadata, epoch=self.db_obj.epoch,
+                                              photParams=params)
 
-                detectors.append(detector)
+                    detectors.append(detector)
 
             if not hasattr(self, 'bandpassDict'):
                 if self.noise_and_background is not None:
