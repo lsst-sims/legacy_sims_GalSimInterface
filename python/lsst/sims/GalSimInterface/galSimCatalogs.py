@@ -309,8 +309,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         #sims_photUtils/../../Sed.py
         sedList = self._calculateGalSimSeds()
 
-        print 'need to draw ',len(objectNames)
-
         if self.hasBeenInitialized is False and len(objectNames)>0:
             #This needs to be here in case, instead of writing the whole catalog with write_catalog(),
             #the user wishes to iterate through the catalog with InstanceCatalog.iter_catalog(),
