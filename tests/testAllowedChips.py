@@ -181,19 +181,22 @@ class allowedChipsTest(unittest.TestCase):
             test_image_name = os.path.join(self.scratchDir, test_root+'_'+stripped_name+'_u.fits')
             control_image_name = os.path.join(self.scratchDir, control_root+'_'+stripped_name+'_u.fits')
 
-            self.assertTrue(os.path.exists(control_image_name))
+            msg = '%s does not exist; it should' % control_image_name
+            self.assertTrue(os.path.exists(control_image_name), msg=msg)
             im = afwImage.ImageF(control_image_name).getArray()
             self.assertLess(np.abs(im.sum()-self.controlADU), 3.0*self.countSigma)
             os.unlink(control_image_name)
 
             if name in allowed_chips:
-                self.assertTrue(os.path.exists(test_image_name))
+                msg = '%s does not exist; it should' % test_image_name
+                self.assertTrue(os.path.exists(test_image_name), msg=msg)
                 im = afwImage.ImageF(test_image_name).getArray()
                 self.assertLess(np.abs(im.sum()-self.controlADU), 3.0*self.countSigma)
                 os.unlink(test_image_name)
                 test_image_ct += 1
             else:
-                self.assertFalse(os.path.exists(test_image_name))
+                msg = '%s exists; it should not' % test_image_name
+                self.assertFalse(os.path.exists(test_image_name), msg=msg)
 
 
         self.assertEqual(test_image_ct, len(allowed_chips))
