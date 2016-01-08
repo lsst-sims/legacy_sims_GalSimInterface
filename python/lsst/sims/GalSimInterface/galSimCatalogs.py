@@ -303,6 +303,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         majorAxis = self.column_by_name('majorAxis')
         positionAngle = self.column_by_name('positionAngle')
         sindex = self.column_by_name('sindex')
+        chipNames = self.column_by_name('chipName')
 
         #correct the SEDs for redshift, dust, etc.  Return a list of Sed objects as defined in
         #sims_photUtils/../../Sed.py
@@ -315,9 +316,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             self._initializeGalSimCatalog()
 
         output = []
-        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn) in \
+        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, cName) in \
             zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight, \
-                minorAxis, majorAxis, positionAngle, sedList, sindex):
+                minorAxis, majorAxis, positionAngle, sedList, sindex, chipNames):
 
             if ss is None or name in self.objectHasBeenDrawn:
                 #do not draw objects that have no SED or have already been drawn
@@ -332,7 +333,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     #time.
                     print 'Trying to draw %s more than once ' % str(name)
 
-            else:
+            elif self.allowed_chips is None or cName in self.allowed_chips:
 
                 self.objectHasBeenDrawn.append(name)
 
@@ -343,6 +344,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 detectorsString = self.galSimInterpreter.drawObject(gsObj)
 
                 output.append(detectorsString)
+
+            else:
+                output.append('None')
 
         return numpy.array(output)
 
