@@ -23,7 +23,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
     http://fits.gsfc.nasa.gov/registry/sip/SIP_distortion_v1_0.pdf
     """
 
-    def __init__(self, afwDetector, afwCamera, obs_metadata, epoch):
+    def __init__(self, afwDetector, afwCamera, obs_metadata, epoch, photParams=None):
         """
         @param [in] afwDetector is an instantiation of afw.cameraGeom.Detector
 
@@ -34,6 +34,9 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         @param [in] epoch is the epoch in Julian years of the equinox against
         which RA and Dec are measured
+
+        @param [in] photParams is an instantiation of PhotometricParameters
+        (it will contain information about gain, exposure time, etc.)
         """
 
         tanSipWcs = tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
@@ -41,10 +44,21 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.afwDetector = afwDetector
         self.afwCamera = afwCamera
         self.obs_metadata = obs_metadata
+        self.photParams = photParams
         self.epoch = epoch
 
         self.fitsHeader = tanSipWcs.getFitsMetadata()
         self.fitsHeader.set("EXTTYPE", "IMAGE")
+
+        if self.obs_metadata.bandpass is not None:
+            if not isinstance(self.obs_metadata.bandpass, list) and not isinstance(self.obs_metadata.bandpass, numpy.ndarray):
+                self.fitsHeader.set("FILTER", self.obs_metadata.bandpass)
+
+        if self.obs_metadata.mjd is not None:
+            self.fitsHeader.set("MJD-OBS", self.obs_metadata.mjd.TAI)
+
+        if self.photParams is not None:
+            self.fitsHeader.set("EXPTIME", self.photParams.nexp*self.photParams.exptime)
 
         self.crpix1 = self.fitsHeader.get("CRPIX1")
         self.crpix2 = self.fitsHeader.get("CRPIX2")
@@ -118,7 +132,8 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         @param [out] _newWcs is a WCS identical to self, but with the origin
         in pixel space moved to the specified origin
         """
-        _newWcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch)
+        _newWcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch,
+                                       photParams=self.photParams)
         _newWcs.crpix1 = origin.x
         _newWcs.crpix2 = origin.y
         _newWcs.fitsHeader.set('CRPIX1', origin.x)
@@ -534,7 +549,8 @@ class GalSimDetector(object):
         """WCS corresponding to this detector"""
         if self._wcs is None:
             self._wcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, \
-                                             self.obs_metadata, self.epoch)
+                                             self.obs_metadata, self.epoch,
+                                             photParams=self.photParams)
 
         return self._wcs
 
