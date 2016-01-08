@@ -334,8 +334,7 @@ class GalSimInterpreter(object):
 
                 time_before_draw_image = time.clock()
 
-                self.detectorImages[name] = obj.drawImage(wcs=detector.wcs,
-                                                          method='phot',
+                self.detectorImages[name] = obj.drawImage(method='phot',
                                                           gain=detector.photParams.gain,
                                                           offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix),
                                                           rng=self._rng,
