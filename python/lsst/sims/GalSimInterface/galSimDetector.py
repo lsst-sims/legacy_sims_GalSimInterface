@@ -552,6 +552,28 @@ class GalSimDetector(object):
                                              self.obs_metadata, self.epoch,
                                              photParams=self.photParams)
 
+
+            wcsName = self.fileName.replace('_','')
+            wcsName = wcsName.replace('S', '_S')
+
+            self._wcs.fitsHeader.set("CHIPID", wcsName)
+
+            obshistid = 9999
+
+            if self.obs_metadata.phoSimMetaData is not None:
+                if 'Opsim_obshistid' in self.obs_metadata.phoSimMetaData:
+                    self._wcs.fitsHeader.set("OBSID", self.obs_metadata.phoSimMetaData['Opsim_obshistid'])
+                    obshistid = self.obs_metadata.phoSimMetaData['Opsim_obshistid']
+
+            bp = self.obs_metadata.bandpass
+            if not isinstance(bp, list) and not isinstance(bp, numpy.ndarray):
+                filt_num = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}[bp]
+            else:
+                filt_num = 2
+
+            out_name = 'lsst_a_%d_f%d_%s_E000.fits' % (obshistid, filt_num, wcsName)
+            self._wcs.fitsHeader.set("OUTFILE", out_name)
+
         return self._wcs
 
     @wcs.setter
