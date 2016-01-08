@@ -10,6 +10,7 @@ GalSimInterpreter expects.
 
 import os
 import numpy
+import time
 import galsim
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
@@ -340,10 +341,12 @@ class GalSimInterpreter(object):
         object illumines, suitable for output in the GalSim InstanceCatalog
         """
 
+        t0 = time.clock()
         #find the detectors which the astronomical object illumines
         outputString, \
         detectorList, \
         centeredObjDict = self.findAllDetectors(gsObject)
+        t_det = time.clock()
 
         if gsObject.sed is None or len(detectorList) == 0:
             #there is nothing to draw
@@ -387,14 +390,23 @@ class GalSimInterpreter(object):
                 obj = centeredObj.copy()
 
                 #convolve the object's shape profile with the spectrum
+                t_before_draw = time.clock()
                 obj = obj*spectrum
                 localImage = self.blankImage(detector=detector)
+                time_before_draw_image = time.clock()
                 localImage = obj.drawImage(bandpass=self.bandpasses[bandpassName], wcs=detector.wcs,
                                            method='phot', gain=detector.photParams.gain, image=localImage,
                                            offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix),
                                            rng=self._rng)
+                time_drawImage = time.clock()-time_before_draw_image
 
                 self.detectorImages[name] += localImage
+                time_total_drawing = time.clock()-t_before_draw
+
+        t_done = time.clock()
+        t_total = t_done-t0
+        print 'total drawing ',t_total,' time finding ',(t_det-t0)/t_total, \
+        ' actual ',(time_total_drawing)/t_total,' just drawImage ',time_drawImage/t_total
 
         return outputString
 
