@@ -394,13 +394,13 @@ class GalSimInterpreter(object):
                 obj = obj*spectrum
                 localImage = self.blankImage(detector=detector)
                 time_before_draw_image = time.clock()
-                localImage = obj.drawImage(bandpass=self.bandpasses[bandpassName], wcs=detector.wcs,
-                                           method='phot', gain=detector.photParams.gain, image=localImage,
-                                           offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix),
-                                           rng=self._rng)
+                self.detectorImages[name] = obj.drawImage(bandpass=self.bandpasses[bandpassName], wcs=detector.wcs,
+                                                          method='phot', gain=detector.photParams.gain,
+                                                          offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix),
+                                                          rng=self._rng,
+                                                          image=self.detectorImages[name],
+                                                          add_to_image=True)
                 time_drawImage = time.clock()-time_before_draw_image
-
-                self.detectorImages[name] += localImage
                 time_total_drawing = time.clock()-t_before_draw
 
         t_done = time.clock()
