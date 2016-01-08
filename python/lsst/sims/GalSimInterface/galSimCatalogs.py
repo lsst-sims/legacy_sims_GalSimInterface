@@ -346,7 +346,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 output.append(detectorsString)
 
             else:
-                output.append('None')
+                output.append(None)
 
         return numpy.array(output)
 
