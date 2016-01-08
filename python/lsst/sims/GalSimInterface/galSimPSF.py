@@ -14,15 +14,9 @@ class PSFbase(object):
     using the GalSim Instance Catalog and GalSim Interpreter, the user must define a daughter
     class of this class and instantiate it as the member variable self.PSF in the GalSim Instance Catalog.
 
-    Any Daughter class of this class must have:
-
-    1) a boolean member variable wavelength_dependent which tells the GalSimInterpreter whether or not
-    it needs to worry about the PSF changing with wavelength
-
-    2) a member method _getPSF which accepts the coordinates xPupil and yPupil in arcseconds as kwargs
-    and (optionally) the kwarg bandpass, which is a galsim bandpass object.  This method will instantiate
-    a psf object at those coordinates (and, if relevant, the effective wavelength) of the bandpass, and return
-    it.
+    Any Daughter class of this class must have a member method _getPSF which accepts the coordinates
+    xPupil and yPupil in arcseconds as kwargs.  This method will instantiate a psf object at those
+    coordinates and return it.
 
     The method applyPSF is defined in this class and should not be overwritten.  It handles the task of actually
     convolving the PSF returned by _getPSF.
@@ -34,9 +28,7 @@ class PSFbase(object):
     See galSimCompoundGenerator.py and galSimStarGenerator.py for example usages.
     """
 
-    wavelength_dependent = False
-
-    def _getPSF(self, xPupil=None, yPupil=None, bandpass=None):
+    def _getPSF(self, xPupil=None, yPupil=None):
         """
         If it had been implemented, this would return a GalSim PSF instantiation at the
         coordinates and wavelength specified and returned it to applyPSF.  As it is, this
@@ -46,9 +38,6 @@ class PSFbase(object):
         @param [in] xPupil the x coordinate on the pupil in arc seconds
 
         @param [in] yPupil the y coordinate on the pupil in arc seconds
-
-        @param [in] bandpass is an instantiation of the GalSim bandpass class which contains
-        data defining the bandpass in question (in case the PSF is wavelength dependent)
         """
 
         raise NotImplementedError("There is not _getPSF for PSFbase; define a daughter class and define your own")
@@ -71,8 +60,6 @@ class PSFbase(object):
 
         @param [in] obj is a GalSim GSObject (an astronomical object) with which
         to convolve the PSF (optional)
-
-        **kwargs is there so that a bandpass can also be passed in and sent to _getPSF
         """
 
         #use the user-defined _getPSF method to calculate the PSF at these specific
@@ -92,8 +79,6 @@ class DoubleGaussianPSF(PSFbase):
     This is an example implementation of a wavelength- and position-independent
     Double Gaussian PSF.  See the documentation in PSFbase to learn how it is used.
     """
-
-    wavelength_dependent = False
 
     def __init__(self, fwhm1=0.6, fwhm2=0.12, wgt1=1.0, wgt2=0.1):
         """
@@ -152,8 +137,6 @@ class SNRdocumentPSF(DoubleGaussianPSF):
 
     www.astro.washington.edu/users/ivezic/Astr511/LSST_SNRdoc.pdf
     """
-
-    wavelength_dependent = False
 
     def __init__(self, fwhm=0.6):
         """

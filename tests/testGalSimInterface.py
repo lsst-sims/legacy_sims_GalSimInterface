@@ -332,15 +332,18 @@ class GalSimInterfaceTest(unittest.TestCase):
             unDrawnDetectors = 0
             for ff in controlCounts:
                 if controlCounts[ff] > 1000.0 and galsimCounts[ff] > 0.001:
+                    countSigma = numpy.sqrt(controlCounts[ff]/catalog.photParams.gain)
+
                     #because, for really dim images, there could be enough
                     #statistical imprecision in the GalSim drawing routine
                     #to violate the condition below
                     drawnDetectors += 1
-                    msg = 'controlCounts %e galsimCounts %e; %s ' % (controlCounts[ff], galsimCounts[ff],nameRoot)
+                    msg = 'controlCounts %e galsimCounts %e sigma %e; %s ' % \
+                    (controlCounts[ff], galsimCounts[ff],countSigma,nameRoot)
                     if catalog.noise_and_background is not None and catalog.noise_and_background.addBackground:
                         msg += 'background per pixel %e pixels %e %s' % (backgroundCounts[ff[-6]], galsimPixels[ff],ff)
 
-                    self.assertLess(numpy.abs(controlCounts[ff] - galsimCounts[ff]), 0.05*controlCounts[ff],
+                    self.assertLess(numpy.abs(controlCounts[ff] - galsimCounts[ff]), 3.0*countSigma,
                                     msg=msg)
                 elif galsimCounts[ff] > 0.001:
                     unDrawnDetectors += 1
@@ -723,6 +726,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         #generate the database
         numpy.random.seed(32)
+        rng = galsim.UniformDeviate(112)
         catSize = 3
         dbName = 'galSimPlacementTestDB.db'
         driver = 'sqlite'
@@ -760,17 +764,18 @@ class GalSimInterfaceTest(unittest.TestCase):
             if firstLine:
                 sedList = cat._calculateGalSimSeds()
                 for detector in cat.galSimInterpreter.detectors:
-                    for bandpass in cat.galSimInterpreter.bandpasses:
+                    for bandpass in cat.galSimInterpreter.bandpassDict:
                         controlImages['placementControl_' + \
                                       cat.galSimInterpreter._getFileName(detector=detector, bandpassName=bandpass)] = \
                                       cat.galSimInterpreter.blankImage(detector=detector)
                 firstLine = False
 
-            spectrum = galsim.SED(spec=lambda ll: numpy.interp(ll, sedList[i].wavelen, sedList[i].flambda), flux_type='flambda')
-            for bp in cat.galSimInterpreter.bandpasses:
-                bandpass = cat.galSimInterpreter.bandpasses[bp]
+            spectrum = sedList[i]
+            for bp in cat.galSimInterpreter.bandpassDict:
+                bandpass = cat.galSimInterpreter.bandpassDict[bp]
+                adu = sedList[i].calcADU(bandpass, cat.photParams)
                 for detector in cat.galSimInterpreter.detectors:
-                    centeredObj = cat.galSimInterpreter.PSF.applyPSF(xPupil=xPupil, yPupil=yPupil, bandpass=bandpass)
+                    centeredObj = cat.galSimInterpreter.PSF.applyPSF(xPupil=xPupil, yPupil=yPupil)
 
                     xPix, yPix = pixelCoordsFromPupilCoords(numpy.array([radiansFromArcsec(xPupil)]),
                                                             numpy.array([radiansFromArcsec(yPupil)]),
@@ -779,11 +784,12 @@ class GalSimInterfaceTest(unittest.TestCase):
 
                     dx = xPix[0] - detector.xCenterPix
                     dy = yPix[0] - detector.yCenterPix
-                    obj = centeredObj*spectrum
+                    obj = centeredObj.withFlux(adu*detector.photParams.gain)
                     localImage = cat.galSimInterpreter.blankImage(detector=detector)
-                    localImage = obj.drawImage(bandpass=bandpass, wcs=detector.wcs, method='phot',
+                    localImage = obj.drawImage(wcs=detector.wcs, method='phot',
                                                gain=detector.photParams.gain, image=localImage,
-                                               offset=galsim.PositionD(dx, dy))
+                                               offset=galsim.PositionD(dx, dy),
+                                               rng=rng)
 
                     controlImages['placementControl_' + \
                                   cat.galSimInterpreter._getFileName(detector=detector, bandpassName=bp)] += \
@@ -815,10 +821,13 @@ class GalSimInterfaceTest(unittest.TestCase):
             if testName in testNames:
                 testImage = afwImage.ImageF(testName)
                 testFlux = testImage.getArray().sum()
-                msg = '%s: controlFlux = %e, testFlux = %e' % (controlName, controlFlux, testFlux)
                 if controlFlux>1000.0:
+                    countSigma = numpy.sqrt(controlFlux/cat.photParams.gain)
+                    msg = '%s: controlFlux = %e, testFlux = %e, sigma %e' \
+                    % (controlName, controlFlux, testFlux, countSigma)
+
                     #the randomness of photon shooting means that faint images won't agree
-                    self.assertLess(numpy.abs(controlFlux/testFlux - 1.0), 0.1, msg=msg)
+                    self.assertLess(numpy.abs(controlFlux-testFlux), 3.0*countSigma, msg=msg)
                     valid += 1
                 else:
                     ignored += 1

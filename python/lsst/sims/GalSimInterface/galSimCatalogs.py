@@ -263,7 +263,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 #class (which can be reassigned by defining a daughter class of this class)
                 #
                 fNorm = sed.calcFluxNorm(norm, imsimband)
-                sed.multiplyFluxNorm(fNorm*self.photParams.exptime*self.photParams.effarea*self.photParams.nexp)
+                sed.multiplyFluxNorm(fNorm)
 
                 #apply dust extinction (internal)
                 if iAv != 0.0 and iRv != 0.0:
@@ -339,8 +339,13 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
                 self.objectHasBeenDrawn.append(name)
 
+                flux_dict = {}
+                for bb in self.bandpassNames:
+                    adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
+                    flux_dict[bb] = adu*self.photParams.gain
+
                 gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp, \
-                                              hlr, minor, major, pa, sn)
+                                              hlr, minor, major, pa, sn, flux_dict)
 
                 #actually draw the object
                 detectorsString = self.galSimInterpreter.drawObject(gsObj)
@@ -380,6 +385,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         an example of how this is used.
         """
         self.camera = otherCatalog.camera
+        self.photParams = otherCatalog.photParams
+        self.bandpassDict = otherCatalog.bandpassDict
         self.galSimInterpreter = otherCatalog.galSimInterpreter
 
     def write_header(self, file_handle):
