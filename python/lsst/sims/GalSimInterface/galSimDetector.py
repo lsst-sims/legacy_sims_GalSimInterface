@@ -23,7 +23,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
     http://fits.gsfc.nasa.gov/registry/sip/SIP_distortion_v1_0.pdf
     """
 
-    def __init__(self, afwDetector, afwCamera, obs_metadata, epoch, photParams=None):
+    def __init__(self, afwDetector, afwCamera, obs_metadata, epoch, photParams=None, wcs=None):
         """
         @param [in] afwDetector is an instantiation of afw.cameraGeom.Detector
 
@@ -39,7 +39,12 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         (it will contain information about gain, exposure time, etc.)
         """
 
-        tanSipWcs = tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
+        print '\n\ncalling the wcs constructor\n\n'
+
+        if wcs is None:
+            self._tanSipWcs = tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
+        else:
+            self._tanSipWcs = wcs
 
         self.afwDetector = afwDetector
         self.afwCamera = afwCamera
@@ -47,7 +52,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.photParams = photParams
         self.epoch = epoch
 
-        self.fitsHeader = tanSipWcs.getFitsMetadata()
+        self.fitsHeader = self._tanSipWcs.getFitsMetadata()
         self.fitsHeader.set("EXTTYPE", "IMAGE")
 
         if self.obs_metadata.bandpass is not None:
@@ -70,6 +75,9 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.crval2 = self.fitsHeader.get("CRVAL2")
 
         self.origin = galsim.PositionD(x=self.crpix1, y=self.crpix2)
+
+
+
 
 
     def _radec(self, x, y):
@@ -133,7 +141,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         in pixel space moved to the specified origin
         """
         _newWcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch,
-                                       photParams=self.photParams)
+                                       photParams=self.photParams, wcs=self._tanSipWcs)
         _newWcs.crpix1 = origin.x
         _newWcs.crpix2 = origin.y
         _newWcs.fitsHeader.set('CRPIX1', origin.x)
