@@ -335,7 +335,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     #time.
                     print 'Trying to draw %s more than once ' % str(name)
 
-            elif self.allowed_chips is None or cName in self.allowed_chips:
+            elif True is True or self.allowed_chips is None or cName in self.allowed_chips:
 
                 self.objectHasBeenDrawn.append(name)
 
