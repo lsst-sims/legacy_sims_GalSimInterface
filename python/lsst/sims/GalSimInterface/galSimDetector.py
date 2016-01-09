@@ -39,8 +39,6 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         (it will contain information about gain, exposure time, etc.)
         """
 
-        print '\n\ncalling the wcs constructor\n\n'
-
         if wcs is None:
             self._tanSipWcs = tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
         else:
