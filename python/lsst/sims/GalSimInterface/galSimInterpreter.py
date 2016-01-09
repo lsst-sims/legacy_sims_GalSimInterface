@@ -43,6 +43,8 @@ class GalSimInterpreter(object):
         generator seeded with the system clock)
         """
 
+        self.t_drawing=0.0
+        self.t_pure=0.0
         self.obs_metadata = obs_metadata
         self.epoch = epoch
         self.PSF = None
@@ -330,11 +332,9 @@ class GalSimInterpreter(object):
                 obj = centeredObj.copy()
 
                 #convolve the object's shape profile with the spectrum
-                t_before_draw = time.clock()
                 obj = obj.withFlux(gsObject.flux(bandpassName))
 
-                time_before_draw_image = time.clock()
-
+                t1 = time.clock()
                 self.detectorImages[name] = obj.drawImage(method='phot',
                                                           gain=detector.photParams.gain,
                                                           offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix),
@@ -342,17 +342,14 @@ class GalSimInterpreter(object):
                                                           image=self.detectorImages[name],
                                                           add_to_image=True)
 
-                time_drawImage = time.clock()-time_before_draw_image
-                time_total_drawing = time.clock()-t_before_draw
+                self.t_pure += time.clock()-t1
 
-        t_done = time.clock()
-        t_total = t_done-t0
-        print 'total drawing ',t_total,' time finding ',(t_det-t0)/t_total, \
-        ' actual ',(time_total_drawing)/t_total,' just drawImage ',time_drawImage/t_total
+
         self._drawn_ct+=1
-        print 'drawn ',self._drawn_ct,gsObject.flux(bandpassName)
-        print '\n'
+        #print 'drawn ',self._drawn_ct,gsObject.flux(bandpassName)
+        #print '\n'
 
+        self.t_drawing += time.clock()-t0
         return outputString
 
     def drawPointSource(self, gsObject):
@@ -438,5 +435,8 @@ class GalSimInterpreter(object):
             self.detectorImages[name].write(file_name=fileName)
             namesWritten.append(fileName)
 
+        print 'drew ',self._drawn_ct
+        print 'in ',self.t_drawing
+        print 'purely ',self.t_pure, self.t_pure/self._drawn_ct
         return namesWritten
 

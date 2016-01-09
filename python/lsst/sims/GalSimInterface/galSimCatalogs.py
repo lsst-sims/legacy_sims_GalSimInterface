@@ -13,6 +13,7 @@ GalSimStars
 import numpy
 import os
 import copy
+import time
 import lsst.utils
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, is_null
