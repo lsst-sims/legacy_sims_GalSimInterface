@@ -117,7 +117,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         if type(ra) is numpy.ndarray:
             chipNameLIst = chipNameList * len(ra)
 
-        xx, yy = calculatePixelCoordiantes(ra=ra, dec=dec, chipNames=chipNameList,
+        xx, yy = calculatePixelCoordinates(ra=ra, dec=dec, chipNames=chipNameList,
                                             obs_metadata=self.obs_metadata,
                                             epoch=self.epoch,
                                             camera = self.afwCamera)

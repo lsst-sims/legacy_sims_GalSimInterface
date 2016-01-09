@@ -266,7 +266,7 @@ class GalSimInterpreter(object):
         if detector.name in self.blankImageCache:
             return self.blankImageCache[detector.name].copy()
         else:
-            image = galsim.Image(detector.xMaxPix-detector.xMinPix+1, detector.yMaxPix-detector.yMinPix+1, \
+            image = galsim.Image(detector.xMaxPix-detector.xMinPix+1, detector.yMaxPix-detector.yMinPix+1,
                                  wcs=detector.wcs)
 
             self.blankImageCache[detector.name] = image
