@@ -305,6 +305,10 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         positionAngle = self.column_by_name('positionAngle')
         sindex = self.column_by_name('sindex')
         chipNames = self.column_by_name('chipName')
+        r_mag_list = self.column_by_name('lsst_r')
+        t_adu=0.0
+
+        print 'need to draw ',len(objectNames)
 
         #correct the SEDs for redshift, dust, etc.  Return a list of Sed objects as defined in
         #sims_photUtils/../../Sed.py
@@ -319,9 +323,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
 
         output = []
-        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, cName) in \
+        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, cName, r_mag) in \
             zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight, \
-                minorAxis, majorAxis, positionAngle, sedList, sindex, chipNames):
+                minorAxis, majorAxis, positionAngle, sedList, sindex, chipNames, r_mag_list):
 
             if ss is None or name in self.objectHasBeenDrawn:
                 #do not draw objects that have no SED or have already been drawn
@@ -336,14 +340,16 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     #time.
                     print 'Trying to draw %s more than once ' % str(name)
 
-            elif True is True or self.allowed_chips is None or cName in self.allowed_chips:
+            elif (self.allowed_chips is None or cName in self.allowed_chips) and r_mag>13.0:
 
                 self.objectHasBeenDrawn.append(name)
 
+                t0=time.clock()
                 flux_dict = {}
                 for bb in self.bandpassNames:
                     adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
                     flux_dict[bb] = adu*self.photParams.gain
+                t_adu+=time.clock()-t0
 
                 gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp, \
                                               hlr, minor, major, pa, sn, flux_dict)
@@ -356,6 +362,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             else:
                 output.append(None)
 
+        print 'time spent on adu ',t_adu
         return numpy.array(output)
 
 
