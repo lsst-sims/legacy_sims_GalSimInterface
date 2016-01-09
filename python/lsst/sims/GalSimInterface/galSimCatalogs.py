@@ -314,6 +314,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             #the user wishes to iterate through the catalog with InstanceCatalog.iter_catalog(),
             #which will not call write_header()
             self._initializeGalSimCatalog()
+            if not hasattr(self, 'bandpassDict'):
+                raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
 
         output = []
         for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, cName) in \
