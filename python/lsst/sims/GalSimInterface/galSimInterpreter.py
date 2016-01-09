@@ -47,6 +47,7 @@ class GalSimInterpreter(object):
         self.epoch = epoch
         self.PSF = None
         self.noiseWrapper = noiseWrapper
+        self._drawn_ct = 0
 
         if seed is not None:
             self._rng = galsim.UniformDeviate(seed)
@@ -348,6 +349,9 @@ class GalSimInterpreter(object):
         t_total = t_done-t0
         print 'total drawing ',t_total,' time finding ',(t_det-t0)/t_total, \
         ' actual ',(time_total_drawing)/t_total,' just drawImage ',time_drawImage/t_total
+        self._drawn_ct+=1
+        print 'drawn ',self._drawn_ct,gsObject.flux(bandpassName)
+        print '\n'
 
         return outputString
 
