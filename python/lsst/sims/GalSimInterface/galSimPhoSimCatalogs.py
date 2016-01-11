@@ -5,6 +5,7 @@ from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
 from lsst.sims.GalSimInterface import GalSimStars, GalSimGalaxies, GalSimAgn
 
 from lsst.sims.catalogs.measures.instance import compound
+from lsst.sims.utils import _observedFromICRS
 from lsst.sims.catUtils.mixins import AstrometryGalaxies, AstrometryStars
 
 
