@@ -304,8 +304,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         majorAxis = self.column_by_name('majorAxis')
         positionAngle = self.column_by_name('positionAngle')
         sindex = self.column_by_name('sindex')
-        chipNames = self.column_by_name('chipName')
-        r_mag_list = self.column_by_name('lsst_r')
+
         t_adu=0.0
 
         print 'need to draw ',len(objectNames)
@@ -323,9 +322,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
 
         output = []
-        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, cName, r_mag) in \
+        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn) in \
             zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight, \
-                minorAxis, majorAxis, positionAngle, sedList, sindex, chipNames, r_mag_list):
+                minorAxis, majorAxis, positionAngle, sedList, sindex):
 
             if ss is None or name in self.objectHasBeenDrawn:
                 #do not draw objects that have no SED or have already been drawn
@@ -340,7 +339,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     #time.
                     print 'Trying to draw %s more than once ' % str(name)
 
-            elif (self.allowed_chips is None or cName in self.allowed_chips) and r_mag>13.0:
+            else:
 
                 self.objectHasBeenDrawn.append(name)
 
@@ -358,9 +357,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 detectorsString = self.galSimInterpreter.drawObject(gsObj)
 
                 output.append(detectorsString)
-
-            else:
-                output.append(None)
 
         print 'time spent on adu ',t_adu
         return numpy.array(output)
