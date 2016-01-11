@@ -290,7 +290,7 @@ class GalSimInterfaceTest(unittest.TestCase):
             lines = testFile.readlines()
             for line in lines:
                 if line[0] != '#':
-                    gg = line.split(';')
+                    gg = line.split('; ')
                     sedName = gg[7]
                     magNorm = float(gg[13])
                     redshift = float(gg[14])

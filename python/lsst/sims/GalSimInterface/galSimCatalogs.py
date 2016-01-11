@@ -128,7 +128,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
     #This is used as the delimiter because the names of the detectors printed in the fitsFiles
     #column contain both ':' and ','
-    delimiter = ';'
+    delimiter = '; '
 
     sedDir = lsst.utils.getPackageDir('sims_sed_library')
 
