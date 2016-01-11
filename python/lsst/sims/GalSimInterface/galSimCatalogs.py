@@ -165,8 +165,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     hasBeenInitialized = False
 
     galSimInterpreter = None #the GalSimInterpreter instantiation for this catalog
-                             #This class is either passed in from another catalog using
-                             #copyGalSimInterpreter, or initialized in the write_header method
 
     totalDrawings = 0
     totalObjects = 0
