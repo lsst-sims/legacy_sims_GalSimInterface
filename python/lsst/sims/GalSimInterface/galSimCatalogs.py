@@ -393,34 +393,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         self.bandpassDict = otherCatalog.bandpassDict
         self.galSimInterpreter = otherCatalog.galSimInterpreter
 
-    def write_header(self, file_handle):
-        """
-        This method adds to the InstanceCatalog.write_header() method.
-        It writes information about all of the detectors in the camera to the header of the
-        catalog output file.
-
-        For each detector it writes:
-
-        detector name
-        center coordinates in arc seconds
-        xmin and xmax in arc seconds
-        ymin and ymax in arc seconds
-        plateScale (arc seconds per pixel)
-
-
-
-        It will also call self._initializeGalSimCatalog() if need be.
-        """
-
-        if not self.hasBeenInitialized:
-            self._initializeGalSimCatalog()
-
-        for detector in self.galSimInterpreter.detectors:
-            file_handle.write('#detector;%s;%f;%f;%f;%f;%f;%f;%f\n' %
-                                 (detector.name, detector.xCenterArcsec, detector.yCenterArcsec, detector.xMinArcsec,
-                                  detector.xMaxArcsec, detector.yMinArcsec, detector.yMaxArcsec, detector.photParams.platescale))
-
-        InstanceCatalog.write_header(self, file_handle)
 
     def _initializeGalSimInterpreter(self):
         """
