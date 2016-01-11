@@ -45,6 +45,7 @@ class GalSimInterpreter(object):
 
         self.t_drawing=0.0
         self.t_pure=0.0
+        self.t_pix=0.0
         self.obs_metadata = obs_metadata
         self.epoch = epoch
         self.PSF = None
@@ -324,10 +325,12 @@ class GalSimInterpreter(object):
 
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
 
+                tbp = time.clock()
                 xPix, yPix = pixelCoordsFromPupilCoords(numpy.array([gsObject.xPupilRadians]),
                                                         numpy.array([gsObject.yPupilRadians]),
                                                         chipNames=[detector.name],
                                                         camera=detector.afwCamera)
+                self.t_pix+=time.clock()-tbp
 
                 obj = centeredObj.copy()
 
@@ -437,6 +440,7 @@ class GalSimInterpreter(object):
 
         print 'drew ',self._drawn_ct
         print 'in ',self.t_drawing
+        print 'pix ',self.t_pix
         print 'purely ',self.t_pure, self.t_pure/self._drawn_ct
         return namesWritten
 
