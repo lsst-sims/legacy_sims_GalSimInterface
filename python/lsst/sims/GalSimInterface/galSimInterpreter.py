@@ -46,6 +46,7 @@ class GalSimInterpreter(object):
         self.t_drawing=0.0
         self.t_pure=0.0
         self.t_pix=0.0
+        self.t_find=0.0
         self.obs_metadata = obs_metadata
         self.epoch = epoch
         self.PSF = None
@@ -293,7 +294,7 @@ class GalSimInterpreter(object):
         outputString, \
         detectorList, \
         centeredObj = self.findAllDetectors(gsObject)
-        t_det = time.clock()
+        self.t_find += time.clock()-t0
 
         if gsObject.sed is None or len(detectorList) == 0:
             #there is nothing to draw
@@ -441,6 +442,7 @@ class GalSimInterpreter(object):
         print 'drew ',self._drawn_ct
         print 'in ',self.t_drawing
         print 'pix ',self.t_pix
+        print 'finding ',self.t_find
         print 'purely ',self.t_pure, self.t_pure/self._drawn_ct
         return namesWritten
 
