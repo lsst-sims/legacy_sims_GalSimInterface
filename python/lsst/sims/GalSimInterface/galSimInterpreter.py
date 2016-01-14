@@ -439,10 +439,10 @@ class GalSimInterpreter(object):
             self.detectorImages[name].write(file_name=fileName)
             namesWritten.append(fileName)
 
-        print 'drew ',self._drawn_ct
-        print 'in ',self.t_drawing
-        print 'pix ',self.t_pix
-        print 'finding ',self.t_find
-        print 'purely ',self.t_pure, self.t_pure/self._drawn_ct
+        #print 'drew ',self._drawn_ct
+        #print 'in ',self.t_drawing
+        #print 'pix ',self.t_pix
+        #print 'finding ',self.t_find
+        #print 'purely ',self.t_pure, self.t_pure/self._drawn_ct
         return namesWritten
 

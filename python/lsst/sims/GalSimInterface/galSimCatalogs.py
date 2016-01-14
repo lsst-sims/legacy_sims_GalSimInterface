@@ -307,7 +307,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
         t_adu=0.0
 
-        print 'need to draw ',len(objectNames)
+        #print 'need to draw ',len(objectNames)
 
         #correct the SEDs for redshift, dust, etc.  Return a list of Sed objects as defined in
         #sims_photUtils/../../Sed.py
@@ -358,9 +358,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
                 output.append(detectorsString)
 
-        print 'time spent getting data ',t_data
-        print 'time spent on adu ',t_adu
-        print 'time spent getter ',t_start-time.clock()
+        #print 'time spent getting data ',t_data
+        #print 'time spent on adu ',t_adu
+        #print 'time spent getter ',t_start-time.clock()
         return numpy.array(output)
 
 
