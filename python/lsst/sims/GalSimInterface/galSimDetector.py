@@ -577,7 +577,7 @@ class GalSimDetector(object):
             else:
                 filt_num = 2
 
-            out_name = 'lsst_a_%d_f%d_%s_E000.fits' % (obshistid, filt_num, wcsName)
+            out_name = 'lsst_e_%d_f%d_%s_E000' % (obshistid, filt_num, wcsName)
             self._wcs.fitsHeader.set("OUTFILE", out_name)
 
         return self._wcs
