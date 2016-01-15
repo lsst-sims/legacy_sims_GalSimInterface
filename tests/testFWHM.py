@@ -91,7 +91,9 @@ class GalSimFwhmTest(unittest.TestCase):
 
         half_flux=0.5*maxFlux
 
-        for theta in numpy.arange(0.0, 2.0*numpy.pi, 0.21*numpy.pi):
+        # only need to consider orientations between 0 and pi because the objects
+        # will be circularly symmetric (and FWHM is a circularly symmetric measure, anyway)
+        for theta in numpy.arange(0.0, numpy.pi, 0.3*numpy.pi):
 
             slope = numpy.tan(theta)
 
@@ -163,20 +165,18 @@ class GalSimFwhmTest(unittest.TestCase):
                                   rotSkyPos = 33.0,
                                   mjd = 49250.0)
 
-        fwhmTestList = [0.5, 0.9, 1.3]
+        create_text_catalog(obs, dbFileName, numpy.array([3.0]), \
+                            numpy.array([1.0]), mag_norm=[14.0])
 
-        for fwhm in fwhmTestList:
-            create_text_catalog(obs, dbFileName, numpy.array([3.0]), \
-                                numpy.array([1.0]), mag_norm=[14.0])
+        db = fwhmFileDBObj(dbFileName, runtable='test')
 
-            db = fwhmFileDBObj(dbFileName, runtable='test')
+        for fwhm in (0.5, 1.3):
 
             cat = fwhmCat(db, obs_metadata=obs)
             cat.camera = camera
 
             psf = SNRdocumentPSF(fwhm=fwhm)
             cat.setPSF(psf)
-
 
             cat.write_catalog(catName)
             cat.write_images(nameRoot=imageRoot)
@@ -185,11 +185,13 @@ class GalSimFwhmTest(unittest.TestCase):
 
             if os.path.exists(catName):
                 os.unlink(catName)
-            if os.path.exists(dbFileName):
-                os.unlink(dbFileName)
+
             if os.path.exists(imageName):
                 os.unlink(imageName)
 
+
+        if os.path.exists(dbFileName):
+            os.unlink(dbFileName)
 
 
 

@@ -166,8 +166,8 @@ class GalSimPositionAngleTest(unittest.TestCase):
         detName = detector.getName()
 
         numpy.random.seed(42)
-        paList = numpy.random.random_sample(3)*360.0
-        rotSkyPosList = numpy.random.random_sample(3)*360.0
+        paList = numpy.random.random_sample(2)*360.0
+        rotSkyPosList = numpy.random.random_sample(2)*360.0
 
         for pa in paList:
             for rotSkyPos in rotSkyPosList:

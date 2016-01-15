@@ -132,7 +132,7 @@ class GalSimHlrTest(unittest.TestCase):
                                   rotSkyPos = 33.0,
                                   mjd = 49250.0)
 
-        hlrTestList = [1.0, 2.0, 3.0, 4.0]
+        hlrTestList = [1.0, 2.0, 4.0]
 
         for hlr in hlrTestList:
             create_text_catalog(obs, dbFileName, numpy.array([3.0]), numpy.array([1.0]),

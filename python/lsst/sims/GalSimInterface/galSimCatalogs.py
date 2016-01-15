@@ -112,13 +112,13 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     #do not land on any detectors
     cannot_be_null = ['sedFilepath', 'fitsFiles']
 
-    column_outputs = ['galSimType', 'uniqueId', 'raObserved', 'decObserved',
+    column_outputs = ['galSimType', 'uniqueId', 'raICRS', 'decICRS',
                       'chipName', 'x_pupil', 'y_pupil', 'sedFilepath',
                       'majorAxis', 'minorAxis', 'sindex', 'halfLightRadius',
                       'positionAngle','fitsFiles']
 
-    transformations = {'raObserved':numpy.degrees,
-                       'decObserved':numpy.degrees,
+    transformations = {'raICRS':numpy.degrees,
+                       'decICRS':numpy.degrees,
                        'x_pupil':arcsecFromRadians,
                        'y_pupil':arcsecFromRadians,
                        'halfLightRadius':arcsecFromRadians}
@@ -290,8 +290,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         images.
         """
         objectNames = self.column_by_name('uniqueId')
-        raObserved = self.column_by_name('raObserved')
-        decObserved = self.column_by_name('decObserved')
+        raICRS = self.column_by_name('raICRS')
+        decICRS = self.column_by_name('decICRS')
         xPupil = self.column_by_name('x_pupil')
         yPupil = self.column_by_name('y_pupil')
         halfLight = self.column_by_name('halfLightRadius')
@@ -312,7 +312,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
         output = []
         for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn) in \
-            zip(objectNames, raObserved, decObserved, xPupil, yPupil, halfLight, \
+            zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight, \
                 minorAxis, majorAxis, positionAngle, sedList, sindex):
 
             if ss is None or name in self.objectHasBeenDrawn:

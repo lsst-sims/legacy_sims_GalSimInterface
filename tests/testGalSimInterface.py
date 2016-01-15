@@ -708,7 +708,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         """
         Test that GalSimInterpreter puts objects on the right detectors.
 
-        Do so by creating a catalog of 10 closely-packed stars.  Draw test FITS
+        Do so by creating a catalog of 3 closely-packed stars.  Draw test FITS
         images of them using the GalSim Catalog infrastructure.  Draw control FITS
         images of the detectors in the camera, paranoidly including every star
         in every control image (GalSim contains code such that it will not
@@ -723,7 +723,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         #generate the database
         numpy.random.seed(32)
-        catSize = 10
+        catSize = 3
         dbName = 'galSimPlacementTestDB.db'
         driver = 'sqlite'
         if os.path.exists(dbName):
@@ -789,6 +789,8 @@ class GalSimInterfaceTest(unittest.TestCase):
                                   cat.galSimInterpreter._getFileName(detector=detector, bandpassName=bp)] += \
                                   localImage
 
+        self.assertGreater(len(controlImages), 0)
+
         for name in controlImages:
             controlImages[name].write(file_name=name)
 
@@ -804,6 +806,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         #make sure that the test and control images agree to some tolerance
         ignored = 0
         zeroFlux = 0
+        valid = 0
         for controlName in controlImages:
             controlImage = afwImage.ImageF(controlName)
             controlFlux = controlImage.getArray().sum()
@@ -816,6 +819,7 @@ class GalSimInterfaceTest(unittest.TestCase):
                 if controlFlux>1000.0:
                     #the randomness of photon shooting means that faint images won't agree
                     self.assertLess(numpy.abs(controlFlux/testFlux - 1.0), 0.1, msg=msg)
+                    valid += 1
                 else:
                     ignored += 1
             else:
@@ -825,6 +829,7 @@ class GalSimInterfaceTest(unittest.TestCase):
                 msg = '%s has flux %e but was not written by catalog' % (controlName, controlFlux)
                 self.assertLess(controlFlux, 1.0, msg=msg)
 
+        self.assertGreater(valid, 0)
         self.assertLess(ignored, len(testNames)/2)
         self.assertGreater(zeroFlux, 0)
 
