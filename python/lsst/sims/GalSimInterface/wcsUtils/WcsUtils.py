@@ -79,7 +79,7 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     dxPix = xTanPixMax-xTanPixMin
     dyPix = yTanPixMax-yTanPixMin
     for xx in numpy.arange(xTanPixMin, xTanPixMax+0.5*dx, dx):
-        for yy in numpy.arange(yTanPixMin, yTanPixMax+0.5*dyPix, dx):
+        for yy in numpy.arange(yTanPixMin, yTanPixMax+0.5*dyPix, dy):
             xPixList.append(xx)
             yPixList.append(yy)
             nameList.append(afwDetector.getName())
