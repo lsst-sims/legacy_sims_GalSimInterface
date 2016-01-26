@@ -13,7 +13,6 @@ GalSimStars
 import numpy
 import os
 import copy
-import time
 import lsst.utils
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, is_null
@@ -292,7 +291,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         This getter also passes objects to the GalSimInterpreter to actually draw the FITS
         images.
         """
-        t_start = time.clock()
         objectNames = self.column_by_name('uniqueId')
         raICRS = self.column_by_name('raICRS')
         decICRS = self.column_by_name('decICRS')
@@ -303,9 +301,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         majorAxis = self.column_by_name('majorAxis')
         positionAngle = self.column_by_name('positionAngle')
         sindex = self.column_by_name('sindex')
-        t_data = time.clock()-t_start
-
-        t_adu=0.0
 
         #print 'need to draw ',len(objectNames)
 
@@ -343,12 +338,10 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
                 self.objectHasBeenDrawn.append(name)
 
-                t0=time.clock()
                 flux_dict = {}
                 for bb in self.bandpassNames:
                     adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
                     flux_dict[bb] = adu*self.photParams.gain
-                t_adu+=time.clock()-t0
 
                 gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp, \
                                               hlr, minor, major, pa, sn, flux_dict)
@@ -358,9 +351,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
                 output.append(detectorsString)
 
-        #print 'time spent getting data ',t_data
-        #print 'time spent on adu ',t_adu
-        #print 'time spent getter ',t_start-time.clock()
         return numpy.array(output)
 
 

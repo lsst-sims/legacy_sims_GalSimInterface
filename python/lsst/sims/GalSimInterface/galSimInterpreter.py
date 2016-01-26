@@ -10,7 +10,6 @@ GalSimInterpreter expects.
 
 import os
 import numpy
-import time
 import galsim
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
@@ -289,12 +288,10 @@ class GalSimInterpreter(object):
         object illumines, suitable for output in the GalSim InstanceCatalog
         """
 
-        t0 = time.clock()
         #find the detectors which the astronomical object illumines
         outputString, \
         detectorList, \
         centeredObj = self.findAllDetectors(gsObject)
-        self.t_find += time.clock()-t0
 
         if gsObject.sed is None or len(detectorList) == 0:
             #there is nothing to draw
@@ -326,19 +323,16 @@ class GalSimInterpreter(object):
 
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
 
-                tbp = time.clock()
                 xPix, yPix = pixelCoordsFromPupilCoords(numpy.array([gsObject.xPupilRadians]),
                                                         numpy.array([gsObject.yPupilRadians]),
                                                         chipNames=[detector.name],
                                                         camera=detector.afwCamera)
-                self.t_pix+=time.clock()-tbp
 
                 obj = centeredObj.copy()
 
                 #convolve the object's shape profile with the spectrum
                 obj = obj.withFlux(gsObject.flux(bandpassName))
 
-                t1 = time.clock()
                 self.detectorImages[name] = obj.drawImage(method='phot',
                                                           gain=detector.photParams.gain,
                                                           offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix),
@@ -346,14 +340,6 @@ class GalSimInterpreter(object):
                                                           image=self.detectorImages[name],
                                                           add_to_image=True)
 
-                self.t_pure += time.clock()-t1
-
-
-        self._drawn_ct+=1
-        #print 'drawn ',self._drawn_ct,gsObject.flux(bandpassName)
-        #print '\n'
-
-        self.t_drawing += time.clock()-t0
         return outputString
 
     def drawPointSource(self, gsObject):
@@ -439,10 +425,5 @@ class GalSimInterpreter(object):
             self.detectorImages[name].write(file_name=fileName)
             namesWritten.append(fileName)
 
-        #print 'drew ',self._drawn_ct
-        #print 'in ',self.t_drawing
-        #print 'pix ',self.t_pix
-        #print 'finding ',self.t_find
-        #print 'purely ',self.t_pure, self.t_pure/self._drawn_ct
         return namesWritten
 
