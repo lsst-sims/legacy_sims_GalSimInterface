@@ -827,7 +827,7 @@ class GalSimInterfaceTest(unittest.TestCase):
                     % (controlName, controlFlux, testFlux, countSigma)
 
                     #the randomness of photon shooting means that faint images won't agree
-                    self.assertLess(numpy.abs(controlFlux-testFlux), 3.0*countSigma, msg=msg)
+                    self.assertLess(numpy.abs(controlFlux-testFlux), 4.0*countSigma, msg=msg)
                     valid += 1
                 else:
                     ignored += 1
