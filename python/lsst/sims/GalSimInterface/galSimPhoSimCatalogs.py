@@ -16,7 +16,7 @@ class GalSimAstrometryStars(AstrometryStars):
 
     @compound('raPhoSim','decPhoSim')
     def get_phoSimCoordinates(self):
-        ff = self.column_by_name('fitsFiles')
+        ff = self.column_by_name('fitsFiles') # to force the catalog to draw the GalSim images
         return self.observedStellarCoordinates(includeRefraction = False)
 
 
@@ -24,7 +24,7 @@ class GalSimAstrometryGalaxies(AstrometryGalaxies):
 
     @compound('raPhoSim','decPhoSim')
     def get_phoSimCoordinates(self):
-        ff = self.column_by_name('fitsFiles')
+        ff = self.column_by_name('fitsFiles') # to force the catalog to draw the GalSim images
         ra = self.column_by_name('raJ2000')
         dec = self.column_by_name('decJ2000')
         return _observedFromICRS(ra, dec, includeRefraction = False, obs_metadata=self.obs_metadata,
@@ -32,6 +32,11 @@ class GalSimAstrometryGalaxies(AstrometryGalaxies):
 
 
 class GalSimPhoSimStars(GalSimAstrometryStars, PhoSimCatalogPoint, GalSimStars):
+    """
+    This InstanceCatalog class is written so that the write_catalog() method produces
+    and InstanceCatalog formatted appropriately for input to PhoSim.  The write_images()
+    method can then be called as in other GalSimCatalogs to produce images with GalSim.
+    """
 
     default_columns = [('redshift', 0., float),('shear1', 0., float), ('shear2', 0., float),
                        ('kappa', 0., float), ('raOffset', 0., float), ('decOffset', 0., float),
@@ -49,6 +54,11 @@ class GalSimPhoSimStars(GalSimAstrometryStars, PhoSimCatalogPoint, GalSimStars):
 
 
 class GalSimPhoSimGalaxies(GalSimAstrometryGalaxies, PhoSimCatalogSersic2D, GalSimGalaxies):
+    """
+    This InstanceCatalog class is written so that the write_catalog() method produces
+    and InstanceCatalog formatted appropriately for input to PhoSim.  The write_images()
+    method can then be called as in other GalSimCatalogs to produce images with GalSim.
+    """
 
     default_columns = [('shear1', 0., float), ('shear2', 0., float), ('kappa', 0., float),
                        ('raOffset', 0., float), ('decOffset', 0., float), ('galacticAv', 0.1, float),
@@ -59,6 +69,11 @@ class GalSimPhoSimGalaxies(GalSimAstrometryGalaxies, PhoSimCatalogSersic2D, GalS
 
 
 class GalSimPhoSimAgn(GalSimAstrometryGalaxies, PhoSimCatalogZPoint, GalSimGalaxies):
+    """
+    This InstanceCatalog class is written so that the write_catalog() method produces
+    and InstanceCatalog formatted appropriately for input to PhoSim.  The write_images()
+    method can then be called as in other GalSimCatalogs to produce images with GalSim.
+    """
 
     default_columns = [('shear1', 0., float), ('shear2', 0., float), ('kappa', 0., float),
                        ('raOffset', 0., float), ('decOffset', 0., float), ('spatialmodel', 'ZPOINT', (str, 6)),
