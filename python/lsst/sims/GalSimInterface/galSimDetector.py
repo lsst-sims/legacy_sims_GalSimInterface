@@ -1,3 +1,4 @@
+import re
 import galsim
 import numpy
 import lsst.afw.geom as afwGeom
@@ -556,26 +557,29 @@ class GalSimDetector(object):
                                              photParams=self.photParams)
 
 
-            wcsName = self.fileName.replace('_','')
-            wcsName = wcsName.replace('S', '_S')
+            if re.match('R_[0-9]_[0-9]_S_[0-9]_[0-9]', self.fileName) is not None:
+                # This is an LSST camera; format the FITS header to feed through DM code
 
-            self._wcs.fitsHeader.set("CHIPID", wcsName)
+                wcsName = self.fileName.replace('_','')
+                wcsName = wcsName.replace('S', '_S')
 
-            obshistid = 9999
+                self._wcs.fitsHeader.set("CHIPID", wcsName)
 
-            if self.obs_metadata.phoSimMetaData is not None:
-                if 'Opsim_obshistid' in self.obs_metadata.phoSimMetaData:
-                    self._wcs.fitsHeader.set("OBSID", self.obs_metadata.phoSimMetaData['Opsim_obshistid'][0])
-                    obshistid = self.obs_metadata.phoSimMetaData['Opsim_obshistid'][0]
+                obshistid = 9999
 
-            bp = self.obs_metadata.bandpass
-            if not isinstance(bp, list) and not isinstance(bp, numpy.ndarray):
-                filt_num = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}[bp]
-            else:
-                filt_num = 2
+                if self.obs_metadata.phoSimMetaData is not None:
+                    if 'Opsim_obshistid' in self.obs_metadata.phoSimMetaData:
+                        self._wcs.fitsHeader.set("OBSID", self.obs_metadata.phoSimMetaData['Opsim_obshistid'][0])
+                        obshistid = self.obs_metadata.phoSimMetaData['Opsim_obshistid'][0]
 
-            out_name = 'lsst_e_%d_f%d_%s_E000' % (obshistid, filt_num, wcsName)
-            self._wcs.fitsHeader.set("OUTFILE", out_name)
+                bp = self.obs_metadata.bandpass
+                if not isinstance(bp, list) and not isinstance(bp, numpy.ndarray):
+                    filt_num = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}[bp]
+                else:
+                    filt_num = 2
+
+                out_name = 'lsst_e_%d_f%d_%s_E000' % (obshistid, filt_num, wcsName)
+                self._wcs.fitsHeader.set("OUTFILE", out_name)
 
         return self._wcs
 
