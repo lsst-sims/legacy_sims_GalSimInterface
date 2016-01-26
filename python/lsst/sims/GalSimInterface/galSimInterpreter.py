@@ -42,15 +42,10 @@ class GalSimInterpreter(object):
         generator seeded with the system clock)
         """
 
-        self.t_drawing=0.0
-        self.t_pure=0.0
-        self.t_pix=0.0
-        self.t_find=0.0
         self.obs_metadata = obs_metadata
         self.epoch = epoch
         self.PSF = None
         self.noiseWrapper = noiseWrapper
-        self._drawn_ct = 0
 
         if seed is not None:
             self._rng = galsim.UniformDeviate(seed)
