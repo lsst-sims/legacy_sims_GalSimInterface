@@ -68,7 +68,7 @@ class GalSimPhoSimGalaxies(GalSimAstrometryGalaxies, PhoSimCatalogSersic2D, GalS
                        ('galSimType', 'sersic', (str, 6))]
 
 
-class GalSimPhoSimAgn(GalSimAstrometryGalaxies, PhoSimCatalogZPoint, GalSimGalaxies):
+class GalSimPhoSimAgn(GalSimAstrometryGalaxies, PhoSimCatalogZPoint, GalSimAgn):
     """
     This InstanceCatalog class is written so that the write_catalog() method produces
     and InstanceCatalog formatted appropriately for input to PhoSim.  The write_images()
