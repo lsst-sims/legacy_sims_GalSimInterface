@@ -38,6 +38,9 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         @param [in] photParams is an instantiation of PhotometricParameters
         (it will contain information about gain, exposure time, etc.)
+
+        @param [in] wcs is a kwarg that is used by the method _newOrigin().
+        The wcs kwarg in this constructor method should not be used by users.
         """
 
         if wcs is None:
