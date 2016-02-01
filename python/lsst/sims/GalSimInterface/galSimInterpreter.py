@@ -31,11 +31,8 @@ class GalSimInterpreter(object):
 
         @param [in] detectors is a list of GalSimDetectors for which we are drawing FITS images
 
-        @param [in] bandpassNames is a list of the form ['u', 'g', 'r', 'i', 'z', 'y'] denoting
-        the bandpasses for which we are drawing FITS images.
-
-        @param [in] bandpassFiles is a list of paths to the bandpass data files corresponding to
-        bandpassNames
+        @param [in] bandpassDict is a BandpassDict containing all of the bandpasses for which we are
+        generating images
 
         @param [in] noiseWrapper is an instantiation of a NoiseAndBackgroundBase
         class which tells the interpreter how to add sky noise to its images.
@@ -61,38 +58,11 @@ class GalSimInterpreter(object):
         self.detectors = detectors
 
         self.detectorImages = {} #this dict will contain the FITS images (as GalSim images)
-        self.bandpasses = {} #this dict will contain the GalSim bandpass instantiations corresponding to the input bandpasses
-        self.catSimBandpasses = None
+        self.bandpassDict = bandpassDict
         self.blankImageCache = {} #this dict will cache blank images associated with specific detectors.
                                   #It turns out that calling the image's constructor is more time-consuming than
                                   #returning a deep copy
 
-        self.setBandpasses(bandpassDict=bandpassDict)
-
-
-    def setBandpasses(self, bandpassDict):
-        """
-        Read in files containing bandpass data and store them in a dict of GalSim bandpass instantiations.
-
-        @param [in] bandpassNames is a list of the names by which the bandpasses are to be referred
-        i.e. ['u', 'g', 'r', 'i', 'z', 'y']
-
-        @param [in] bandpassFiles is a list of paths to the files containing data for the bandpasses
-
-        The bandpasses will be stored in the member variable self.bandpasses, which is a dict
-        """
-
-        self.catSimBandpasses = bandpassDict
-        for bpname in bandpassDict:
-
-            # 14 April 2015
-            #For some reason, you need to pass in the bandpass as an instance of galsim.LookupTable.
-            #If you pass a lambda function, image generation will get much slower and unit tests
-            #will fail because too few counts are placed on images.
-            bptest = galsim.Bandpass(throughput = galsim.LookupTable(x=bandpassDict[bpname].wavelen, f=bandpassDict[bpname].sb),
-                                 wave_type='nm')
-
-            self.bandpasses[bpname] = bptest
 
     def setPSF(self, PSF=None):
         """
@@ -177,10 +147,7 @@ class GalSimInterpreter(object):
         @param [out] outputList is a list of detector instantiations indicating which
         detectors the object illumines
 
-        @param [out] centeredObjDict is a dict of GalSim Objects centered on the chip, one for
-        each bandpass (in case the object is convolved with a wavelength dependent PSF).
-        The dict will be keyed to the bandpassName values stored in self.bandpasses
-        (i.e. 'u', 'g', 'r', 'i', 'z', 'y' for default LSST behavior)
+        @param [out] centeredObj is a GalSim GSObject centered on the chip
 
         Note: parameters that only apply to Sersic profiles will be ignored in the case of
         pointSources, etc.
@@ -188,121 +155,97 @@ class GalSimInterpreter(object):
 
         outputString = ''
         outputList = []
-        centeredObjDict = {}
         centeredObj = None
         testScale = 0.1
 
-        for bandpassName in self.bandpasses:
-            if centeredObj is None or (self.PSF is not None and self.PSF.wavelength_dependent):
-                #create a GalSim Object centered on the chip.  Re-create it for each bandpass if
-                #it is convolved with a wavelength-dependent PSF
+        #create a GalSim Object centered on the chip.
+        centeredObj = self.createCenteredObject(gsObject)
 
-                centeredObj = self.createCenteredObject(gsObject, bandpassName=bandpassName)
+        if centeredObj is None:
+            return
 
-            #for output; to be used by self.drawObject()
-            centeredObjDict[bandpassName] = centeredObj
+        #4 March 2015
+        #create a test image of the object to compare against the pixel
+        #domains of each detector.  Use photon shooting rather than real space integration
+        #for reasons of speed.  A flux of 1000 photons ought to be enough to plot the true
+        #extent of the object, but this is just a guess.
+        centeredImage = centeredObj.drawImage(scale=testScale, method='phot', n_photons=1000, rng=self._rng)
+        xmax = testScale * (centeredImage.getXMax()/2) + gsObject.xPupilArcsec
+        xmin = testScale * (-1*centeredImage.getXMax()/2) + gsObject.xPupilArcsec
+        ymax = testScale * (centeredImage.getYMax()/2) + gsObject.yPupilArcsec
+        ymin = testScale *(-1*centeredImage.getYMin()/2) + gsObject.yPupilArcsec
 
-        nTests = 0
-        for bandpassName in self.bandpasses:
-            goOn = False
-            if nTests==0 or (self.PSF is not None and self.PSF.wavelength_dependent):
+        #first assemble a list of detectors which have any hope
+        #of overlapping the test image
+        viableDetectors = []
+        for dd in self.detectors:
+            xOverLaps = False
+            if xmax > dd.xMinArcsec and xmax < dd.xMaxArcsec:
+                xOverLaps = True
+            elif xmin > dd.xMinArcsec and xmin < dd.xMaxArcsec:
+                xOverLaps = True
+            elif xmin < dd.xMinArcsec and xmax > dd.xMaxArcsec:
+                xOverLaps = True
 
-                #if we have already decided that the object illumines all detectors,
-                #there is no point in going on
-                for dd in self.detectors:
-                    if dd not in outputList:
-                        goOn = True
-                        break
+            yOverLaps = False
+            if ymax > dd.yMinArcsec and ymax < dd.yMaxArcsec:
+                yOverLaps = True
+            elif ymin > dd.yMinArcsec and ymin < dd.yMaxArcsec:
+                yOverLaps = True
+            elif ymin < dd.yMinArcsec and ymax > dd.yMaxArcsec:
+                yOverLaps = True
 
-            nTests += 1
-            if goOn:
-                centeredObj = centeredObjDict[bandpassName]
-
-                if centeredObj is None:
-                    return
-
-                #4 March 2015
-                #create a test image of the object to compare against the pixel
-                #domains of each detector.  Use photon shooting rather than real space integration
-                #for reasons of speed.  A flux of 1000 photons ought to be enough to plot the true
-                #extent of the object, but this is just a guess.
-                centeredImage = centeredObj.drawImage(scale=testScale, method='phot', n_photons=1000, rng=self._rng)
-                xmax = testScale * (centeredImage.getXMax()/2) + gsObject.xPupilArcsec
-                xmin = testScale * (-1*centeredImage.getXMax()/2) + gsObject.xPupilArcsec
-                ymax = testScale * (centeredImage.getYMax()/2) + gsObject.yPupilArcsec
-                ymin = testScale *(-1*centeredImage.getYMin()/2) + gsObject.yPupilArcsec
-
-                #first assemble a list of detectors which have any hope
-                #of overlapping the test image
-                viableDetectors = []
-                for dd in self.detectors:
-                    xOverLaps = False
-                    if xmax > dd.xMinArcsec and xmax < dd.xMaxArcsec:
-                        xOverLaps = True
-                    elif xmin > dd.xMinArcsec and xmin < dd.xMaxArcsec:
-                        xOverLaps = True
-                    elif xmin < dd.xMinArcsec and xmax > dd.xMaxArcsec:
-                        xOverLaps = True
-
-                    yOverLaps = False
-                    if ymax > dd.yMinArcsec and ymax < dd.yMaxArcsec:
-                        yOverLaps = True
-                    elif ymin > dd.yMinArcsec and ymin < dd.yMaxArcsec:
-                        yOverLaps = True
-                    elif ymin < dd.yMinArcsec and ymax > dd.yMaxArcsec:
-                        yOverLaps = True
-
-                    if xOverLaps and yOverLaps and dd not in outputList:
-                        viableDetectors.append(dd)
+            if xOverLaps and yOverLaps and dd not in outputList:
+                viableDetectors.append(dd)
 
 
-                if len(viableDetectors)>0:
+        if len(viableDetectors)>0:
 
-                    #Find the pixels that have a flux greater than 0.001 times the flux of
-                    #the central pixel (remember that the object is centered on the test image)
-                    maxPixel = centeredImage(centeredImage.getXMax()/2, centeredImage.getYMax()/2)
-                    activePixels = numpy.where(centeredImage.array>maxPixel*0.001)
+            #Find the pixels that have a flux greater than 0.001 times the flux of
+            #the central pixel (remember that the object is centered on the test image)
+            maxPixel = centeredImage(centeredImage.getXMax()/2, centeredImage.getYMax()/2)
+            activePixels = numpy.where(centeredImage.array>maxPixel*0.001)
 
-                    #Find the bounds of those active pixels in pixel coordinates
-                    xmin = testScale * (activePixels[0].min() - centeredImage.getXMax()/2) + gsObject.xPupilArcsec
-                    xmax = testScale * (activePixels[0].max() - centeredImage.getXMax()/2) + gsObject.xPupilArcsec
-                    ymin = testScale * (activePixels[1].min() - centeredImage.getYMax()/2) + gsObject.yPupilArcsec
-                    ymax = testScale * (activePixels[1].max() - centeredImage.getYMax()/2) + gsObject.yPupilArcsec
+            #Find the bounds of those active pixels in pixel coordinates
+            xmin = testScale * (activePixels[0].min() - centeredImage.getXMax()/2) + gsObject.xPupilArcsec
+            xmax = testScale * (activePixels[0].max() - centeredImage.getXMax()/2) + gsObject.xPupilArcsec
+            ymin = testScale * (activePixels[1].min() - centeredImage.getYMax()/2) + gsObject.yPupilArcsec
+            ymax = testScale * (activePixels[1].max() - centeredImage.getYMax()/2) + gsObject.yPupilArcsec
 
-                    #find all of the detectors that overlap with the bounds of the active pixels.
-                    for dd in viableDetectors:
-                        xOverLaps = False
-                        if xmax > dd.xMinArcsec and xmax < dd.xMaxArcsec:
-                            xOverLaps = True
-                        elif xmin > dd.xMinArcsec and xmin < dd.xMaxArcsec:
-                            xOverLaps = True
-                        elif xmin < dd.xMinArcsec and xmax > dd.xMaxArcsec:
-                            xOverLaps = True
+            #find all of the detectors that overlap with the bounds of the active pixels.
+            for dd in viableDetectors:
+                xOverLaps = False
+                if xmax > dd.xMinArcsec and xmax < dd.xMaxArcsec:
+                    xOverLaps = True
+                elif xmin > dd.xMinArcsec and xmin < dd.xMaxArcsec:
+                    xOverLaps = True
+                elif xmin < dd.xMinArcsec and xmax > dd.xMaxArcsec:
+                    xOverLaps = True
 
-                        yOverLaps = False
-                        if ymax > dd.yMinArcsec and ymax < dd.yMaxArcsec:
-                            yOverLaps = True
-                        elif ymin > dd.yMinArcsec and ymin < dd.yMaxArcsec:
-                            yOverLaps = True
-                        elif ymin < dd.yMinArcsec and ymax > dd.yMaxArcsec:
-                            yOverLaps = True
+                yOverLaps = False
+                if ymax > dd.yMinArcsec and ymax < dd.yMaxArcsec:
+                    yOverLaps = True
+                elif ymin > dd.yMinArcsec and ymin < dd.yMaxArcsec:
+                    yOverLaps = True
+                elif ymin < dd.yMinArcsec and ymax > dd.yMaxArcsec:
+                    yOverLaps = True
 
-                        #specifically test that these overlapping detectors do contain active pixels
-                        if xOverLaps and yOverLaps:
-                            if self._doesObjectImpingeOnDetector(xPupil=gsObject.xPupilArcsec - centeredImage.getXMax()*testScale/2.0,
-                                                                 yPupil=gsObject.yPupilArcsec - centeredImage.getYMax()*testScale/2.0,
-                                                                 detector=dd, imgScale=centeredImage.scale,
-                                                                 nonZeroPixels=activePixels):
+                #specifically test that these overlapping detectors do contain active pixels
+                if xOverLaps and yOverLaps:
+                    if self._doesObjectImpingeOnDetector(xPupil=gsObject.xPupilArcsec - centeredImage.getXMax()*testScale/2.0,
+                                                         yPupil=gsObject.yPupilArcsec - centeredImage.getYMax()*testScale/2.0,
+                                                         detector=dd, imgScale=centeredImage.scale,
+                                                         nonZeroPixels=activePixels):
 
-                                if outputString != '':
-                                    outputString += '//'
-                                outputString += dd.name
-                                outputList.append(dd)
+                        if outputString != '':
+                            outputString += '//'
+                        outputString += dd.name
+                        outputList.append(dd)
 
         if outputString == '':
             outputString = None
 
-        return outputString, outputList, centeredObjDict
+        return outputString, outputList, centeredObj
 
 
     def blankImage(self, detector=None):
@@ -322,7 +265,7 @@ class GalSimInterpreter(object):
         if detector.name in self.blankImageCache:
             return self.blankImageCache[detector.name].copy()
         else:
-            image = galsim.Image(detector.xMaxPix-detector.xMinPix+1, detector.yMaxPix-detector.yMinPix+1, \
+            image = galsim.Image(detector.xMaxPix-detector.xMinPix+1, detector.yMaxPix-detector.yMinPix+1,
                                  wcs=detector.wcs)
 
             self.blankImageCache[detector.name] = image
@@ -343,7 +286,7 @@ class GalSimInterpreter(object):
         #find the detectors which the astronomical object illumines
         outputString, \
         detectorList, \
-        centeredObjDict = self.findAllDetectors(gsObject)
+        centeredObj = self.findAllDetectors(gsObject)
 
         if gsObject.sed is None or len(detectorList) == 0:
             #there is nothing to draw
@@ -352,26 +295,22 @@ class GalSimInterpreter(object):
         #go through the list of detector/bandpass combinations and initialize
         #all of the FITS files we will need (if they have not already been initialized)
         for detector in detectorList:
-            for bandpassName in self.bandpasses:
+            for bandpassName in self.bandpassDict:
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
                 if name not in self.detectorImages:
                     self.detectorImages[name] = self.blankImage(detector=detector)
                     if self.noiseWrapper is not None:
                         #Add sky background and noise to the image
                         self.detectorImages[name] = self.noiseWrapper.addNoiseAndBackground(self.detectorImages[name],
-                                                                              bandpass=self.catSimBandpasses[bandpassName],
+                                                                              bandpass=self.bandpassDict[bandpassName],
                                                                               m5=self.obs_metadata.m5[bandpassName],
                                                                               FWHMeff=self.obs_metadata.seeing[bandpassName],
                                                                               photParams=detector.photParams)
 
-        spectrum = galsim.SED(spec = lambda ll: numpy.interp(ll, gsObject.sed.wavelen, gsObject.sed.flambda),
-                              flux_type='flambda')
-
-        for bandpassName in self.bandpasses:
+        for bandpassName in self.bandpassDict:
 
             #create a new object if one has not already been created or if the PSF is wavelength
             #dependent (in which case, each filter is going to need its own initialized object)
-            centeredObj = centeredObjDict[bandpassName]
             if centeredObj is None:
                 return outputString
 
@@ -387,42 +326,36 @@ class GalSimInterpreter(object):
                 obj = centeredObj.copy()
 
                 #convolve the object's shape profile with the spectrum
-                obj = obj*spectrum
-                localImage = self.blankImage(detector=detector)
-                localImage = obj.drawImage(bandpass=self.bandpasses[bandpassName], wcs=detector.wcs,
-                                           method='phot', gain=detector.photParams.gain, image=localImage,
-                                           offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix),
-                                           rng=self._rng)
+                obj = obj.withFlux(gsObject.flux(bandpassName))
 
-                self.detectorImages[name] += localImage
+                self.detectorImages[name] = obj.drawImage(method='phot',
+                                                          gain=detector.photParams.gain,
+                                                          offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix),
+                                                          rng=self._rng,
+                                                          image=self.detectorImages[name],
+                                                          add_to_image=True)
 
         return outputString
 
-    def drawPointSource(self, gsObject, bandpass=None):
+    def drawPointSource(self, gsObject):
         """
         Draw an image of a point source.
 
         @param [in] gsObject is an instantiation of the GalSimCelestialObject class
         carrying information about the object whose image is to be drawn
-
-        @param [in] bandpass is an instantiation of the galsim.Bandpass class characterizing
-        the bandpass over which we are integrating (in case the PSF is wavelength dependent)
         """
 
         if self.PSF is None:
             raise RuntimeError("Cannot draw a point source in GalSim without a PSF")
 
-        return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec, bandpass=bandpass)
+        return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec)
 
-    def drawSersic(self, gsObject, bandpass=None):
+    def drawSersic(self, gsObject):
         """
         Draw the image of a Sersic profile.
 
         @param [in] gsObject is an instantiation of the GalSimCelestialObject class
         carrying information about the object whose image is to be drawn
-
-        @param [in] bandpass is an instantiation of the galsim.Bandpass class characterizing
-        the bandpass over which we are integrating (in case the PSF is wavelength dependent)
         """
 
         #create a Sersic profile
@@ -434,12 +367,11 @@ class GalSimInterpreter(object):
         centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians, \
                                         beta=(0.5*numpy.pi-gsObject.positionAngleRadians)*galsim.radians)
         if self.PSF is not None:
-            centeredObj = self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec, obj=centeredObj,
-                                            bandpass=bandpass)
+            centeredObj = self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec, obj=centeredObj)
 
         return centeredObj
 
-    def createCenteredObject(self, gsObject, bandpassName=None):
+    def createCenteredObject(self, gsObject):
         """
         Create a centered GalSim Object (i.e. if we were just to draw this object as an image,
         the object would be centered on the frame)
@@ -447,20 +379,15 @@ class GalSimInterpreter(object):
         @param [in] gsObject is an instantiation of the GalSimCelestialObject class
         carrying information about the object whose image is to be drawn
 
-        @param [in] bandpassName is the tag indicating the bandpass (i.e. 'u', 'g', 'r', 'i', 'z', or 'y')
-
-        @param [out] a GalSim Object suitable to base an image off of (but centered on the frame)
-
         Note: parameters that obviously only apply to Sersic profiles will be ignored in the case
         of point sources
         """
 
         if gsObject.galSimType == 'sersic':
-            centeredObj = self.drawSersic(gsObject,
-                                          bandpass=self.bandpasses[bandpassName])
+            centeredObj = self.drawSersic(gsObject)
 
         elif gsObject.galSimType == 'pointSource':
-            centeredObj = self.drawPointSource(gsObject, bandpass=self.bandpasses[bandpassName])
+            centeredObj = self.drawPointSource(gsObject)
         else:
             print "Apologies: the GalSimInterpreter does not yet have a method to draw "
             print gsObject.galSimType

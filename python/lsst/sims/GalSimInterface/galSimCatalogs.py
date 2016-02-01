@@ -127,7 +127,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
     #This is used as the delimiter because the names of the detectors printed in the fitsFiles
     #column contain both ':' and ','
-    delimiter = ';'
+    delimiter = '; '
 
     sedDir = lsst.utils.getPackageDir('sims_sed_library')
 
@@ -137,6 +137,10 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     componentList = ['detector.dat', 'm1.dat', 'm2.dat', 'm3.dat',
                      'lens1.dat', 'lens2.dat', 'lens3.dat']
     atmoTransmissionName = 'atmos.dat'
+
+    # allowed_chips is a list of the names of the detectors we actually want to draw.
+    # If 'None', then all chips are drawn.
+    allowed_chips = None
 
     #This member variable will define a PSF to convolve with the sources.
     #See the classes PSFbase and DoubleGaussianPSF in
@@ -160,8 +164,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     hasBeenInitialized = False
 
     galSimInterpreter = None #the GalSimInterpreter instantiation for this catalog
-                             #This class is either passed in from another catalog using
-                             #copyGalSimInterpreter, or initialized in the write_header method
 
     totalDrawings = 0
     totalObjects = 0
@@ -259,7 +261,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 #class (which can be reassigned by defining a daughter class of this class)
                 #
                 fNorm = sed.calcFluxNorm(norm, imsimband)
-                sed.multiplyFluxNorm(fNorm*self.photParams.exptime*self.photParams.effarea*self.photParams.nexp)
+                sed.multiplyFluxNorm(fNorm)
 
                 #apply dust extinction (internal)
                 if iAv != 0.0 and iRv != 0.0:
@@ -309,6 +311,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             #the user wishes to iterate through the catalog with InstanceCatalog.iter_catalog(),
             #which will not call write_header()
             self._initializeGalSimCatalog()
+            if not hasattr(self, 'bandpassDict'):
+                raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
 
         output = []
         for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn) in \
@@ -332,8 +336,13 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
                 self.objectHasBeenDrawn.append(name)
 
+                flux_dict = {}
+                for bb in self.bandpassNames:
+                    adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
+                    flux_dict[bb] = adu*self.photParams.gain
+
                 gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp, \
-                                              hlr, minor, major, pa, sn)
+                                              hlr, minor, major, pa, sn, flux_dict)
 
                 #actually draw the object
                 detectorsString = self.galSimInterpreter.drawObject(gsObj)
@@ -370,36 +379,10 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         an example of how this is used.
         """
         self.camera = otherCatalog.camera
+        self.photParams = otherCatalog.photParams
+        self.bandpassDict = otherCatalog.bandpassDict
         self.galSimInterpreter = otherCatalog.galSimInterpreter
 
-    def write_header(self, file_handle):
-        """
-        This method adds to the InstanceCatalog.write_header() method.
-        It writes information about all of the detectors in the camera to the header of the
-        catalog output file.
-
-        For each detector it writes:
-
-        detector name
-        center coordinates in arc seconds
-        xmin and xmax in arc seconds
-        ymin and ymax in arc seconds
-        plateScale (arc seconds per pixel)
-
-
-
-        It will also call self._initializeGalSimCatalog() if need be.
-        """
-
-        if not self.hasBeenInitialized:
-            self._initializeGalSimCatalog()
-
-        for detector in self.galSimInterpreter.detectors:
-            file_handle.write('#detector;%s;%f;%f;%f;%f;%f;%f;%f\n' %
-                                 (detector.name, detector.xCenterArcsec, detector.yCenterArcsec, detector.xMinArcsec,
-                                  detector.xMaxArcsec, detector.yMinArcsec, detector.yMaxArcsec, detector.photParams.platescale))
-
-        InstanceCatalog.write_header(self, file_handle)
 
     def _initializeGalSimInterpreter(self):
         """
@@ -420,37 +403,38 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             detectors = []
 
             for dd in self.camera:
-                cs = dd.makeCameraSys(PUPIL)
-                centerPupil = self.camera.transform(dd.getCenter(FOCAL_PLANE),cs).getPoint()
-                centerPixel = dd.getCenter(PIXELS).getPoint()
+                if self.allowed_chips is None or dd.getName() in self.allowed_chips:
+                    cs = dd.makeCameraSys(PUPIL)
+                    centerPupil = self.camera.transform(dd.getCenter(FOCAL_PLANE),cs).getPoint()
+                    centerPixel = dd.getCenter(PIXELS).getPoint()
 
-                translationPixel = afwGeom.Point2D(centerPixel.getX()+1, centerPixel.getY()+1)
-                translationPupil = self.camera.transform(
-                                        dd.makeCameraPoint(translationPixel, PIXELS), cs).getPoint()
+                    translationPixel = afwGeom.Point2D(centerPixel.getX()+1, centerPixel.getY()+1)
+                    translationPupil = self.camera.transform(
+                                            dd.makeCameraPoint(translationPixel, PIXELS), cs).getPoint()
 
-                plateScale = numpy.sqrt(numpy.power(translationPupil.getX()-centerPupil.getX(),2)+
-                                        numpy.power(translationPupil.getY()-centerPupil.getY(),2))/numpy.sqrt(2.0)
+                    plateScale = numpy.sqrt(numpy.power(translationPupil.getX()-centerPupil.getX(),2)+
+                                            numpy.power(translationPupil.getY()-centerPupil.getY(),2))/numpy.sqrt(2.0)
 
-                plateScale = 3600.0*numpy.degrees(plateScale)
+                    plateScale = 3600.0*numpy.degrees(plateScale)
 
-                #make a detector-custom photParams that copies all of the quantities
-                #in the catalog photParams, except the platescale, which is
-                #calculated above
-                params = PhotometricParameters(exptime=self.photParams.exptime,
-                                               nexp=self.photParams.nexp,
-                                               effarea=self.photParams.effarea,
-                                               gain=self.photParams.gain,
-                                               readnoise=self.photParams.readnoise,
-                                               darkcurrent=self.photParams.darkcurrent,
-                                               othernoise=self.photParams.othernoise,
-                                               platescale=plateScale)
+                    #make a detector-custom photParams that copies all of the quantities
+                    #in the catalog photParams, except the platescale, which is
+                    #calculated above
+                    params = PhotometricParameters(exptime=self.photParams.exptime,
+                                                   nexp=self.photParams.nexp,
+                                                   effarea=self.photParams.effarea,
+                                                   gain=self.photParams.gain,
+                                                   readnoise=self.photParams.readnoise,
+                                                   darkcurrent=self.photParams.darkcurrent,
+                                                   othernoise=self.photParams.othernoise,
+                                                   platescale=plateScale)
 
 
-                detector = GalSimDetector(dd, self.camera,
-                                          obs_metadata=self.obs_metadata, epoch=self.db_obj.epoch,
-                                          photParams=params)
+                    detector = GalSimDetector(dd, self.camera,
+                                              obs_metadata=self.obs_metadata, epoch=self.db_obj.epoch,
+                                              photParams=params)
 
-                detectors.append(detector)
+                    detectors.append(detector)
 
             if not hasattr(self, 'bandpassDict'):
                 if self.noise_and_background is not None:

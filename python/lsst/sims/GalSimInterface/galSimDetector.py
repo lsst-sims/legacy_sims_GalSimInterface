@@ -1,3 +1,4 @@
+import re
 import galsim
 import numpy
 import lsst.afw.geom as afwGeom
@@ -23,7 +24,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
     http://fits.gsfc.nasa.gov/registry/sip/SIP_distortion_v1_0.pdf
     """
 
-    def __init__(self, afwDetector, afwCamera, obs_metadata, epoch):
+    def __init__(self, afwDetector, afwCamera, obs_metadata, epoch, photParams=None, wcs=None):
         """
         @param [in] afwDetector is an instantiation of afw.cameraGeom.Detector
 
@@ -34,17 +35,37 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         @param [in] epoch is the epoch in Julian years of the equinox against
         which RA and Dec are measured
+
+        @param [in] photParams is an instantiation of PhotometricParameters
+        (it will contain information about gain, exposure time, etc.)
+
+        @param [in] wcs is a kwarg that is used by the method _newOrigin().
+        The wcs kwarg in this constructor method should not be used by users.
         """
 
-        tanSipWcs = tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
+        if wcs is None:
+            self._tanSipWcs = tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
+        else:
+            self._tanSipWcs = wcs
 
         self.afwDetector = afwDetector
         self.afwCamera = afwCamera
         self.obs_metadata = obs_metadata
+        self.photParams = photParams
         self.epoch = epoch
 
-        self.fitsHeader = tanSipWcs.getFitsMetadata()
+        self.fitsHeader = self._tanSipWcs.getFitsMetadata()
         self.fitsHeader.set("EXTTYPE", "IMAGE")
+
+        if self.obs_metadata.bandpass is not None:
+            if not isinstance(self.obs_metadata.bandpass, list) and not isinstance(self.obs_metadata.bandpass, numpy.ndarray):
+                self.fitsHeader.set("FILTER", self.obs_metadata.bandpass)
+
+        if self.obs_metadata.mjd is not None:
+            self.fitsHeader.set("MJD-OBS", self.obs_metadata.mjd.TAI)
+
+        if self.photParams is not None:
+            self.fitsHeader.set("EXPTIME", self.photParams.nexp*self.photParams.exptime)
 
         self.crpix1 = self.fitsHeader.get("CRPIX1")
         self.crpix2 = self.fitsHeader.get("CRPIX2")
@@ -95,7 +116,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         if type(ra) is numpy.ndarray:
             chipNameLIst = chipNameList * len(ra)
 
-        xx, yy = calculatePixelCoordiantes(ra=ra, dec=dec, chipNames=chipNameList,
+        xx, yy = calculatePixelCoordinates(ra=ra, dec=dec, chipNames=chipNameList,
                                             obs_metadata=self.obs_metadata,
                                             epoch=self.epoch,
                                             camera = self.afwCamera)
@@ -118,7 +139,8 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         @param [out] _newWcs is a WCS identical to self, but with the origin
         in pixel space moved to the specified origin
         """
-        _newWcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch)
+        _newWcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch,
+                                       photParams=self.photParams, wcs=self._tanSipWcs)
         _newWcs.crpix1 = origin.x
         _newWcs.crpix2 = origin.y
         _newWcs.fitsHeader.set('CRPIX1', origin.x)
@@ -534,7 +556,33 @@ class GalSimDetector(object):
         """WCS corresponding to this detector"""
         if self._wcs is None:
             self._wcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, \
-                                             self.obs_metadata, self.epoch)
+                                             self.obs_metadata, self.epoch,
+                                             photParams=self.photParams)
+
+
+            if re.match('R_[0-9]_[0-9]_S_[0-9]_[0-9]', self.fileName) is not None:
+                # This is an LSST camera; format the FITS header to feed through DM code
+
+                wcsName = self.fileName.replace('_','')
+                wcsName = wcsName.replace('S', '_S')
+
+                self._wcs.fitsHeader.set("CHIPID", wcsName)
+
+                obshistid = 9999
+
+                if self.obs_metadata.phoSimMetaData is not None:
+                    if 'Opsim_obshistid' in self.obs_metadata.phoSimMetaData:
+                        self._wcs.fitsHeader.set("OBSID", self.obs_metadata.phoSimMetaData['Opsim_obshistid'][0])
+                        obshistid = self.obs_metadata.phoSimMetaData['Opsim_obshistid'][0]
+
+                bp = self.obs_metadata.bandpass
+                if not isinstance(bp, list) and not isinstance(bp, numpy.ndarray):
+                    filt_num = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}[bp]
+                else:
+                    filt_num = 2
+
+                out_name = 'lsst_e_%d_f%d_%s_E000' % (obshistid, filt_num, wcsName)
+                self._wcs.fitsHeader.set("OUTFILE", out_name)
 
         return self._wcs
 

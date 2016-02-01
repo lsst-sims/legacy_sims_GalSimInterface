@@ -14,7 +14,7 @@ class GalSimCelestialObject(object):
 
     def __init__(self, galSimType, sed, ra, dec, xPupil, yPupil,
                  halfLightRadius, minorAxis, majorAxis, positionAngle,
-                 sindex):
+                 sindex, fluxDict):
         """
         @param [in] galSimType is a string, either 'pointSource' or 'sersic' denoting the shape of the object
 
@@ -40,6 +40,10 @@ class GalSimCelestialObject(object):
         @param [in] positionAngle is the position angle of the object in radians
 
         @param [in] sindex is the sersic index of the object
+
+        @param [in] fluxDict is a dict of electron count (not ADU) values keyed to bandpass names,
+        i.e. {'u':44000, 'g':41000} would mean the source produces 44000 electrons in the
+        u band and 41000 electrons in the g band.
         """
 
         self._galSimType = galSimType
@@ -56,6 +60,7 @@ class GalSimCelestialObject(object):
         self._majorAxisRadians = majorAxis
         self._positionAngleRadians = positionAngle
         self._sindex = sindex
+        self._fluxDict = fluxDict
 
 
     @property
@@ -196,3 +201,15 @@ class GalSimCelestialObject(object):
     def sindex(self, value):
         raise RuntimeError("You should not be setting sindex on the fly; " \
         + "just instantiate a new GalSimCelestialObject")
+
+
+    def flux(self, band):
+        """
+        @param [in] band is the name of a bandpass
+
+        @param [out] the ADU in that bandpass, as stored in self._fluxDict
+        """
+        if band not in self._fluxDict:
+            raise RuntimeError("Asked GalSimCelestialObject for flux in %s; that band does not exist" % band)
+
+        return self._fluxDict[band]
