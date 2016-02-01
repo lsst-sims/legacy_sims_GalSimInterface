@@ -302,8 +302,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         positionAngle = self.column_by_name('positionAngle')
         sindex = self.column_by_name('sindex')
 
-        #print 'need to draw ',len(objectNames)
-
         #correct the SEDs for redshift, dust, etc.  Return a list of Sed objects as defined in
         #sims_photUtils/../../Sed.py
         sedList = self._calculateGalSimSeds()
