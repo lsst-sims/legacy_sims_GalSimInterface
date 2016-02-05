@@ -6,29 +6,30 @@ from lsst.sims.GalSimInterface import GalSimStars, GalSimGalaxies, GalSimAgn
 
 from lsst.sims.catalogs.measures.instance import compound
 from lsst.sims.utils import _observedFromICRS
-from lsst.sims.catUtils.mixins import AstrometryGalaxies, AstrometryStars
 
 
 __all__ = ["GalSimPhoSimStars", "GalSimPhoSimGalaxies", "GalSimPhoSimAgn"]
 
 
-class GalSimAstrometryStars(AstrometryStars):
+class GalSimAstrometryStars(object):
 
     @compound('raPhoSim','decPhoSim')
     def get_phoSimCoordinates(self):
         ff = self.column_by_name('fitsFiles') # to force the catalog to draw the GalSim images
-        return self.observedStellarCoordinates(includeRefraction = False)
+        raObs, decObs = self.observedStellarCoordinates(includeRefraction = False)
+        return self._dePrecess(raObs, decObs, self.obs_metadata)
 
 
-class GalSimAstrometryGalaxies(AstrometryGalaxies):
+class GalSimAstrometryGalaxies(object):
 
     @compound('raPhoSim','decPhoSim')
     def get_phoSimCoordinates(self):
         ff = self.column_by_name('fitsFiles') # to force the catalog to draw the GalSim images
         ra = self.column_by_name('raJ2000')
         dec = self.column_by_name('decJ2000')
-        return _observedFromICRS(ra, dec, includeRefraction = False, obs_metadata=self.obs_metadata,
-                                epoch=self.db_obj.epoch)
+        raObs, decObs =  _observedFromICRS(ra, dec, includeRefraction = False, obs_metadata=self.obs_metadata,
+                                           epoch=self.db_obj.epoch)
+        return self._dePrecess(raObs, decObs, self.obs_metadata)
 
 
 class GalSimPhoSimStars(GalSimAstrometryStars, PhoSimCatalogPoint, GalSimStars):
