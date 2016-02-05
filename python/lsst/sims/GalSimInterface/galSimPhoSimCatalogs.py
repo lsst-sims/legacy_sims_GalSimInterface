@@ -1,19 +1,17 @@
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogPoint
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
-from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimAstrometryBase
 
 from lsst.sims.GalSimInterface import GalSimStars, GalSimGalaxies, GalSimAgn
 
 from lsst.sims.catalogs.measures.instance import compound
 from lsst.sims.utils import _observedFromICRS
-from lsst.sims.catUtils.mixins import AstrometryGalaxies, AstrometryStars
 
 
 __all__ = ["GalSimPhoSimStars", "GalSimPhoSimGalaxies", "GalSimPhoSimAgn"]
 
 
-class GalSimAstrometryStars(PhoSimAstrometryBase, AstrometryStars):
+class GalSimAstrometryStars(object):
 
     @compound('raPhoSim','decPhoSim')
     def get_phoSimCoordinates(self):
@@ -22,7 +20,7 @@ class GalSimAstrometryStars(PhoSimAstrometryBase, AstrometryStars):
         return self._dePrecess(raObs, decObs, self.obs_metadata)
 
 
-class GalSimAstrometryGalaxies(PhoSimAstrometryBase, AstrometryGalaxies):
+class GalSimAstrometryGalaxies(object):
 
     @compound('raPhoSim','decPhoSim')
     def get_phoSimCoordinates(self):
