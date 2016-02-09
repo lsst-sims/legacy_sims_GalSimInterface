@@ -338,12 +338,12 @@ class GalSimInterfaceTest(unittest.TestCase):
                     #statistical imprecision in the GalSim drawing routine
                     #to violate the condition below
                     drawnDetectors += 1
-                    msg = 'controlCounts %e galsimCounts %e sigma %e; %s ' % \
-                    (controlCounts[ff], galsimCounts[ff],countSigma,nameRoot)
+                    msg = 'controlCounts %e galsimCounts %e sigma %e; delta/sigma %e; %s ' % \
+                    (controlCounts[ff], galsimCounts[ff],countSigma,(controlCounts[ff]-galsimCounts[ff])/countSigma,nameRoot)
                     if catalog.noise_and_background is not None and catalog.noise_and_background.addBackground:
                         msg += 'background per pixel %e pixels %e %s' % (backgroundCounts[ff[-6]], galsimPixels[ff],ff)
 
-                    self.assertLess(numpy.abs(controlCounts[ff] - galsimCounts[ff]), 3.0*countSigma,
+                    self.assertLess(numpy.abs(controlCounts[ff] - galsimCounts[ff]), 4.0*countSigma,
                                     msg=msg)
                 elif galsimCounts[ff] > 0.001:
                     unDrawnDetectors += 1

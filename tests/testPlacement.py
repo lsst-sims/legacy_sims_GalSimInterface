@@ -30,9 +30,9 @@ class placementCatalog(GalSimStars):
 
     bandpassNames = ['u']
 
-    def get_galacticRv(self):
+    def get_galacticAv(self):
         ra = self.column_by_name('raJ2000')
-        return numpy.array([3.1]*len(ra))
+        return numpy.array([0.1]*len(ra))
 
     default_columns = GalSimStars.default_columns
 
