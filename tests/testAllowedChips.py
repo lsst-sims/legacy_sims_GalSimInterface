@@ -33,9 +33,9 @@ class allowedChipsCatalog(GalSimStars):
 
     bandpassNames = ['u']
 
-    def get_galacticRv(self):
+    def get_galacticAv(self):
         ra = self.column_by_name('raJ2000')
-        return np.array([3.1]*len(ra))
+        return np.array([0.1]*len(ra))
 
     default_columns = GalSimStars.default_columns
 

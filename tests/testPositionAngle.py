@@ -35,6 +35,7 @@ class paCat(GalSimGalaxies):
     default_columns = [('sedFilename', 'sed_flat.txt', (str, 12)),
                        ('magNorm', 21.0, float),
                        ('galacticAv', 0.1, float),
+                       ('galacticRv', 3.1, float),
                        ('galSimType', 'sersic', (str,11)),
                        ('internalAv', 0.1, float),
                        ('internalRv', 3.1, float),
