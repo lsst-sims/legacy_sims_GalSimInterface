@@ -169,7 +169,7 @@ class GalSimFwhmTest(unittest.TestCase):
                                   mjd = 49250.0)
 
         create_text_catalog(obs, dbFileName, numpy.array([3.0]), \
-                            numpy.array([1.0]), mag_norm=[14.0])
+                            numpy.array([1.0]), mag_norm=[13.0])
 
         db = fwhmFileDBObj(dbFileName, runtable='test')
 
