@@ -139,7 +139,10 @@ class GalSimFwhmTest(unittest.TestCase):
             bb = distanceList[ix] - mm * fluxList[ix]
             distanceToRight = mm*half_flux + bb
 
-            self.assertLess(numpy.abs(distanceToLeft+distanceToRight-fwhm), 0.1*fwhm)
+            msg = "measured fwhm %e; expected fwhm %e; maxFlux %e\n" % \
+            (distanceToLeft+distanceToRight, fwhm, maxFlux)
+
+            self.assertLess(numpy.abs(distanceToLeft+distanceToRight-fwhm), 0.1*fwhm, msg=msg)
 
 
     def testFwhmOfImage(self):
