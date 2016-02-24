@@ -80,7 +80,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         ['detector.dat', 'm1.dat', 'm2.dat', 'm3.dat', 'lens1.dat', 'lens2.dat', 'lens3.dat']
 
         atomTransmissionName is the name of the file in bandpass_directory that contains the
-        atmostpheric transmissivity, e.g. 'atmos.dat'
+        atmostpheric transmissivity, e.g. 'atmos_std.dat'
 
     4) Telescope parameters such as exposure time, area, and gain are stored in the
     GalSim InstanceCatalog member variable photParams, which is an instantiation of
@@ -136,7 +136,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     bandpassRoot = 'filter_'
     componentList = ['detector.dat', 'm1.dat', 'm2.dat', 'm3.dat',
                      'lens1.dat', 'lens2.dat', 'lens3.dat']
-    atmoTransmissionName = 'atmos.dat'
+    atmoTransmissionName = 'atmos_std.dat'
 
     # allowed_chips is a list of the names of the detectors we actually want to draw.
     # If 'None', then all chips are drawn.
