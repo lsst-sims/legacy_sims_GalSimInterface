@@ -47,7 +47,7 @@ class placementCatalog(GalSimStars):
 class GalSimPlacementTest(unittest.TestCase):
 
     def setUp(self):
-        self.magNorm=20.0
+        self.magNorm=19.0
 
     def check_placement(self, imageName, raList, decList, fwhmList,
                         countList, gain,
