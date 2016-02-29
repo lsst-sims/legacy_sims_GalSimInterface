@@ -40,7 +40,7 @@ def create_text_catalog(obs, file_name, raDisplacement, decDisplacement, \
         hlr = [2.0]*len(raDisplacement)
 
     if mag_norm is None:
-        mag_norm = [21.0]*len(raDisplacement)
+        mag_norm = [20.0]*len(raDisplacement)
 
     if pa is None:
         pa = [0.0]*len(raDisplacement)
