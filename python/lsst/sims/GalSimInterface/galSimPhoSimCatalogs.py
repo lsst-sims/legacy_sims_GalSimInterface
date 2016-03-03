@@ -44,6 +44,7 @@ class GalSimPhoSimStars(GalSimAstrometryStars, PhoSimCatalogPoint, GalSimStars):
                        ('galacticExtinctionModel', 'CCM', (str,3)),
                        ('internalExtinctionModel', 'none', (str,4)),
                        ('galacticAv', 0.1, float),
+                       ('galacticRv', 3.1, float),
                        ('galSimType', 'pointSource', (str,11)),
                        ('internalAv', 0.0, float),
                        ('internalRv', 0.0, float),
@@ -62,7 +63,8 @@ class GalSimPhoSimGalaxies(GalSimAstrometryGalaxies, PhoSimCatalogSersic2D, GalS
     """
 
     default_columns = [('shear1', 0., float), ('shear2', 0., float), ('kappa', 0., float),
-                       ('raOffset', 0., float), ('decOffset', 0., float), ('galacticAv', 0.1, float),
+                       ('raOffset', 0., float), ('decOffset', 0., float),
+                       ('galacticAv', 0.1, float), ('galacticRv', 3.1, float),
                        ('galacticExtinctionModel', 'CCM', (str,3)),
                        ('internalExtinctionModel', 'CCM', (str,3)), ('internalAv', 0., float),
                        ('internalRv', 3.1, float),
@@ -80,6 +82,7 @@ class GalSimPhoSimAgn(GalSimAstrometryGalaxies, PhoSimCatalogZPoint, GalSimAgn):
                        ('raOffset', 0., float), ('decOffset', 0., float), ('spatialmodel', 'ZPOINT', (str, 6)),
                        ('galacticExtinctionModel', 'CCM', (str,3)),
                        ('galacticAv', 0.1, float),
+                       ('galacticRv', 3.1, float),
                        ('internalExtinctionModel', 'none', (str,4)),
                        ('galSimType', 'pointSource', (str,11)),
                        ('majorAxis', 0.0, float),
