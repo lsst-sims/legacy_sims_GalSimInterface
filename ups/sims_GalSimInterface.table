@@ -1,4 +1,4 @@
-setupRequired(GalSim)
+setupRequired(galsim)
 setupRequired(meas_astrom)
 setupRequired(afw)
 setupRequired(sims_utils)
