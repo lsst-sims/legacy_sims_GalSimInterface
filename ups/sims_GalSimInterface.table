@@ -1,4 +1,5 @@
 setupRequired(galsim)
+setupRequired(astropy)
 setupRequired(meas_astrom)
 setupRequired(afw)
 setupRequired(sims_utils)
