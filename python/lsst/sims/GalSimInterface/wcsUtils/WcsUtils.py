@@ -92,9 +92,9 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
                                             epoch=epoch,
                                             includeDistortion=False)
 
-    crPix1, crPix2 = _pixelCoordsFromRaDec(numpy.array([obs_metadata._pointingRA]),
-                                           numpy.array([obs_metadata._pointingDec]),
-                                           chipNames=[afwDetector.getName()], camera=afwCamera,
+    crPix1, crPix2 = _pixelCoordsFromRaDec(obs_metadata._pointingRA,
+                                           obs_metadata._pointingDec,
+                                           chipName=afwDetector.getName(), camera=afwCamera,
                                            obs_metadata=obs_metadata, epoch=epoch,
                                            includeDistortion=False)
 
@@ -111,8 +111,8 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     uList = radiusList*numpy.sin(lonList)
     vList = -radiusList*numpy.cos(lonList)
 
-    delta_xList = xPixList - crPix1[0]
-    delta_yList = yPixList - crPix2[0]
+    delta_xList = xPixList - crPix1
+    delta_yList = yPixList - crPix2
 
     bVector = numpy.array([
                           (delta_xList*uList).sum(),
@@ -137,15 +137,15 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     crValPoint = afwGeom.Point2D(obs_metadata.pointingRA,
                                  obs_metadata.pointingDec)
 
-    crPixPoint = afwGeom.Point2D(crPix1[0], crPix2[0])
+    crPixPoint = afwGeom.Point2D(crPix1, crPix2)
 
     fitsHeader = dafBase.PropertyList()
     fitsHeader.set("RADESYS", "ICRS")
     fitsHeader.set("EQUINOX", epoch)
     fitsHeader.set("CRVAL1", obs_metadata.pointingRA)
     fitsHeader.set("CRVAL2", obs_metadata.pointingDec)
-    fitsHeader.set("CRPIX1", crPix1[0]+1) # the +1 is because LSST uses 0-indexed images
-    fitsHeader.set("CRPIX2", crPix2[0]+1) # FITS files use 1-indexed images
+    fitsHeader.set("CRPIX1", crPix1+1) # the +1 is because LSST uses 0-indexed images
+    fitsHeader.set("CRPIX2", crPix2+1) # FITS files use 1-indexed images
     fitsHeader.set("CTYPE1", "RA---TAN")
     fitsHeader.set("CTYPE2", "DEC--TAN")
     fitsHeader.setDouble("CD1_1", coeffs[0])

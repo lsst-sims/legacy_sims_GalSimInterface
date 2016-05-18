@@ -318,9 +318,9 @@ class GalSimInterpreter(object):
 
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
 
-                xPix, yPix = pixelCoordsFromPupilCoords(numpy.array([gsObject.xPupilRadians]),
-                                                        numpy.array([gsObject.yPupilRadians]),
-                                                        chipNames=[detector.name],
+                xPix, yPix = pixelCoordsFromPupilCoords(gsObject.xPupilRadians,
+                                                        gsObject.yPupilRadians,
+                                                        chipName=detector.name,
                                                         camera=detector.afwCamera)
 
                 obj = centeredObj.copy()
@@ -330,7 +330,7 @@ class GalSimInterpreter(object):
 
                 self.detectorImages[name] = obj.drawImage(method='phot',
                                                           gain=detector.photParams.gain,
-                                                          offset=galsim.PositionD(xPix[0]-detector.xCenterPix, yPix[0]-detector.yCenterPix),
+                                                          offset=galsim.PositionD(xPix-detector.xCenterPix, yPix-detector.yCenterPix),
                                                           rng=self._rng,
                                                           image=self.detectorImages[name],
                                                           add_to_image=True)

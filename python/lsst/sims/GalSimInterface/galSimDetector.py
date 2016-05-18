@@ -116,7 +116,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         if type(ra) is numpy.ndarray:
             chipNameLIst = chipNameList * len(ra)
 
-        xx, yy = calculatePixelCoordinates(ra=ra, dec=dec, chipNames=chipNameList,
+        xx, yy = calculatePixelCoordinates(ra=ra, dec=dec, chipName=chipNameList,
                                             obs_metadata=self.obs_metadata,
                                             epoch=self.epoch,
                                             camera = self.afwCamera)
@@ -265,7 +265,7 @@ class GalSimDetector(object):
             raLocal = numpy.array([ra])
             decLocal = numpy.array([dec])
 
-        xPix, yPix = _pixelCoordsFromRaDec(raLocal, decLocal, chipNames=nameList,
+        xPix, yPix = _pixelCoordsFromRaDec(raLocal, decLocal, chipName=nameList,
                                            obs_metadata=self._obs_metadata,
                                            epoch=self._epoch,
                                            camera=self._afwCamera)
@@ -298,7 +298,7 @@ class GalSimDetector(object):
             xp = numpy.array([xPupil])
             yp = numpy.array([yPupil])
 
-        xPix, yPix = pixelCoordsFromPupilCoords(xp, yp, chipNames=nameList,
+        xPix, yPix = pixelCoordsFromPupilCoords(xp, yp, chipName=nameList,
                                                 camera=self._afwCamera)
 
         return xPix, yPix

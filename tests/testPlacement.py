@@ -101,7 +101,7 @@ class GalSimPlacementTest(unittest.TestCase):
 
         nameList = [detector.getName()]*len(raList)
         xPixList, yPixList = _pixelCoordsFromRaDec(raList, decList,
-                                                   chipNames=nameList,
+                                                   chipName=nameList,
                                                    camera=camera,
                                                    obs_metadata=obs,
                                                    epoch=epoch)

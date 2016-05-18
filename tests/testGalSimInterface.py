@@ -777,13 +777,13 @@ class GalSimInterfaceTest(unittest.TestCase):
                 for detector in cat.galSimInterpreter.detectors:
                     centeredObj = cat.galSimInterpreter.PSF.applyPSF(xPupil=xPupil, yPupil=yPupil)
 
-                    xPix, yPix = pixelCoordsFromPupilCoords(numpy.array([radiansFromArcsec(xPupil)]),
-                                                            numpy.array([radiansFromArcsec(yPupil)]),
-                                                            chipNames = [detector.name],
+                    xPix, yPix = pixelCoordsFromPupilCoords(radiansFromArcsec(xPupil),
+                                                            radiansFromArcsec(yPupil),
+                                                            chipName = detector.name,
                                                             camera = detector.afwCamera)
 
-                    dx = xPix[0] - detector.xCenterPix
-                    dy = yPix[0] - detector.yCenterPix
+                    dx = xPix - detector.xCenterPix
+                    dy = yPix - detector.yCenterPix
                     obj = centeredObj.withFlux(adu*detector.photParams.gain)
                     localImage = cat.galSimInterpreter.blankImage(detector=detector)
                     localImage = obj.drawImage(wcs=detector.wcs, method='phot',
