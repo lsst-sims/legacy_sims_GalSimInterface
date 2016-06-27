@@ -1,6 +1,6 @@
 import re
 import galsim
-import numpy
+import numpy as np
 import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 from lsst.sims.utils import arcsecFromRadians
@@ -59,7 +59,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         if self.obs_metadata.bandpass is not None:
             if not isinstance(self.obs_metadata.bandpass, list) and not \
-                isinstance(self.obs_metadata.bandpass, numpy.ndarray):
+                isinstance(self.obs_metadata.bandpass, np.ndarray):
 
                 self.fitsHeader.set("FILTER", self.obs_metadata.bandpass)
 
@@ -91,7 +91,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         chipNameList = [self.afwDetector.getName()]
 
-        if type(x) is numpy.ndarray:
+        if type(x) is np.ndarray:
             chipNameList = chipNameList * len(x)
 
         ra, dec = _raDecFromPixelCoords(x + self.afw_crpix1, y + self.afw_crpix2, chipNameList,
@@ -99,7 +99,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
                                         obs_metadata=self.obs_metadata,
                                         epoch=self.epoch)
 
-        if type(x) is numpy.ndarray:
+        if type(x) is np.ndarray:
             return (ra, dec)
         else:
             return (ra[0], dec[0])
@@ -113,7 +113,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         chipNameList = [self.afwDetector.getName()]
 
-        if type(ra) is numpy.ndarray:
+        if type(ra) is np.ndarray:
             chipNameList = chipNameList * len(ra)
 
         xx, yy = _pixelCoordsFromRaDec(ra=ra, dec=dec, chipName=chipNameList,
@@ -121,7 +121,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
                                        epoch=self.epoch,
                                        camera = self.afwCamera)
 
-        if type(ra) is numpy.ndarray:
+        if type(ra) is np.ndarray:
             return (xx-self.crpix1, yy-self.crpix2)
         else:
             return (xx[0]-self.crpix1, yy-self.crpix2)
@@ -250,13 +250,13 @@ class GalSimDetector(object):
         """
 
         nameList = [self.name]
-        if type(ra) is numpy.ndarray:
+        if type(ra) is np.ndarray:
             nameList = nameList*len(ra)
             raLocal = ra
             decLocal = dec
         else:
-            raLocal = numpy.array([ra])
-            decLocal = numpy.array([dec])
+            raLocal = np.array([ra])
+            decLocal = np.array([dec])
 
         xPix, yPix = _pixelCoordsFromRaDec(raLocal, decLocal, chipName=nameList,
                                            obs_metadata=self._obs_metadata,
@@ -281,13 +281,13 @@ class GalSimDetector(object):
         """
 
         nameList = [self._name]
-        if type(xPupil) is numpy.ndarray:
+        if type(xPupil) is np.ndarray:
             nameList = nameList*len(xPupil)
             xp = xPupil
             yp = yPupil
         else:
-            xp = numpy.array([xPupil])
-            yp = numpy.array([yPupil])
+            xp = np.array([xPupil])
+            yp = np.array([yPupil])
 
         xPix, yPix = pixelCoordsFromPupilCoords(xp, yp, chipName=nameList,
                                                 camera=self._afwCamera)
@@ -544,7 +544,7 @@ class GalSimDetector(object):
                         obshistid = self.obs_metadata.phoSimMetaData['Opsim_obshistid'][0]
 
                 bp = self.obs_metadata.bandpass
-                if not isinstance(bp, list) and not isinstance(bp, numpy.ndarray):
+                if not isinstance(bp, list) and not isinstance(bp, np.ndarray):
                     filt_num = {'u': 0, 'g': 1, 'r': 2, 'i': 3, 'z': 4, 'y': 5}[bp]
                 else:
                     filt_num = 2
