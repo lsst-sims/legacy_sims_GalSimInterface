@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 from lsst.sims.coordUtils import _pixelCoordsFromRaDec, _raDecFromPixelCoords
 from lsst.afw.cameraGeom import TAN_PIXELS, FOCAL_PLANE
 import lsst.afw.geom as afwGeom
@@ -75,14 +75,14 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     dx = 0.5*(xTanPixMax-xTanPixMin)
     dy = 0.5*(yTanPixMax-yTanPixMin)
 
-    for xx in numpy.arange(xTanPixMin, xTanPixMax+0.5*dx, dx):
-        for yy in numpy.arange(yTanPixMin, yTanPixMax+0.5*dy, dy):
+    for xx in np.arange(xTanPixMin, xTanPixMax+0.5*dx, dx):
+        for yy in np.arange(yTanPixMin, yTanPixMax+0.5*dy, dy):
             xPixList.append(xx)
             yPixList.append(yy)
             nameList.append(afwDetector.getName())
 
-    raList, decList = _raDecFromPixelCoords(numpy.array(xPixList),
-                                            numpy.array(yPixList),
+    raList, decList = _raDecFromPixelCoords(np.array(xPixList),
+                                            np.array(yPixList),
                                             nameList,
                                             camera=afwCamera,
                                             obs_metadata=obs_metadata,
@@ -104,32 +104,32 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     #
     # Calabretta and Greisen (2002), A&A 395, p. 1077
     #
-    radiusList = 180.0/(numpy.tan(latList)*numpy.pi)
-    uList = radiusList*numpy.sin(lonList)
-    vList = -radiusList*numpy.cos(lonList)
+    radiusList = 180.0/(np.tan(latList)*np.pi)
+    uList = radiusList*np.sin(lonList)
+    vList = -radiusList*np.cos(lonList)
 
     delta_xList = xPixList - crPix1
     delta_yList = yPixList - crPix2
 
-    bVector = numpy.array([
-                          (delta_xList*uList).sum(),
-                          (delta_yList*uList).sum(),
-                          (delta_xList*vList).sum(),
-                          (delta_yList*vList).sum()
-                          ])
+    bVector = np.array([
+                       (delta_xList*uList).sum(),
+                       (delta_yList*uList).sum(),
+                       (delta_xList*vList).sum(),
+                       (delta_yList*vList).sum()
+                       ])
 
     offDiag = (delta_yList*delta_xList).sum()
-    xsq = numpy.power(delta_xList, 2).sum()
-    ysq = numpy.power(delta_yList, 2).sum()
+    xsq = np.power(delta_xList, 2).sum()
+    ysq = np.power(delta_yList, 2).sum()
 
-    aMatrix = numpy.array([
-                          [xsq, offDiag, 0.0, 0.0],
-                          [offDiag, ysq, 0.0, 0.0],
-                          [0.0, 0.0, xsq, offDiag],
-                          [0.0, 0.0, offDiag, ysq]
-                          ])
+    aMatrix = np.array([
+                       [xsq, offDiag, 0.0, 0.0],
+                       [offDiag, ysq, 0.0, 0.0],
+                       [0.0, 0.0, xsq, offDiag],
+                       [0.0, 0.0, offDiag, ysq]
+                       ])
 
-    coeffs = numpy.linalg.solve(aMatrix, bVector)
+    coeffs = np.linalg.solve(aMatrix, bVector)
 
     fitsHeader = dafBase.PropertyList()
     fitsHeader.set("RADESYS", "ICRS")
