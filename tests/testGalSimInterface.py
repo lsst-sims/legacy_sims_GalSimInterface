@@ -7,10 +7,9 @@ import galsim
 from collections import OrderedDict
 import lsst.utils
 import lsst.utils.tests as utilsTests
-from lsst.sims.utils import arcsecFromRadians, radiansFromArcsec
+from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
-from lsst.sims.catalogs.measures.instance import InstanceCatalog
 from lsst.sims.catalogs.generation.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.GalSimInterface import GalSimGalaxies, GalSimStars, GalSimAgn, \
@@ -18,6 +17,7 @@ from lsst.sims.GalSimInterface import GalSimGalaxies, GalSimStars, GalSimAgn, \
 from lsst.sims.catUtils.utils import calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj, \
                                      testGalaxyAgnDBObj, testStarsDBObj
 import lsst.afw.image as afwImage
+
 
 class testGalaxyCatalog(GalSimGalaxies):
     """
@@ -60,6 +60,7 @@ class testStarCatalog(GalSimStars):
 
     PSF = SNRdocumentPSF()
 
+
 class testAgnCatalog(GalSimAgn):
     """
     Wraps the GalSimAgn class.  Adds columns to the output
@@ -80,11 +81,13 @@ class testAgnCatalog(GalSimAgn):
 
     PSF = SNRdocumentPSF()
 
+
 class psfCatalog(testGalaxyCatalog):
     """
     Adds a PSF to testGalaxyCatalog
     """
     PSF = SNRdocumentPSF()
+
 
 class backgroundCatalog(testGalaxyCatalog):
     """
@@ -92,6 +95,7 @@ class backgroundCatalog(testGalaxyCatalog):
     """
     PSF = SNRdocumentPSF()
     noise_and_background = ExampleCCDNoise(addNoise=False, seed=42)
+
 
 class noisyCatalog(testGalaxyCatalog):
     """
@@ -107,17 +111,18 @@ class testFakeBandpassCatalog(testStarCatalog):
     """
     bandpassNames = ['x', 'y', 'z']
 
-    bandpassDir = os.path.join(lsst.utils.getPackageDir('sims_catUtils'),'tests','testThroughputs')
+    bandpassDir = os.path.join(lsst.utils.getPackageDir('sims_catUtils'), 'tests', 'testThroughputs')
     bandpassRoot = 'fakeFilter_'
     componentList = ['fakeM1.dat', 'fakeM2.dat']
     atmoTransmissionName = 'fakeAtmo.dat'
     skySEDname = 'fakeSky.dat'
 
+
 class testFakeSedCatalog(testFakeBandpassCatalog):
     """
     tests the GalSim interface on fake seds and bandpasses
     """
-    sedDir = os.path.join(lsst.utils.getPackageDir('sims_catUtils'),'tests','testSeds')
+    sedDir = os.path.join(lsst.utils.getPackageDir('sims_catUtils'), 'tests', 'testSeds')
 
     def get_sedFilepath(self):
         """
@@ -125,9 +130,9 @@ class testFakeSedCatalog(testFakeBandpassCatalog):
         in testSeds/
         """
 
-        nameMap = {'km20_5750.fits_g40_5790':'fakeSed1.dat',
-                   'm2.0Full.dat':'fakeSed2.dat',
-                   'bergeron_6500_85.dat_6700':'fakeSed3.dat'}
+        nameMap = {'km20_5750.fits_g40_5790': 'fakeSed1.dat',
+                   'm2.0Full.dat': 'fakeSed2.dat',
+                   'bergeron_6500_85.dat_6700': 'fakeSed3.dat'}
 
         rawNames = self.column_by_name('sedFilename')
         return numpy.array([nameMap[nn] for nn in rawNames])
@@ -156,8 +161,6 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         cls.driver = 'sqlite'
 
-
-
     @classmethod
     def tearDownClass(cls):
         if os.path.exists(cls.dbName):
@@ -170,10 +173,9 @@ class GalSimInterfaceTest(unittest.TestCase):
         del cls.m5
         del cls.seeing
 
-
     def getFilesAndBandpasses(self, catalog, nameRoot=None,
-                                bandpassDir=os.path.join(lsst.utils.getPackageDir('throughputs'),'baseline'),
-                                bandpassRoot='total_',):
+                              bandpassDir=os.path.join(lsst.utils.getPackageDir('throughputs'), 'baseline'),
+                              bandpassRoot='total_',):
 
         """
         Take a GalSimCatalog.  Return a list of fits files and and OrderedDict of bandpasses associated
@@ -193,16 +195,16 @@ class GalSimInterfaceTest(unittest.TestCase):
         filters in this catalog.
         """
 
-        #write the fits files
+        # write the fits files
         catalog.write_images(nameRoot=nameRoot)
 
-        #a list of bandpasses over which we are integraging
+        # a list of bandpasses over which we are integraging
         listOfFilters = []
         listOfFiles = []
 
-        #read in the names of all of the written fits files directly from the
-        #InstanceCatalog's GalSimInterpreter
-        #Use AFW to read in the FITS files and calculate the ADU
+        # read in the names of all of the written fits files directly from the
+        # InstanceCatalog's GalSimInterpreter
+        # Use AFW to read in the FITS files and calculate the ADU
         for name in catalog.galSimInterpreter.detectorImages:
             if nameRoot is not None:
                 name = nameRoot+'_'+name
@@ -214,16 +216,15 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         bandpassDict = OrderedDict()
         for filterName in listOfFilters:
-            bandpassName=os.path.join(bandpassDir, bandpassRoot + filterName + '.dat')
+            bandpassName = os.path.join(bandpassDir, bandpassRoot + filterName + '.dat')
             bandpass = Bandpass()
             bandpass.readThroughput(bandpassName)
             bandpassDict[filterName] = bandpass
 
         return listOfFiles, bandpassDict
 
-
     def catalogTester(self, catName=None, catalog=None, nameRoot=None,
-                      bandpassDir=os.path.join(lsst.utils.getPackageDir('throughputs'),'baseline'),
+                      bandpassDir=os.path.join(lsst.utils.getPackageDir('throughputs'), 'baseline'),
                       bandpassRoot='total_',
                       sedDir=lsst.utils.getPackageDir('sims_sed_library')):
         """
@@ -247,22 +248,22 @@ class GalSimInterfaceTest(unittest.TestCase):
             os.path.join(bandpassDir, bandpassRoot + bandpassName + '.dat')
         """
 
-        #a dictionary of ADU for each FITS file as calculated by GalSim
-        #(indexed on the name of the FITS file)
+        # a dictionary of ADU for each FITS file as calculated by GalSim
+        # (indexed on the name of the FITS file)
         galsimCounts = {}
         galsimPixels = {}
 
-        #a dictionary of ADU for each FITS file as calculated by sims_photUtils
-        #(indexed on the name of the FITS file)
+        # a dictionary of ADU for each FITS file as calculated by sims_photUtils
+        # (indexed on the name of the FITS file)
         controlCounts = {}
 
         listOfFiles, bandpassDict = self.getFilesAndBandpasses(catalog, nameRoot=nameRoot,
-                                                                 bandpassDir=bandpassDir,
-                                                                 bandpassRoot=bandpassRoot)
+                                                               bandpassDir=bandpassDir,
+                                                               bandpassRoot=bandpassRoot)
 
-        #read in the names of all of the written fits files directly from the
-        #InstanceCatalog's GalSimInterpreter
-        #Use AFW to read in the FITS files and calculate the ADU
+        # read in the names of all of the written fits files directly from the
+        # InstanceCatalog's GalSimInterpreter
+        # Use AFW to read in the FITS files and calculate the ADU
         for name in listOfFiles:
             im = afwImage.ImageF(name)
             imArr = im.getArray()
@@ -272,11 +273,13 @@ class GalSimInterfaceTest(unittest.TestCase):
             os.unlink(name)
 
         if catalog.noise_and_background is not None and catalog.noise_and_background.addBackground:
-            #calculate the expected skyCounts in each filter
+            # calculate the expected skyCounts in each filter
             backgroundCounts = {}
             for filterName in bandpassDict.keys():
-                cts = calcSkyCountsPerPixelForM5(catalog.obs_metadata.m5[filterName], bandpassDict[filterName],
-                                             catalog.photParams, FWHMeff=catalog.obs_metadata.seeing[filterName])
+                cts = calcSkyCountsPerPixelForM5(catalog.obs_metadata.m5[filterName],
+                                                 bandpassDict[filterName],
+                                                 catalog.photParams,
+                                                 FWHMeff=catalog.obs_metadata.seeing[filterName])
 
                 backgroundCounts[filterName] = cts
 
@@ -284,8 +287,8 @@ class GalSimInterfaceTest(unittest.TestCase):
                 filterName = name[-6]
                 controlCounts[name] += backgroundCounts[filterName] * galsimPixels[name]
 
-        #Read in the InstanceCatalog.  For each object in the catalog, use sims_photUtils
-        #to calculate the ADU.  Keep track of how many ADU should be in each FITS file.
+        # Read in the InstanceCatalog.  For each object in the catalog, use sims_photUtils
+        # to calculate the ADU.  Keep track of how many ADU should be in each FITS file.
         with open(catName, 'r') as testFile:
             lines = testFile.readlines()
             for line in lines:
@@ -303,30 +306,33 @@ class GalSimInterfaceTest(unittest.TestCase):
 
                     for name in listOfFileNames:
 
-                        #guard against objects being written on one
-                        #chip more than once
+                        # guard against objects being written on one
+                        # chip more than once
                         msg = '%s was written on %s more than once' % (sedName, name)
                         self.assertNotIn(name, alreadyWritten, msg=msg)
                         alreadyWritten.append(name)
 
-                        #loop over all of the detectors on which an object fell
-                        #(this is not a terribly great idea, since our conservative implementation
-                        #of GalSimInterpreter._doesObjectImpingeOnDetector means that some detectors
-                        #will be listed here even though the object does not illumine them)
+                        # loop over all of the detectors on which an object fell
+                        # (this is not a terribly great idea, since our conservative implementation
+                        # of GalSimInterpreter._doesObjectImpingeOnDetector means that some detectors
+                        # will be listed here even though the object does not illumine them)
                         for filterName in bandpassDict.keys():
-                            chipName = name.replace(':','_')
-                            chipName = chipName.replace(' ','_')
-                            chipName = chipName.replace(',','_')
+                            chipName = name.replace(':', '_')
+                            chipName = chipName.replace(' ', '_')
+                            chipName = chipName.replace(',', '_')
                             chipName = chipName.strip()
 
                             fullName = nameRoot+'_'+chipName+'_'+filterName+'.fits'
 
                             fullSedName = os.path.join(sedDir, sedName)
 
-                            controlCounts[fullName] += calcADUwrapper(sedName=fullSedName, bandpass=bandpassDict[filterName],
-                                                                        redshift=redshift, magNorm=magNorm,
-                                                                        internalAv=internalAv, internalRv=internalRv,
-                                                                        galacticAv=galacticAv, galacticRv=galacticRv)
+                            controlCounts[fullName] += calcADUwrapper(sedName=fullSedName,
+                                                                      bandpass=bandpassDict[filterName],
+                                                                      redshift=redshift, magNorm=magNorm,
+                                                                      internalAv=internalAv,
+                                                                      internalRv=internalRv,
+                                                                      galacticAv=galacticAv,
+                                                                      galacticRv=galacticRv)
 
             drawnDetectors = 0
             unDrawnDetectors = 0
@@ -334,24 +340,27 @@ class GalSimInterfaceTest(unittest.TestCase):
                 if controlCounts[ff] > 1000.0 and galsimCounts[ff] > 0.001:
                     countSigma = numpy.sqrt(controlCounts[ff]/catalog.photParams.gain)
 
-                    #because, for really dim images, there could be enough
-                    #statistical imprecision in the GalSim drawing routine
-                    #to violate the condition below
+                    # because, for really dim images, there could be enough
+                    # statistical imprecision in the GalSim drawing routine
+                    # to violate the condition below
                     drawnDetectors += 1
                     msg = 'controlCounts %e galsimCounts %e sigma %e; delta/sigma %e; %s ' % \
-                    (controlCounts[ff], galsimCounts[ff],countSigma,(controlCounts[ff]-galsimCounts[ff])/countSigma,nameRoot)
-                    if catalog.noise_and_background is not None and catalog.noise_and_background.addBackground:
-                        msg += 'background per pixel %e pixels %e %s' % (backgroundCounts[ff[-6]], galsimPixels[ff],ff)
+                          (controlCounts[ff], galsimCounts[ff], countSigma,
+                           (controlCounts[ff]-galsimCounts[ff])/countSigma, nameRoot)
+
+                    if catalog.noise_and_background is not None \
+                    and catalog.noise_and_background.addBackground:
+                        msg += 'background per pixel %e pixels %e %s' % \
+                               (backgroundCounts[ff[-6]], galsimPixels[ff], ff)
 
                     self.assertLess(numpy.abs(controlCounts[ff] - galsimCounts[ff]), 4.0*countSigma,
                                     msg=msg)
                 elif galsimCounts[ff] > 0.001:
                     unDrawnDetectors += 1
 
-            #to make sure we did not neglect more than one detector
+            # to make sure we did not neglect more than one detector
             self.assertLess(unDrawnDetectors, 2)
             self.assertGreater(drawnDetectors, 0)
-
 
     def compareCatalogs(self, cleanCatalog, noisyCatalog, gain, readnoise):
         """
@@ -370,11 +379,13 @@ class GalSimInterfaceTest(unittest.TestCase):
         cleanFileList, cleanBandpassDict = self.getFilesAndBandpasses(cleanCatalog, nameRoot='clean')
         noisyFileList, noisyBandpassDict = self.getFilesAndBandpasses(noisyCatalog, nameRoot='unclean')
 
-        #calculate the expected skyCounts in each filter
+        # calculate the expected skyCounts in each filter
         backgroundCounts = {}
         for filterName in noisyBandpassDict.keys():
-            cts = calcSkyCountsPerPixelForM5(noisyCatalog.obs_metadata.m5[filterName], noisyBandpassDict[filterName],
-                                         noisyCatalog.photParams, FWHMeff=noisyCatalog.obs_metadata.seeing[filterName])
+            cts = calcSkyCountsPerPixelForM5(noisyCatalog.obs_metadata.m5[filterName],
+                                             noisyBandpassDict[filterName],
+                                             noisyCatalog.photParams,
+                                             FWHMeff=noisyCatalog.obs_metadata.seeing[filterName])
 
             backgroundCounts[filterName] = cts
 
@@ -398,13 +409,13 @@ class GalSimInterfaceTest(unittest.TestCase):
             self.assertEqual(cleanIm.shape[1], noisyIm.shape[1], msg='images not same shape')
 
             var = cleanIm/gain + readnoise/(gain*gain)
-            totalVar = (numpy.power(noisyIm-cleanIm,2)/var).sum()
+            totalVar = (numpy.power(noisyIm-cleanIm, 2)/var).sum()
             totalMean = cleanIm.sum()
             ct = float(cleanIm.shape[0]*cleanIm.shape[1])
             totalVar = totalVar/ct
             totalMean = totalMean/ct
 
-            if totalMean>=100.0:
+            if totalMean >= 100.0:
                 countedImages += 1
                 self.assertLess(numpy.abs(totalVar-1.0), 0.05)
 
@@ -412,7 +423,6 @@ class GalSimInterfaceTest(unittest.TestCase):
             os.unlink(cleanName)
 
         self.assertGreater(countedImages, 0)
-
 
     def testGalaxyBulges(self):
         """
@@ -426,7 +436,6 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(catName):
             os.unlink(catName)
 
-
     def testGalaxyDisks(self):
         """
         Test that GalSimInterpreter puts the right number of counts on images of galaxy disks
@@ -438,7 +447,6 @@ class GalSimInterfaceTest(unittest.TestCase):
         self.catalogTester(catName=catName, catalog=cat, nameRoot='disk')
         if os.path.exists(catName):
             os.unlink(catName)
-
 
     def testStars(self):
         """
@@ -452,7 +460,6 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(catName):
             os.unlink(catName)
 
-
     def testFakeBandpasses(self):
         """
         Test GalSim catalog with alternate bandpasses
@@ -461,19 +468,18 @@ class GalSimInterfaceTest(unittest.TestCase):
         m5 = [22.0, 23.0, 25.0]
         seeing = [0.6, 0.5, 0.7]
         bandpassNames = ['x', 'y', 'z']
-        obs_metadata = ObservationMetaData(
-                       pointingRA=self.obs_metadata.pointingRA,
-                       pointingDec=self.obs_metadata.pointingDec,
-                       rotSkyPos=self.obs_metadata.rotSkyPos,
-                       mjd=self.obs_metadata.mjd,
-                       bandpassName=bandpassNames,
-                       m5=m5,
-                       seeing=seeing)
+        obs_metadata = ObservationMetaData(pointingRA=self.obs_metadata.pointingRA,
+                                           pointingDec=self.obs_metadata.pointingDec,
+                                           rotSkyPos=self.obs_metadata.rotSkyPos,
+                                           mjd=self.obs_metadata.mjd,
+                                           bandpassName=bandpassNames,
+                                           m5=m5,
+                                           seeing=seeing)
 
         stars = testStarsDBObj(driver=self.driver, database=self.dbName)
         cat = testFakeBandpassCatalog(stars, obs_metadata=obs_metadata)
         cat.write_catalog(catName)
-        bandpassDir = os.path.join(lsst.utils.getPackageDir('sims_catUtils'),'tests','testThroughputs')
+        bandpassDir = os.path.join(lsst.utils.getPackageDir('sims_catUtils'), 'tests', 'testThroughputs')
         self.catalogTester(catName=catName, catalog=cat, nameRoot='fakeBandpass',
                            bandpassDir=bandpassDir, bandpassRoot='fakeTotal_')
 
@@ -488,14 +494,13 @@ class GalSimInterfaceTest(unittest.TestCase):
         m5 = [22.0, 23.0, 25.0]
         seeing = [0.6, 0.5, 0.7]
         bandpassNames = ['x', 'y', 'z']
-        obs_metadata = ObservationMetaData(
-                       pointingRA=self.obs_metadata.pointingRA,
-                       pointingDec=self.obs_metadata.pointingDec,
-                       rotSkyPos=self.obs_metadata.rotSkyPos,
-                       mjd=self.obs_metadata.mjd,
-                       bandpassName=bandpassNames,
-                       m5=m5,
-                       seeing=seeing)
+        obs_metadata = ObservationMetaData(pointingRA=self.obs_metadata.pointingRA,
+                                           pointingDec=self.obs_metadata.pointingDec,
+                                           rotSkyPos=self.obs_metadata.rotSkyPos,
+                                           mjd=self.obs_metadata.mjd,
+                                           bandpassName=bandpassNames,
+                                           m5=m5,
+                                           seeing=seeing)
 
         stars = testStarsDBObj(driver=self.driver, database=self.dbName)
         cat = testFakeSedCatalog(stars, obs_metadata=obs_metadata)
@@ -509,8 +514,6 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(catName):
             os.unlink(catName)
 
-
-
     def testAgns(self):
         """
         Test that GalSimInterpreter puts the right number of counts on images of AGN
@@ -522,7 +525,6 @@ class GalSimInterfaceTest(unittest.TestCase):
         self.catalogTester(catName=catName, catalog=cat, nameRoot='agn')
         if os.path.exists(catName):
             os.unlink(catName)
-
 
     def testPSFimages(self):
         """
@@ -537,7 +539,6 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(catName):
             os.unlink(catName)
 
-
     def testBackground(self):
         """
         Test that GalSimInterpreter puts the right number of counts on images of Galaxy bulges with
@@ -550,7 +551,6 @@ class GalSimInterfaceTest(unittest.TestCase):
         self.catalogTester(catName=catName, catalog=cat, nameRoot='background')
         if os.path.exists(catName):
             os.unlink(catName)
-
 
     def testNoisyCatalog(self):
         """
@@ -569,13 +569,13 @@ class GalSimInterfaceTest(unittest.TestCase):
         noisyCat.write_catalog(noisyCatName)
         cleanCat.write_catalog(cleanCatName)
 
-        self.compareCatalogs(cleanCat, noisyCat, PhotometricParameters().gain, PhotometricParameters().readnoise)
+        self.compareCatalogs(cleanCat, noisyCat, PhotometricParameters().gain,
+                             PhotometricParameters().readnoise)
 
         if os.path.exists(noisyCatName):
             os.unlink(noisyCatName)
         if os.path.exists(cleanCatName):
             os.unlink(cleanCatName)
-
 
     def testNoise(self):
         """
@@ -587,14 +587,15 @@ class GalSimInterfaceTest(unittest.TestCase):
         lsstDefaults = LSSTdefaults()
         gain = 2.5
         readnoise = 6.0
-        photParams=PhotometricParameters(gain=gain, readnoise=readnoise)
-        img = galsim.Image(100,100)
+        photParams = PhotometricParameters(gain=gain, readnoise=readnoise)
+        img = galsim.Image(100, 100)
         noise = ExampleCCDNoise(seed=42)
         m5 = 24.5
         bandpass = Bandpass()
-        bandpass.readThroughput(os.path.join(lsst.utils.getPackageDir('throughputs'),'baseline','total_r.dat'))
+        bandpass.readThroughput(os.path.join(lsst.utils.getPackageDir('throughputs'),
+                                             'baseline', 'total_r.dat'))
         background = calcSkyCountsPerPixelForM5(m5, bandpass, FWHMeff=lsstDefaults.FWHMeff('r'),
-                                            photParams=photParams)
+                                                photParams=photParams)
 
         noisyImage = noise.addNoiseAndBackground(img, bandpass, m5=m5,
                                                  FWHMeff=lsstDefaults.FWHMeff('r'),
@@ -602,14 +603,14 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         mean = 0.0
         var = 0.0
-        for ix in range(1,101):
-            for iy in range(1,101):
+        for ix in range(1, 101):
+            for iy in range(1, 101):
                 mean += noisyImage(ix, iy)
 
         mean = mean/10000.0
 
-        for ix in range(1,101):
-            for iy in range(1,101):
+        for ix in range(1, 101):
+            for iy in range(1, 101):
                 var += (noisyImage(ix, iy) - mean)*(noisyImage(ix, iy) - mean)
 
         var = var/9999.0
@@ -622,7 +623,6 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         msg = 'var %e varADU %e ; ratio %e ; background %e' % (var, varADU, var/varADU, background)
         self.assertLess(numpy.abs(var/varADU - 1.0), 0.05, msg=msg)
-
 
     def testMultipleImages(self):
         """
@@ -660,10 +660,10 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(dbName):
             os.unlink(dbName)
 
-
     def testCompoundFitsFiles(self):
         """
-        Test that GalSimInterpreter puts the right number of counts on images containgin different types of objects
+        Test that GalSimInterpreter puts the right number of counts on images
+        containing different types of objects
         """
         driver = 'sqlite'
         dbName1 = 'galSimTestCompound1DB.db'
@@ -684,9 +684,9 @@ class GalSimInterfaceTest(unittest.TestCase):
         displacedRA = numpy.array([55.0/3600.0, 60.0/3600.0, 62.0/3600.0])
         displacedDec = numpy.array([-3.0/3600.0, 10.0/3600.0, 10.0/3600.0])
         obs_metadata2 = makePhoSimTestDB(filename=dbName2, size=1,
-                                            displacedRA=displacedRA, displacedDec=displacedDec,
-                                            bandpass=self.bandpassNameList,
-                                            m5=self.m5, seeing=self.seeing)
+                                         displacedRA=displacedRA, displacedDec=displacedDec,
+                                         bandpass=self.bandpassNameList,
+                                         m5=self.m5, seeing=self.seeing)
 
         gals = testGalaxyBulgeDBObj(driver=driver, database=dbName1)
         cat1 = testGalaxyCatalog(gals, obs_metadata=obs_metadata1)
@@ -706,7 +706,6 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(catName):
             os.unlink(catName)
 
-
     def testPlacement(self):
         """
         Test that GalSimInterpreter puts objects on the right detectors.
@@ -724,7 +723,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         (i.e. detectors on which no star actually fell) are effectively zero
         """
 
-        #generate the database
+        # generate the database
         numpy.random.seed(32)
         rng = galsim.UniformDeviate(112)
         catSize = 3
@@ -739,38 +738,30 @@ class GalSimInterfaceTest(unittest.TestCase):
                                         bandpass=self.bandpassNameList,
                                         m5=self.m5, seeing=self.seeing)
 
-        catName = 'testPlacementCat.sav'
         stars = testStarsDBObj(driver=driver, database=dbName)
 
-        #create the catalog
+        # create the catalog
         cat = testStarCatalog(stars, obs_metadata = obs_metadata)
         results = cat.iter_catalog()
         firstLine = True
 
-        #iterate over the catalog, giving every star a chance to
-        #illumine every detector
+        # iterate over the catalog, giving every star a chance to
+        # illumine every detector
         controlImages = {}
         for i, line in enumerate(results):
-            galSimType = line[0]
             xPupil = line[5]
             yPupil = line[6]
 
-
-            majorAxis = line[8]
-            minorAxis = line[9]
-            sindex = line[10]
-            halfLightRadius = line[11]
-            positionAngle = line[12]
             if firstLine:
                 sedList = cat._calculateGalSimSeds()
                 for detector in cat.galSimInterpreter.detectors:
                     for bandpass in cat.galSimInterpreter.bandpassDict:
-                        controlImages['placementControl_' + \
-                                      cat.galSimInterpreter._getFileName(detector=detector, bandpassName=bandpass)] = \
+                        controlImages['placementControl_' +
+                                      cat.galSimInterpreter._getFileName(
+                                      detector=detector, bandpassName=bandpass)] = \
                                       cat.galSimInterpreter.blankImage(detector=detector)
                 firstLine = False
 
-            spectrum = sedList[i]
             for bp in cat.galSimInterpreter.bandpassDict:
                 bandpass = cat.galSimInterpreter.bandpassDict[bp]
                 adu = sedList[i].calcADU(bandpass, cat.photParams)
@@ -791,7 +782,7 @@ class GalSimInterfaceTest(unittest.TestCase):
                                                offset=galsim.PositionD(dx, dy),
                                                rng=rng)
 
-                    controlImages['placementControl_' + \
+                    controlImages['placementControl_' +
                                   cat.galSimInterpreter._getFileName(detector=detector, bandpassName=bp)] += \
                                   localImage
 
@@ -800,16 +791,16 @@ class GalSimInterfaceTest(unittest.TestCase):
         for name in controlImages:
             controlImages[name].write(file_name=name)
 
-        #write the test images using the catalog infrastructure
+        # write the test images using the catalog infrastructure
         testNames = cat.write_images(nameRoot='placementTest')
 
-        #make sure that every test image has a corresponding control image
+        # make sure that every test image has a corresponding control image
         for testName in testNames:
             controlName = testName.replace('Test', 'Control')
             msg = '%s has no counterpart ' % testName
             self.assertIn(controlName, controlImages, msg=msg)
 
-        #make sure that the test and control images agree to some tolerance
+        # make sure that the test and control images agree to some tolerance
         ignored = 0
         zeroFlux = 0
         valid = 0
@@ -821,19 +812,19 @@ class GalSimInterfaceTest(unittest.TestCase):
             if testName in testNames:
                 testImage = afwImage.ImageF(testName)
                 testFlux = testImage.getArray().sum()
-                if controlFlux>1000.0:
+                if controlFlux > 1000.0:
                     countSigma = numpy.sqrt(controlFlux/cat.photParams.gain)
                     msg = '%s: controlFlux = %e, testFlux = %e, sigma %e' \
-                    % (controlName, controlFlux, testFlux, countSigma)
+                          % (controlName, controlFlux, testFlux, countSigma)
 
-                    #the randomness of photon shooting means that faint images won't agree
+                    # the randomness of photon shooting means that faint images won't agree
                     self.assertLess(numpy.abs(controlFlux-testFlux), 4.0*countSigma, msg=msg)
                     valid += 1
                 else:
                     ignored += 1
             else:
-                #make sure that controlImages that have no corresponding test image really do
-                #have zero flux (because no star fell on them)
+                # make sure that controlImages that have no corresponding test image really do
+                # have zero flux (because no star fell on them)
                 zeroFlux += 1
                 msg = '%s has flux %e but was not written by catalog' % (controlName, controlFlux)
                 self.assertLess(controlFlux, 1.0, msg=msg)
@@ -853,28 +844,27 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(dbName):
             os.unlink(dbName)
 
-
     def testPSF(self):
         """
         This method will test that SNRdocumentPSF returns a PSF
         with the correct Full Width at Half Max
         """
 
-        fwhm = 0.4 #in arc-seconds; make sure that it divides evenly by scale, so that rounding
-                   #half integer numbers of pixels does not affect the unit test
+        fwhm = 0.4  # in arc-seconds; make sure that it divides evenly by scale, so that rounding
+                    # half integer numbers of pixels does not affect the unit test
 
-        scale = 0.1 #arc-seconds per pixel
+        scale = 0.1  # arc-seconds per pixel
 
         psf = SNRdocumentPSF(fwhm=fwhm)
         image = psf._cached_psf.drawImage(scale=scale)
         xCenter = (image.getXMax() + image.getXMin())/2
         yCenter = (image.getYMax() + image.getYMin())/2
 
-        maxValue = image(xCenter, yCenter) #because the default is to center GSObjects
-        halfDex = int(numpy.round(0.5*fwhm/scale)) #the distance from the center corresponding to FWHM
+        maxValue = image(xCenter, yCenter)  # because the default is to center GSObjects
+        halfDex = int(numpy.round(0.5*fwhm/scale))  # the distance from the center corresponding to FWHM
 
-        #Test that pixel combinations bracketing the expected FWHM value behave
-        #the way we expect them to
+        # Test that pixel combinations bracketing the expected FWHM value behave
+        # the way we expect them to
         midP1 = image(xCenter+halfDex+1, yCenter)
         midM1 = image(xCenter+halfDex-1, yCenter)
         msg = '%e is not > %e ' % (midM1, 0.5*maxValue)
@@ -882,7 +872,6 @@ class GalSimInterfaceTest(unittest.TestCase):
         msg = '%e is not < %e ' % (midP1, 0.5*maxValue)
         self.assertLess(midP1, 0.5*maxValue, msg=msg)
 
-        midValue = image(xCenter-halfDex, yCenter)
         midP1 = image(xCenter-halfDex-1, yCenter)
         midM1 = image(xCenter-halfDex+1, yCenter)
         msg = '%e is not > %e ' % (midM1, 0.5*maxValue)
@@ -911,6 +900,7 @@ def suite():
     suites += unittest.makeSuite(GalSimInterfaceTest)
 
     return unittest.TestSuite(suites)
+
 
 def run(shouldExit = False):
     utilsTests.run(suite(), shouldExit)
