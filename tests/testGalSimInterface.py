@@ -1,7 +1,7 @@
 from __future__ import with_statement
 import os
 import copy
-import numpy
+import numpy as np
 import unittest
 import galsim
 from collections import OrderedDict
@@ -135,7 +135,7 @@ class testFakeSedCatalog(testFakeBandpassCatalog):
                    'bergeron_6500_85.dat_6700': 'fakeSed3.dat'}
 
         rawNames = self.column_by_name('sedFilename')
-        return numpy.array([nameMap[nn] for nn in rawNames])
+        return np.array([nameMap[nn] for nn in rawNames])
 
 
 class GalSimInterfaceTest(unittest.TestCase):
@@ -146,8 +146,8 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
 
-        displacedRA = numpy.array([72.0/3600.0])
-        displacedDec = numpy.array([0.0])
+        displacedRA = np.array([72.0/3600.0])
+        displacedDec = np.array([0.0])
         defaults = LSSTdefaults()
         cls.bandpassNameList = ['u', 'g', 'r', 'i', 'z', 'y']
         cls.m5 = defaults._m5.values()
@@ -338,7 +338,7 @@ class GalSimInterfaceTest(unittest.TestCase):
             unDrawnDetectors = 0
             for ff in controlCounts:
                 if controlCounts[ff] > 1000.0 and galsimCounts[ff] > 0.001:
-                    countSigma = numpy.sqrt(controlCounts[ff]/catalog.photParams.gain)
+                    countSigma = np.sqrt(controlCounts[ff]/catalog.photParams.gain)
 
                     # because, for really dim images, there could be enough
                     # statistical imprecision in the GalSim drawing routine
@@ -353,7 +353,7 @@ class GalSimInterfaceTest(unittest.TestCase):
                         msg += 'background per pixel %e pixels %e %s' % \
                                (backgroundCounts[ff[-6]], galsimPixels[ff], ff)
 
-                    self.assertLess(numpy.abs(controlCounts[ff] - galsimCounts[ff]), 4.0*countSigma,
+                    self.assertLess(np.abs(controlCounts[ff] - galsimCounts[ff]), 4.0*countSigma,
                                     msg=msg)
                 elif galsimCounts[ff] > 0.001:
                     unDrawnDetectors += 1
@@ -409,7 +409,7 @@ class GalSimInterfaceTest(unittest.TestCase):
             self.assertEqual(cleanIm.shape[1], noisyIm.shape[1], msg='images not same shape')
 
             var = cleanIm/gain + readnoise/(gain*gain)
-            totalVar = (numpy.power(noisyIm-cleanIm, 2)/var).sum()
+            totalVar = (np.power(noisyIm-cleanIm, 2)/var).sum()
             totalMean = cleanIm.sum()
             ct = float(cleanIm.shape[0]*cleanIm.shape[1])
             totalVar = totalVar/ct
@@ -417,7 +417,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
             if totalMean >= 100.0:
                 countedImages += 1
-                self.assertLess(numpy.abs(totalVar-1.0), 0.05)
+                self.assertLess(np.abs(totalVar-1.0), 0.05)
 
             os.unlink(noisyName)
             os.unlink(cleanName)
@@ -619,10 +619,10 @@ class GalSimInterfaceTest(unittest.TestCase):
         varADU = varElectrons/(gain*gain)
 
         msg = 'background %e mean %e ' % (background, mean)
-        self.assertLess(numpy.abs(background/mean - 1.0), 0.05, msg=msg)
+        self.assertLess(np.abs(background/mean - 1.0), 0.05, msg=msg)
 
         msg = 'var %e varADU %e ; ratio %e ; background %e' % (var, varADU, var/varADU, background)
-        self.assertLess(numpy.abs(var/varADU - 1.0), 0.05, msg=msg)
+        self.assertLess(np.abs(var/varADU - 1.0), 0.05, msg=msg)
 
     def testMultipleImages(self):
         """
@@ -634,8 +634,8 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(dbName):
             os.unlink(dbName)
 
-        displacedRA = numpy.array([72.0/3600.0, 55.0/3600.0, 75.0/3600.0])
-        displacedDec = numpy.array([0.0, 15.0/3600.0, -15.0/3600.0])
+        displacedRA = np.array([72.0/3600.0, 55.0/3600.0, 75.0/3600.0])
+        displacedDec = np.array([0.0, 15.0/3600.0, -15.0/3600.0])
         obs_metadata = makePhoSimTestDB(filename=dbName, size=1,
                                         displacedRA=displacedRA, displacedDec=displacedDec,
                                         bandpass=self.bandpassNameList,
@@ -670,8 +670,8 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(dbName1):
             os.unlink(dbName1)
 
-        displacedRA = numpy.array([72.0/3600.0, 55.0/3600.0, 75.0/3600.0])
-        displacedDec = numpy.array([0.0, 15.0/3600.0, -15.0/3600.0])
+        displacedRA = np.array([72.0/3600.0, 55.0/3600.0, 75.0/3600.0])
+        displacedDec = np.array([0.0, 15.0/3600.0, -15.0/3600.0])
         obs_metadata1 = makePhoSimTestDB(filename=dbName1, size=1,
                                          displacedRA=displacedRA, displacedDec=displacedDec,
                                          bandpass=self.bandpassNameList,
@@ -681,8 +681,8 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(dbName2):
             os.unlink(dbName2)
 
-        displacedRA = numpy.array([55.0/3600.0, 60.0/3600.0, 62.0/3600.0])
-        displacedDec = numpy.array([-3.0/3600.0, 10.0/3600.0, 10.0/3600.0])
+        displacedRA = np.array([55.0/3600.0, 60.0/3600.0, 62.0/3600.0])
+        displacedDec = np.array([-3.0/3600.0, 10.0/3600.0, 10.0/3600.0])
         obs_metadata2 = makePhoSimTestDB(filename=dbName2, size=1,
                                          displacedRA=displacedRA, displacedDec=displacedDec,
                                          bandpass=self.bandpassNameList,
@@ -724,7 +724,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         """
 
         # generate the database
-        numpy.random.seed(32)
+        np.random.seed(32)
         rng = galsim.UniformDeviate(112)
         catSize = 3
         dbName = 'galSimPlacementTestDB.db'
@@ -732,8 +732,8 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(dbName):
             os.unlink(dbName)
 
-        displacedRA = (-40.0 + numpy.random.sample(catSize)*(120.0))/3600.0
-        displacedDec = (-20.0 + numpy.random.sample(catSize)*(80.0))/3600.0
+        displacedRA = (-40.0 + np.random.sample(catSize)*(120.0))/3600.0
+        displacedDec = (-20.0 + np.random.sample(catSize)*(80.0))/3600.0
         obs_metadata = makePhoSimTestDB(filename=dbName, displacedRA=displacedRA, displacedDec=displacedDec,
                                         bandpass=self.bandpassNameList,
                                         m5=self.m5, seeing=self.seeing)
@@ -813,12 +813,12 @@ class GalSimInterfaceTest(unittest.TestCase):
                 testImage = afwImage.ImageF(testName)
                 testFlux = testImage.getArray().sum()
                 if controlFlux > 1000.0:
-                    countSigma = numpy.sqrt(controlFlux/cat.photParams.gain)
+                    countSigma = np.sqrt(controlFlux/cat.photParams.gain)
                     msg = '%s: controlFlux = %e, testFlux = %e, sigma %e' \
                           % (controlName, controlFlux, testFlux, countSigma)
 
                     # the randomness of photon shooting means that faint images won't agree
-                    self.assertLess(numpy.abs(controlFlux-testFlux), 4.0*countSigma, msg=msg)
+                    self.assertLess(np.abs(controlFlux-testFlux), 4.0*countSigma, msg=msg)
                     valid += 1
                 else:
                     ignored += 1
@@ -861,7 +861,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         yCenter = (image.getYMax() + image.getYMin())/2
 
         maxValue = image(xCenter, yCenter)  # because the default is to center GSObjects
-        halfDex = int(numpy.round(0.5*fwhm/scale))  # the distance from the center corresponding to FWHM
+        halfDex = int(np.round(0.5*fwhm/scale))  # the distance from the center corresponding to FWHM
 
         # Test that pixel combinations bracketing the expected FWHM value behave
         # the way we expect them to
