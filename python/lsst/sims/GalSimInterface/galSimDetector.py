@@ -58,8 +58,8 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.fitsHeader.set("EXTTYPE", "IMAGE")
 
         if self.obs_metadata.bandpass is not None:
-            if not isinstance(self.obs_metadata.bandpass, list) and not \
-                isinstance(self.obs_metadata.bandpass, np.ndarray):
+            if (not isinstance(self.obs_metadata.bandpass, list) and not
+                isinstance(self.obs_metadata.bandpass, np.ndarray)):
 
                 self.fitsHeader.set("FILTER", self.obs_metadata.bandpass)
 
