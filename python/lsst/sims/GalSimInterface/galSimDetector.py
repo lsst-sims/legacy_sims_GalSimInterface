@@ -1,9 +1,9 @@
 import re
 import galsim
-import numpy
+import numpy as np
 import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
-from lsst.sims.utils import arcsecFromRadians, radiansFromArcsec
+from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.coordUtils import _raDecFromPixelCoords, \
                                  _pixelCoordsFromRaDec, \
                                  pixelCoordsFromPupilCoords
@@ -58,7 +58,9 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.fitsHeader.set("EXTTYPE", "IMAGE")
 
         if self.obs_metadata.bandpass is not None:
-            if not isinstance(self.obs_metadata.bandpass, list) and not isinstance(self.obs_metadata.bandpass, numpy.ndarray):
+            if (not isinstance(self.obs_metadata.bandpass, list) and not
+                isinstance(self.obs_metadata.bandpass, np.ndarray)):
+
                 self.fitsHeader.set("FILTER", self.obs_metadata.bandpass)
 
         if self.obs_metadata.mjd is not None:
@@ -78,7 +80,6 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         self.origin = galsim.PositionD(x=self.crpix1, y=self.crpix2)
 
-
     def _radec(self, x, y):
         """
         This is a method required by the GalSim WCS API
@@ -90,7 +91,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         chipNameList = [self.afwDetector.getName()]
 
-        if type(x) is numpy.ndarray:
+        if type(x) is np.ndarray:
             chipNameList = chipNameList * len(x)
 
         ra, dec = _raDecFromPixelCoords(x + self.afw_crpix1, y + self.afw_crpix2, chipNameList,
@@ -98,11 +99,10 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
                                         obs_metadata=self.obs_metadata,
                                         epoch=self.epoch)
 
-        if type(x) is numpy.ndarray:
+        if type(x) is np.ndarray:
             return (ra, dec)
         else:
             return (ra[0], dec[0])
-
 
     def _xy(self, ra, dec):
         """
@@ -113,19 +113,18 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         chipNameList = [self.afwDetector.getName()]
 
-        if type(ra) is numpy.ndarray:
-            chipNameLIst = chipNameList * len(ra)
+        if type(ra) is np.ndarray:
+            chipNameList = chipNameList * len(ra)
 
-        xx, yy = calculatePixelCoordinates(ra=ra, dec=dec, chipNames=chipNameList,
-                                            obs_metadata=self.obs_metadata,
-                                            epoch=self.epoch,
-                                            camera = self.afwCamera)
+        xx, yy = _pixelCoordsFromRaDec(ra=ra, dec=dec, chipName=chipNameList,
+                                       obs_metadata=self.obs_metadata,
+                                       epoch=self.epoch,
+                                       camera = self.afwCamera)
 
-        if type(ra) is numpy.ndarray:
+        if type(ra) is np.ndarray:
             return (xx-self.crpix1, yy-self.crpix2)
         else:
             return (xx[0]-self.crpix1, yy-self.crpix2)
-
 
     def _newOrigin(self, origin):
         """
@@ -147,14 +146,11 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         _newWcs.fitsHeader.set('CRPIX2', origin.y)
         return _newWcs
 
-
     def _writeHeader(self, header, bounds):
         for key in self.fitsHeader.getOrderedNames():
             header[key] = self.fitsHeader.get(key)
 
         return header
-
-
 
 
 class GalSimDetector(object):
@@ -179,7 +175,7 @@ class GalSimDetector(object):
             raise RuntimeError("You need to specify an instantiation of PhotometricParameters " +
                                "when constructing a GalSimDetector")
 
-        self._wcs = None #this will be created when it is actually called for
+        self._wcs = None  # this will be created when it is actually called for
         self._name = afwDetector.getName()
         self._afwDetector = afwDetector
         self._afwCamera = afwCamera
@@ -216,32 +212,29 @@ class GalSimDetector(object):
 
             xx = arcsecFromRadians(cameraPointPupil.getX())
             yy = arcsecFromRadians(cameraPointPupil.getY())
-            if self._xMinArcsec is None or xx<self._xMinArcsec:
+            if self._xMinArcsec is None or xx < self._xMinArcsec:
                 self._xMinArcsec = xx
-            if self._xMaxArcsec is None or xx>self._xMaxArcsec:
+            if self._xMaxArcsec is None or xx > self._xMaxArcsec:
                 self._xMaxArcsec = xx
-            if self._yMinArcsec is None or yy<self._yMinArcsec:
+            if self._yMinArcsec is None or yy < self._yMinArcsec:
                 self._yMinArcsec = yy
-            if self._yMaxArcsec is None or yy>self._yMaxArcsec:
+            if self._yMaxArcsec is None or yy > self._yMaxArcsec:
                 self._yMaxArcsec = yy
-
 
         self._photParams = photParams
         self._fileName = self._getFileName()
-
 
     def _getFileName(self):
         """
         Format the name of the detector to add to the name of the FITS file
         """
         detectorName = self.name
-        detectorName = detectorName.replace(',','_')
-        detectorName = detectorName.replace(':','_')
-        detectorName = detectorName.replace(' ','_')
+        detectorName = detectorName.replace(',', '_')
+        detectorName = detectorName.replace(':', '_')
+        detectorName = detectorName.replace(' ', '_')
 
         name = detectorName
         return name
-
 
     def pixelCoordinatesFromRaDec(self, ra, dec):
         """
@@ -257,22 +250,20 @@ class GalSimDetector(object):
         """
 
         nameList = [self.name]
-        if type(ra) is numpy.ndarray:
+        if type(ra) is np.ndarray:
             nameList = nameList*len(ra)
-            raLocal=ra
-            decLocal=dec
+            raLocal = ra
+            decLocal = dec
         else:
-            raLocal = numpy.array([ra])
-            decLocal = numpy.array([dec])
+            raLocal = np.array([ra])
+            decLocal = np.array([dec])
 
-        xPix, yPix = _pixelCoordsFromRaDec(raLocal, decLocal, chipNames=nameList,
+        xPix, yPix = _pixelCoordsFromRaDec(raLocal, decLocal, chipName=nameList,
                                            obs_metadata=self._obs_metadata,
                                            epoch=self._epoch,
                                            camera=self._afwCamera)
 
         return xPix, yPix
-
-
 
     def pixelCoordinatesFromPupilCoordinates(self, xPupil, yPupil):
         """
@@ -290,19 +281,18 @@ class GalSimDetector(object):
         """
 
         nameList = [self._name]
-        if type(xPupil) is numpy.ndarray:
+        if type(xPupil) is np.ndarray:
             nameList = nameList*len(xPupil)
             xp = xPupil
             yp = yPupil
         else:
-            xp = numpy.array([xPupil])
-            yp = numpy.array([yPupil])
+            xp = np.array([xPupil])
+            yp = np.array([yPupil])
 
-        xPix, yPix = pixelCoordsFromPupilCoords(xp, yp, chipNames=nameList,
+        xPix, yPix = pixelCoordsFromPupilCoords(xp, yp, chipName=nameList,
                                                 camera=self._afwCamera)
 
         return xPix, yPix
-
 
     def containsRaDec(self, ra, dec):
         """
@@ -320,7 +310,6 @@ class GalSimDetector(object):
         points = [afwGeom.Point2D(xx, yy) for xx, yy in zip(xPix, yPix)]
         answer = [self._bbox.contains(pp) for pp in points]
         return answer
-
 
     def containsPupilCoordinates(self, xPupil, yPupil):
         """
@@ -340,7 +329,6 @@ class GalSimDetector(object):
         answer = [self._bbox.contains(pp) for pp in points]
         return answer
 
-
     @property
     def xMinPix(self):
         """Minimum x pixel coordinate of the detector"""
@@ -348,9 +336,8 @@ class GalSimDetector(object):
 
     @xMinPix.setter
     def xMinPix(self, value):
-        raise RuntimeError("You should not be setting xMinPix on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting xMinPix on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def xMaxPix(self):
@@ -359,9 +346,8 @@ class GalSimDetector(object):
 
     @xMaxPix.setter
     def xMaxPix(self, value):
-        raise RuntimeError("You should not be setting xMaxPix on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting xMaxPix on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def yMinPix(self):
@@ -370,9 +356,8 @@ class GalSimDetector(object):
 
     @yMinPix.setter
     def yMinPix(self, value):
-        raise RuntimeError("You should not be setting yMinPix on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting yMinPix on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def yMaxPix(self):
@@ -381,9 +366,8 @@ class GalSimDetector(object):
 
     @yMaxPix.setter
     def yMaxPix(self, value):
-        raise RuntimeError("You should not be setting yMaxPix on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting yMaxPix on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def xCenterPix(self):
@@ -392,9 +376,8 @@ class GalSimDetector(object):
 
     @xCenterPix.setter
     def xCenterPix(self, value):
-        raise RuntimeError("You should not be setting xCenterPix on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting xCenterPix on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def yCenterPix(self):
@@ -403,9 +386,8 @@ class GalSimDetector(object):
 
     @yCenterPix.setter
     def yCenterPix(self, value):
-        raise RuntimeError("You should not be setting yCenterPix on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting yCenterPix on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def xMaxArcsec(self):
@@ -414,9 +396,8 @@ class GalSimDetector(object):
 
     @xMaxArcsec.setter
     def xMaxArcsec(self, value):
-        raise RuntimeError("You should not be setting xMaxArcsec on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting xMaxArcsec on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def xMinArcsec(self):
@@ -425,9 +406,8 @@ class GalSimDetector(object):
 
     @xMinArcsec.setter
     def xMinArcsec(self, value):
-        raise RuntimeError("You should not be setting xMinArcsec on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting xMinArcsec on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def yMaxArcsec(self):
@@ -436,9 +416,8 @@ class GalSimDetector(object):
 
     @yMaxArcsec.setter
     def yMaxArcsec(self, value):
-        raise RuntimeError("You should not be setting yMaxArcsec on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting yMaxArcsec on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def yMinArcsec(self):
@@ -447,21 +426,18 @@ class GalSimDetector(object):
 
     @yMinArcsec.setter
     def yMinArcsec(self, value):
-        raise RuntimeError("You should not be setting yMinArcsec on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting yMinArcsec on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def xCenterArcsec(self):
         """Center x pupil coordinate of the detector in arcseconds"""
         return self._xCenterArcsec
 
-
     @xCenterArcsec.setter
     def xCenterArcsec(self, value):
-        raise RuntimeError("You should not be setting xCenterArcsec on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting xCenterArcsec on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def yCenterArcsec(self):
@@ -470,9 +446,8 @@ class GalSimDetector(object):
 
     @yCenterArcsec.setter
     def yCenterArcsec(self, value):
-        raise RuntimeError("You should not be setting yCenterArcsec on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting yCenterArcsec on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def epoch(self):
@@ -481,9 +456,8 @@ class GalSimDetector(object):
 
     @epoch.setter
     def epoch(self, value):
-        raise RuntimeError("You should not be setting epoch on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting epoch on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def obs_metadata(self):
@@ -492,9 +466,8 @@ class GalSimDetector(object):
 
     @obs_metadata.setter
     def obs_metadata(self, value):
-        raise RuntimeError("You should not be setting obs_metadata on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting obs_metadata on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def name(self):
@@ -503,9 +476,8 @@ class GalSimDetector(object):
 
     @name.setter
     def name(self, value):
-        raise RuntimeError("You should not be setting name on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting name on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def photParams(self):
@@ -514,9 +486,8 @@ class GalSimDetector(object):
 
     @photParams.setter
     def photParams(self, value):
-        raise RuntimeError("You should not be setting photParams on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting photParams on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def fileName(self):
@@ -525,9 +496,8 @@ class GalSimDetector(object):
 
     @fileName.setter
     def fileName(self, value):
-        raise RuntimeError("You should not be setting fileName on the fly; "  \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting fileName on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def afwCamera(self):
@@ -536,9 +506,8 @@ class GalSimDetector(object):
 
     @afwCamera.setter
     def afwCamera(self, value):
-        raise RuntimeError("You should not be setting afwCamera on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting afwCamera on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def afwDetector(self):
@@ -547,23 +516,21 @@ class GalSimDetector(object):
 
     @afwDetector.setter
     def afwDetector(self, value):
-        raise RuntimeError("You should not be setting afwDetector on the fly; " \
-                           + "just instantiate a new GalSimDetector")
-
+        raise RuntimeError("You should not be setting afwDetector on the fly; "
+                           "just instantiate a new GalSimDetector")
 
     @property
     def wcs(self):
         """WCS corresponding to this detector"""
         if self._wcs is None:
-            self._wcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, \
+            self._wcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera,
                                              self.obs_metadata, self.epoch,
                                              photParams=self.photParams)
-
 
             if re.match('R_[0-9]_[0-9]_S_[0-9]_[0-9]', self.fileName) is not None:
                 # This is an LSST camera; format the FITS header to feed through DM code
 
-                wcsName = self.fileName.replace('_','')
+                wcsName = self.fileName.replace('_', '')
                 wcsName = wcsName.replace('S', '_S')
 
                 self._wcs.fitsHeader.set("CHIPID", wcsName)
@@ -572,12 +539,13 @@ class GalSimDetector(object):
 
                 if self.obs_metadata.phoSimMetaData is not None:
                     if 'Opsim_obshistid' in self.obs_metadata.phoSimMetaData:
-                        self._wcs.fitsHeader.set("OBSID", self.obs_metadata.phoSimMetaData['Opsim_obshistid'][0])
+                        self._wcs.fitsHeader.set("OBSID",
+                                                 self.obs_metadata.phoSimMetaData['Opsim_obshistid'][0])
                         obshistid = self.obs_metadata.phoSimMetaData['Opsim_obshistid'][0]
 
                 bp = self.obs_metadata.bandpass
-                if not isinstance(bp, list) and not isinstance(bp, numpy.ndarray):
-                    filt_num = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}[bp]
+                if not isinstance(bp, list) and not isinstance(bp, np.ndarray):
+                    filt_num = {'u': 0, 'g': 1, 'r': 2, 'i': 3, 'z': 4, 'y': 5}[bp]
                 else:
                     filt_num = 2
 
@@ -588,6 +556,6 @@ class GalSimDetector(object):
 
     @wcs.setter
     def wcs(self, value):
-        raise RuntimeError("You should not be setting wcs on the fly; " \
-                           + "just instantiate a new GalSimDetector")
+        raise RuntimeError("You should not be setting wcs on the fly; "
+                           "just instantiate a new GalSimDetector")
 

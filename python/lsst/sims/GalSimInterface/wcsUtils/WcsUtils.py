@@ -1,6 +1,6 @@
-import numpy
+import numpy as np
 from lsst.sims.coordUtils import _pixelCoordsFromRaDec, _raDecFromPixelCoords
-from lsst.afw.cameraGeom import PUPIL, PIXELS, TAN_PIXELS, FOCAL_PLANE
+from lsst.afw.cameraGeom import TAN_PIXELS, FOCAL_PLANE
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 import lsst.afw.image.utils as afwImageUtils
@@ -20,19 +20,18 @@ def _getTanPixelBounds(afwDetector, afwCamera):
     yPixMax = None
     cornerPointList = afwDetector.getCorners(FOCAL_PLANE)
     for cornerPoint in cornerPointList:
-        cameraPoint = afwCamera.transform(
-                           afwDetector.makeCameraPoint(cornerPoint, FOCAL_PLANE),
-                           tanPixelSystem).getPoint()
+        cameraPoint = afwCamera.transform(afwDetector.makeCameraPoint(cornerPoint, FOCAL_PLANE),
+                                          tanPixelSystem).getPoint()
 
         xx = cameraPoint.getX()
         yy = cameraPoint.getY()
-        if xPixMin is None or xx<xPixMin:
+        if xPixMin is None or xx < xPixMin:
             xPixMin = xx
-        if xPixMax is None or xx>xPixMax:
+        if xPixMax is None or xx > xPixMax:
             xPixMax = xx
-        if yPixMin is None or yy<yPixMin:
+        if yPixMin is None or yy < yPixMin:
             yPixMin = yy
-        if yPixMax is None or yy>yPixMax:
+        if yPixMax is None or yy > yPixMax:
             yPixMax = yy
 
     return xPixMin, xPixMax, yPixMin, yPixMax
@@ -65,36 +64,34 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     xTanPixMin, xTanPixMax, \
     yTanPixMin, yTanPixMax = _getTanPixelBounds(afwDetector, afwCamera)
 
-
     xPixList = []
     yPixList = []
     nameList = []
 
-    #dx and dy are set somewhat heuristically
-    #setting them eqal to 0.1(max-min) lead to errors
-    #on the order of 0.7 arcsec in the WCS
+    # dx and dy are set somewhat heuristically
+    # setting them eqal to 0.1(max-min) lead to errors
+    # on the order of 0.7 arcsec in the WCS
 
     dx = 0.5*(xTanPixMax-xTanPixMin)
     dy = 0.5*(yTanPixMax-yTanPixMin)
-    dxPix = xTanPixMax-xTanPixMin
-    dyPix = yTanPixMax-yTanPixMin
-    for xx in numpy.arange(xTanPixMin, xTanPixMax+0.5*dx, dx):
-        for yy in numpy.arange(yTanPixMin, yTanPixMax+0.5*dyPix, dy):
+
+    for xx in np.arange(xTanPixMin, xTanPixMax+0.5*dx, dx):
+        for yy in np.arange(yTanPixMin, yTanPixMax+0.5*dy, dy):
             xPixList.append(xx)
             yPixList.append(yy)
             nameList.append(afwDetector.getName())
 
-    raList, decList = _raDecFromPixelCoords(numpy.array(xPixList),
-                                            numpy.array(yPixList),
+    raList, decList = _raDecFromPixelCoords(np.array(xPixList),
+                                            np.array(yPixList),
                                             nameList,
                                             camera=afwCamera,
                                             obs_metadata=obs_metadata,
                                             epoch=epoch,
                                             includeDistortion=False)
 
-    crPix1, crPix2 = _pixelCoordsFromRaDec(numpy.array([obs_metadata._pointingRA]),
-                                           numpy.array([obs_metadata._pointingDec]),
-                                           chipNames=[afwDetector.getName()], camera=afwCamera,
+    crPix1, crPix2 = _pixelCoordsFromRaDec(obs_metadata._pointingRA,
+                                           obs_metadata._pointingDec,
+                                           chipName=afwDetector.getName(), camera=afwCamera,
                                            obs_metadata=obs_metadata, epoch=epoch,
                                            includeDistortion=False)
 
@@ -102,50 +99,45 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
                                                  obs_metadata._pointingRA,
                                                  obs_metadata._pointingDec)
 
-    #convert from native longitude and latitude to intermediate world coordinates
-    #according to equations (12), (13), (54) and (55) of
+    # convert from native longitude and latitude to intermediate world coordinates
+    # according to equations (12), (13), (54) and (55) of
     #
-    #Calabretta and Greisen (2002), A&A 395, p. 1077
+    # Calabretta and Greisen (2002), A&A 395, p. 1077
     #
-    radiusList = 180.0/(numpy.tan(latList)*numpy.pi)
-    uList = radiusList*numpy.sin(lonList)
-    vList = -radiusList*numpy.cos(lonList)
+    radiusList = 180.0/(np.tan(latList)*np.pi)
+    uList = radiusList*np.sin(lonList)
+    vList = -radiusList*np.cos(lonList)
 
-    delta_xList = xPixList - crPix1[0]
-    delta_yList = yPixList - crPix2[0]
+    delta_xList = xPixList - crPix1
+    delta_yList = yPixList - crPix2
 
-    bVector = numpy.array([
-                          (delta_xList*uList).sum(),
-                          (delta_yList*uList).sum(),
-                          (delta_xList*vList).sum(),
-                          (delta_yList*vList).sum()
-                          ])
+    bVector = np.array([
+                       (delta_xList*uList).sum(),
+                       (delta_yList*uList).sum(),
+                       (delta_xList*vList).sum(),
+                       (delta_yList*vList).sum()
+                       ])
 
     offDiag = (delta_yList*delta_xList).sum()
-    xsq = numpy.power(delta_xList,2).sum()
-    ysq = numpy.power(delta_yList,2).sum()
+    xsq = np.power(delta_xList, 2).sum()
+    ysq = np.power(delta_yList, 2).sum()
 
-    aMatrix = numpy.array([
-                          [xsq, offDiag, 0.0, 0.0],
-                          [offDiag, ysq, 0.0, 0.0],
-                          [0.0, 0.0, xsq, offDiag],
-                          [0.0, 0.0, offDiag, ysq]
-                          ])
+    aMatrix = np.array([
+                       [xsq, offDiag, 0.0, 0.0],
+                       [offDiag, ysq, 0.0, 0.0],
+                       [0.0, 0.0, xsq, offDiag],
+                       [0.0, 0.0, offDiag, ysq]
+                       ])
 
-    coeffs = numpy.linalg.solve(aMatrix, bVector)
-
-    crValPoint = afwGeom.Point2D(obs_metadata.pointingRA,
-                                 obs_metadata.pointingDec)
-
-    crPixPoint = afwGeom.Point2D(crPix1[0], crPix2[0])
+    coeffs = np.linalg.solve(aMatrix, bVector)
 
     fitsHeader = dafBase.PropertyList()
     fitsHeader.set("RADESYS", "ICRS")
     fitsHeader.set("EQUINOX", epoch)
     fitsHeader.set("CRVAL1", obs_metadata.pointingRA)
     fitsHeader.set("CRVAL2", obs_metadata.pointingDec)
-    fitsHeader.set("CRPIX1", crPix1[0]+1) # the +1 is because LSST uses 0-indexed images
-    fitsHeader.set("CRPIX2", crPix2[0]+1) # FITS files use 1-indexed images
+    fitsHeader.set("CRPIX1", crPix1+1)  # the +1 is because LSST uses 0-indexed images
+    fitsHeader.set("CRPIX2", crPix2+1)  # FITS files use 1-indexed images
     fitsHeader.set("CTYPE1", "RA---TAN")
     fitsHeader.set("CTYPE2", "DEC--TAN")
     fitsHeader.setDouble("CD1_1", coeffs[0])
@@ -205,12 +197,12 @@ def tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch,
 
     distortedWcs = afwImageUtils.getDistortedWcs(mockExposure.getInfo())
     tanSipWcs = approximateWcs(distortedWcs, bbox,
-                                          order=order,
-                                          skyTolerance=skyToleranceArcSec*afwGeom.arcseconds,
-                                          pixelTolerance=pixelTolerance,
-                                          detector=afwDetector,
-                                          camera=afwCamera,
-                                          obs_metadata=obs_metadata)
+                               order=order,
+                               skyTolerance=skyToleranceArcSec*afwGeom.arcseconds,
+                               pixelTolerance=pixelTolerance,
+                               detector=afwDetector,
+                               camera=afwCamera,
+                               obs_metadata=obs_metadata)
 
     return tanSipWcs
 
