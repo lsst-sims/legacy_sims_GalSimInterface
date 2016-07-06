@@ -53,7 +53,8 @@ class allowedChipsTest(unittest.TestCase):
     def setUpClass(cls):
         cls.scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
         cls.obs = ObservationMetaData(pointingRA=122.0, pointingDec=-29.1,
-                                      mjd=57381.2, rotSkyPos=43.2)
+                                      mjd=57381.2, rotSkyPos=43.2,
+                                      bandpassName='r')
 
 
         cls.camera = camTestUtils.CameraWrapper().camera

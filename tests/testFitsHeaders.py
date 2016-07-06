@@ -72,8 +72,9 @@ class FitsHeaderTest(unittest.TestCase):
 
         obs = ObservationMetaData(pointingRA=32.0, pointingDec=22.0,
                                   boundLength=0.1, boundType='circle',
-                                  mjd=58000.0, rotSkyPos=14.0, bandpassName='u',
-                                  phoSimMetaData={'Opsim_obshistid':(112, int)})
+                                  mjd=58000.0, rotSkyPos=14.0, bandpassName='u')
+
+        obs.phoSimMetaData = {'Opsim_obshistid': 112}
 
         dbFileName = os.path.join(outputDir, 'fits_test_db.dat')
         create_text_catalog(obs, dbFileName, np.array([30.0]), np.array([30.0]), [22.0])
