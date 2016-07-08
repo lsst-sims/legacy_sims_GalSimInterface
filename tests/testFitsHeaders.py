@@ -14,16 +14,16 @@ from lsst.obs.lsstSim import LsstSimMapper
 
 from testUtils import create_text_catalog
 
+
 class fitsHeaderFileDBObj(fileDBObject):
     idColKey = 'test_id'
     objectTypeId = 8123
     tableid = 'test'
     raColName = 'ra'
     decColName = 'dec'
-    #sedFilename
 
-    columns = [('raJ2000','ra*PI()/180.0', np.float),
-               ('decJ2000','dec*PI()/180.0', np.float),
+    columns = [('raJ2000', 'ra*PI()/180.0', np.float),
+               ('decJ2000', 'dec*PI()/180.0', np.float),
                ('magNorm', 'mag_norm', np.float)]
 
 
@@ -37,13 +37,12 @@ class fitsHeaderCatalog(GalSimStars):
 
     default_columns = GalSimStars.default_columns
 
-    default_columns += [('sedFilename', 'sed_flat.txt', (str,12)),
+    default_columns += [('sedFilename', 'sed_flat.txt', (str, 12)),
                         ('properMotionRa', 0.0, np.float),
                         ('properMotionDec', 0.0, np.float),
                         ('radialVelocity', 0.0, np.float),
                         ('parallax', 0.0, np.float)
                         ]
-
 
 
 class FitsHeaderTest(unittest.TestCase):
@@ -62,7 +61,6 @@ class FitsHeaderTest(unittest.TestCase):
 
         outputDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests',
                                  'scratchSpace')
-
 
         lsst_cat_name = os.path.join(outputDir, 'fits_test_lsst_cat.txt')
         lsst_cat_root = os.path.join(outputDir, 'fits_test_lsst_image')
@@ -141,8 +139,10 @@ def suite():
 
     return unittest.TestSuite(suites)
 
+
 def run(shouldExit = False):
     utilsTests.run(suite(), shouldExit)
+
 
 if __name__ == "__main__":
     run(True)
