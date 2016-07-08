@@ -4,9 +4,9 @@ import numpy as np
 import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 from lsst.sims.utils import arcsecFromRadians
-from lsst.sims.coordUtils import _raDecFromPixelCoords, \
-                                 _pixelCoordsFromRaDec, \
-                                 pixelCoordsFromPupilCoords
+from lsst.sims.coordUtils import (_raDecFromPixelCoords,
+                                  _pixelCoordsFromRaDec,
+                                  pixelCoordsFromPupilCoords)
 from lsst.sims.GalSimInterface.wcsUtils import tanSipWcsFromDetector
 
 __all__ = ["GalSimDetector"]
