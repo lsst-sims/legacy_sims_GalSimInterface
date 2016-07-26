@@ -22,10 +22,9 @@ class allowedChipsFileDBObj(fileDBObject):
     tableid = 'test'
     raColName = 'ra'
     decColName = 'dec'
-    #sedFilename
 
-    columns = [('raJ2000','ra*PI()/180.0', np.float),
-               ('decJ2000','dec*PI()/180.0', np.float),
+    columns = [('raJ2000', 'ra*PI()/180.0', np.float),
+               ('decJ2000', 'dec*PI()/180.0', np.float),
                ('magNorm', 'mag_norm', np.float)]
 
 
@@ -39,7 +38,7 @@ class allowedChipsCatalog(GalSimStars):
 
     default_columns = GalSimStars.default_columns
 
-    default_columns += [('sedFilename', 'sed_flat.txt', (str,12)),
+    default_columns += [('sedFilename', 'sed_flat.txt', (str, 12)),
                         ('properMotionRa', 0.0, np.float),
                         ('properMotionDec', 0.0, np.float),
                         ('radialVelocity', 0.0, np.float),
@@ -53,8 +52,8 @@ class allowedChipsTest(unittest.TestCase):
     def setUpClass(cls):
         cls.scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
         cls.obs = ObservationMetaData(pointingRA=122.0, pointingDec=-29.1,
-                                      mjd=57381.2, rotSkyPos=43.2)
-
+                                      mjd=57381.2, rotSkyPos=43.2,
+                                      bandpassName='r')
 
         cls.camera = camTestUtils.CameraWrapper().camera
 
@@ -64,7 +63,7 @@ class allowedChipsTest(unittest.TestCase):
 
         cls.controlSed = Sed()
         cls.controlSed.readSED_flambda(os.path.join(getPackageDir('sims_sed_library'),
-                                               'flatSED','sed_flat.txt.gz'))
+                                                    'flatSED', 'sed_flat.txt.gz'))
         cls.magNorm = 18.1
         imsim = Bandpass()
         imsim.imsimBandpass()
@@ -102,7 +101,6 @@ class allowedChipsTest(unittest.TestCase):
                             mag_norm=[cls.magNorm]*len(dra_list))
 
         cls.db = allowedChipsFileDBObj(cls.dbFileName, runtable='test')
-
 
     @classmethod
     def tearDownClass(cls):
@@ -198,7 +196,6 @@ class allowedChipsTest(unittest.TestCase):
                 msg = '%s exists; it should not' % test_image_name
                 self.assertFalse(os.path.exists(test_image_name), msg=msg)
 
-
         self.assertEqual(test_image_ct, len(allowed_chips))
 
         if os.path.exists(test_cat_name):
@@ -214,7 +211,10 @@ def suite():
 
     return unittest.TestSuite(suites)
 
+
 def run(shouldExit = False):
     utilsTests.run(suite(), shouldExit)
+
+
 if __name__ == "__main__":
     run(True)

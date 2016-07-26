@@ -4,9 +4,9 @@ import numpy as np
 import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 from lsst.sims.utils import arcsecFromRadians
-from lsst.sims.coordUtils import _raDecFromPixelCoords, \
-                                 _pixelCoordsFromRaDec, \
-                                 pixelCoordsFromPupilCoords
+from lsst.sims.coordUtils import (_raDecFromPixelCoords,
+                                  _pixelCoordsFromRaDec,
+                                  pixelCoordsFromPupilCoords)
 from lsst.sims.GalSimInterface.wcsUtils import tanSipWcsFromDetector
 
 __all__ = ["GalSimDetector"]
@@ -540,8 +540,8 @@ class GalSimDetector(object):
                 if self.obs_metadata.phoSimMetaData is not None:
                     if 'Opsim_obshistid' in self.obs_metadata.phoSimMetaData:
                         self._wcs.fitsHeader.set("OBSID",
-                                                 self.obs_metadata.phoSimMetaData['Opsim_obshistid'][0])
-                        obshistid = self.obs_metadata.phoSimMetaData['Opsim_obshistid'][0]
+                                                 self.obs_metadata.phoSimMetaData['Opsim_obshistid'])
+                        obshistid = self.obs_metadata.phoSimMetaData['Opsim_obshistid']
 
                 bp = self.obs_metadata.bandpass
                 if not isinstance(bp, list) and not isinstance(bp, np.ndarray):

@@ -10,8 +10,6 @@ from lsst.sims.catalogs.generation.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimPhoSimGalaxies, GalSimPhoSimStars, GalSimPhoSimAgn
 from lsst.sims.GalSimInterface import SNRdocumentPSF
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D, PhoSimCatalogPoint, PhoSimCatalogZPoint
-from lsst.obs.lsstSim import LsstSimMapper
-
 
 
 class GalSimPhoSimTest(unittest.TestCase):
@@ -28,13 +26,9 @@ class GalSimPhoSimTest(unittest.TestCase):
         np.random.seed(45)
         pointingRA = 45.2
         pointingDec = -31.6
-        phoSimMetaData = {'pointingRA': (np.radians(pointingRA), np.dtype(np.float)),
-                          'pointingDec': (np.radians(pointingDec), np.dtype(np.float)),
-                          'Opsim_rotskypos': (1.2, np.dtype(np.float)),
-                          'Opsim_filter': ('r', np.dtype(str)),
-                          'Opsim_expmjd': (57341.6, np.dtype(np.float))
-                          }
-        cls.obs = ObservationMetaData(phoSimMetaData=phoSimMetaData,
+
+        cls.obs = ObservationMetaData(pointingRA=pointingRA, pointingDec=pointingDec,
+                                      rotSkyPos=1.2, bandpassName='r', mjd=57341.5,
                                       boundLength=0.1, boundType='circle')
 
         cls.dtype = np.dtype([('id', int),
@@ -85,12 +79,11 @@ class GalSimPhoSimTest(unittest.TestCase):
             for ix in range(cls.n_objects):
                 output_file.write('%d %f %f %f %f Const.79E06.002Z.spec %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n' %
                                   (ix, ra[ix], dec[ix], np.degrees(ra[ix]), np.degrees(dec[ix]),
-                                  magNorm[ix], redshift[ix],
-                                  max(majorAxis[ix], minorAxis[ix]), min(majorAxis[ix], minorAxis[ix]),
-                                  positionAngle[ix], hlr[ix], sindex[ix], internalAv[ix], internalRv[ix],
-                                  galacticAv[ix], galacticRv[ix],
-                                  properMotionRa[ix], properMotionDec[ix], radialVelocity[ix], parallax[ix]))
-
+                                   magNorm[ix], redshift[ix],
+                                   max(majorAxis[ix], minorAxis[ix]), min(majorAxis[ix], minorAxis[ix]),
+                                   positionAngle[ix], hlr[ix], sindex[ix], internalAv[ix], internalRv[ix],
+                                   galacticAv[ix], galacticRv[ix],
+                                   properMotionRa[ix], properMotionDec[ix], radialVelocity[ix], parallax[ix]))
 
         # generate some galaxy disk data
         redshift = np.random.random_sample(cls.n_objects)*1.5
@@ -118,12 +111,11 @@ class GalSimPhoSimTest(unittest.TestCase):
             for ix in range(cls.n_objects):
                 output_file.write('%d %f %f %f %f Inst.79E06.02Z.spec %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n' %
                                   (ix, ra[ix], dec[ix], np.degrees(ra[ix]), np.degrees(dec[ix]),
-                                  magNorm[ix], redshift[ix],
-                                  max(majorAxis[ix], minorAxis[ix]), min(majorAxis[ix], minorAxis[ix]),
-                                  positionAngle[ix], hlr[ix], sindex[ix], internalAv[ix], internalRv[ix],
-                                  galacticAv[ix], galacticRv[ix],
-                                  properMotionRa[ix], properMotionDec[ix], radialVelocity[ix], parallax[ix]))
-
+                                   magNorm[ix], redshift[ix],
+                                   max(majorAxis[ix], minorAxis[ix]), min(majorAxis[ix], minorAxis[ix]),
+                                   positionAngle[ix], hlr[ix], sindex[ix], internalAv[ix], internalRv[ix],
+                                   galacticAv[ix], galacticRv[ix],
+                                   properMotionRa[ix], properMotionDec[ix], radialVelocity[ix], parallax[ix]))
 
         # generate some agn data
         redshift = np.random.random_sample(cls.n_objects)*1.5
@@ -151,11 +143,11 @@ class GalSimPhoSimTest(unittest.TestCase):
             for ix in range(cls.n_objects):
                 output_file.write('%d %f %f %f %f agn.spec %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n' %
                                   (ix, ra[ix], dec[ix], np.degrees(ra[ix]), np.degrees(dec[ix]),
-                                  magNorm[ix], redshift[ix],
-                                  max(majorAxis[ix], minorAxis[ix]), min(majorAxis[ix], minorAxis[ix]),
-                                  positionAngle[ix], hlr[ix], sindex[ix], internalAv[ix], internalRv[ix],
-                                  galacticAv[ix], galacticRv[ix],
-                                  properMotionRa[ix], properMotionDec[ix], radialVelocity[ix], parallax[ix]))
+                                   magNorm[ix], redshift[ix],
+                                   max(majorAxis[ix], minorAxis[ix]), min(majorAxis[ix], minorAxis[ix]),
+                                   positionAngle[ix], hlr[ix], sindex[ix], internalAv[ix], internalRv[ix],
+                                   galacticAv[ix], galacticRv[ix],
+                                   properMotionRa[ix], properMotionDec[ix], radialVelocity[ix], parallax[ix]))
 
         # generate some star data
         redshift = np.random.random_sample(cls.n_objects)*1.5
@@ -183,12 +175,11 @@ class GalSimPhoSimTest(unittest.TestCase):
             for ix in range(cls.n_objects):
                 output_file.write('%d %f %f %f %f km30_5000.fits_g10_5040 %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n' %
                                   (ix, ra[ix], dec[ix], np.degrees(ra[ix]), np.degrees(dec[ix]),
-                                  magNorm[ix], redshift[ix],
-                                  max(majorAxis[ix], minorAxis[ix]), min(majorAxis[ix], minorAxis[ix]),
-                                  positionAngle[ix], hlr[ix], sindex[ix], internalAv[ix], internalRv[ix],
-                                  galacticAv[ix], galacticRv[ix],
-                                  properMotionRa[ix], properMotionDec[ix], radialVelocity[ix], parallax[ix]))
-
+                                   magNorm[ix], redshift[ix],
+                                   max(majorAxis[ix], minorAxis[ix]), min(majorAxis[ix], minorAxis[ix]),
+                                   positionAngle[ix], hlr[ix], sindex[ix], internalAv[ix], internalRv[ix],
+                                   galacticAv[ix], galacticRv[ix],
+                                   properMotionRa[ix], properMotionDec[ix], radialVelocity[ix], parallax[ix]))
 
     @classmethod
     def tearDownClass(cls):
@@ -203,7 +194,6 @@ class GalSimPhoSimTest(unittest.TestCase):
 
         if os.path.exists(cls.star_name):
             os.unlink(cls.star_name)
-
 
     def testGalSimPhoSimCat(self):
         """
@@ -282,7 +272,7 @@ class GalSimPhoSimTest(unittest.TestCase):
                 galsim_lines = galsim_input.readlines()
                 phosim_lines = phosim_input.readlines()
                 self.assertEqual(len(galsim_lines), len(phosim_lines))
-                self.assertEqual(len(galsim_lines), 4*self.n_objects+5)
+                self.assertEqual(len(galsim_lines), 4*self.n_objects+8)
                 for line in galsim_lines:
                     self.assertIn(line, phosim_lines)
                 for line in phosim_lines:
@@ -302,8 +292,10 @@ def suite():
 
     return unittest.TestSuite(suites)
 
+
 def run(shouldExit = False):
     utilsTests.run(suite(), shouldExit)
+
 
 if __name__ == "__main__":
     run(True)
