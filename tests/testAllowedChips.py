@@ -9,7 +9,7 @@ import lsst.afw.cameraGeom.testUtils as camTestUtils
 
 import lsst.afw.image as afwImage
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import fileDBObject
+from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.coordUtils import raDecFromPixelCoords
 from lsst.sims.photUtils import Sed, Bandpass, BandpassDict, PhotometricParameters
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF

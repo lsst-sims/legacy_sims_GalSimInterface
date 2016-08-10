@@ -6,7 +6,7 @@ import lsst.utils.tests as utilsTests
 
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec
-from lsst.sims.catalogs.generation.db import fileDBObject
+from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimPhoSimGalaxies, GalSimPhoSimStars, GalSimPhoSimAgn
 from lsst.sims.GalSimInterface import SNRdocumentPSF
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D, PhoSimCatalogPoint, PhoSimCatalogZPoint

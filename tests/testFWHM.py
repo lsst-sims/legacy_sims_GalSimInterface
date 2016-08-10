@@ -6,7 +6,7 @@ from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRadians
 from lsst.sims.utils import haversine, arcsecFromRadians
-from lsst.sims.catalogs.generation.db import fileDBObject
+from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, GalSimDetector, SNRdocumentPSF
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 

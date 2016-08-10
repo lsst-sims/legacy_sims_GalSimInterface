@@ -15,7 +15,8 @@ import os
 import copy
 import lsst.utils
 from lsst.sims.utils import arcsecFromRadians
-from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, is_null
+from lsst.sims.catalogs.definitions import InstanceCatalog, is_null
+from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catUtils.mixins import CameraCoords, AstrometryGalaxies, AstrometryStars, \
                                       EBVmixin
 from lsst.sims.GalSimInterface import GalSimInterpreter, GalSimDetector, GalSimCelestialObject
