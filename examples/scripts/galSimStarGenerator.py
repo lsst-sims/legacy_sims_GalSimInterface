@@ -4,7 +4,7 @@ This script shows how to use our GalSim interface to generate FITS images of sta
 
 import os
 import galsim
-from lsst.sims.catalogs.generation.db import CatalogDBObject
+from lsst.sims.catalogs.db import CatalogDBObject
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catUtils.baseCatalogModels import StarObj, OpSim3_61DBObject
 from lsst.sims.GalSimInterface import SNRdocumentPSF, GalSimStars
