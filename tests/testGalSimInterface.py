@@ -10,7 +10,7 @@ import lsst.utils.tests as utilsTests
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
-from lsst.sims.catalogs.generation.utils import makePhoSimTestDB
+from lsst.sims.catalogs.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.GalSimInterface import GalSimGalaxies, GalSimStars, GalSimAgn, \
                                                SNRdocumentPSF, ExampleCCDNoise

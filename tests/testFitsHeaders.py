@@ -7,7 +7,7 @@ import astropy.io.fits as fits
 
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import fileDBObject
+from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.obs.lsstSim import LsstSimMapper

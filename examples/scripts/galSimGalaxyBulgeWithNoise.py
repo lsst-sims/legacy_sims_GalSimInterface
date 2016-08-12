@@ -3,7 +3,7 @@ This script shows how incorporate noise in images of galaxies
 """
 
 import os
-from lsst.sims.catalogs.generation.db import CatalogDBObject
+from lsst.sims.catalogs.db import CatalogDBObject
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catUtils.baseCatalogModels import GalaxyBulgeObj, OpSim3_61DBObject
 from lsst.sims.GalSimInterface import GalSimGalaxies, ExampleCCDNoise, \

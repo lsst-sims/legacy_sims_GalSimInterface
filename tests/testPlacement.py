@@ -9,7 +9,7 @@ from lsst.sims.utils import ObservationMetaData, arcsecFromRadians, haversine
 from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.sims.coordUtils import _pixelCoordsFromRaDec, _raDecFromPixelCoords
 from lsst.sims.photUtils import Sed, Bandpass
-from lsst.sims.catalogs.generation.db import fileDBObject
+from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from testUtils import create_text_catalog
 
