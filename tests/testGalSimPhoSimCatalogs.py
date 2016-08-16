@@ -9,7 +9,8 @@ from lsst.sims.utils import ObservationMetaData, radiansFromArcsec
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimPhoSimGalaxies, GalSimPhoSimStars, GalSimPhoSimAgn
 from lsst.sims.GalSimInterface import SNRdocumentPSF
-from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D, PhoSimCatalogPoint, PhoSimCatalogZPoint
+from lsst.sims.catUtils.exampleCatalogDefinitions import (PhoSimCatalogSersic2D, PhoSimCatalogPoint,
+                                                          PhoSimCatalogZPoint)
 
 
 def setup_module(module):
