@@ -72,10 +72,10 @@ class GalSimOutputWcsTest(unittest.TestCase):
         imageName = '%s_%s_u.fits' % (imageRoot, detName)
 
         nSamples = 3
-        np.random.seed(42)
-        pointingRaList = np.random.random_sample(nSamples)*360.0
-        pointingDecList = np.random.random_sample(nSamples)*180.0 - 90.0
-        rotSkyPosList = np.random.random_sample(nSamples)*360.0
+        rng = np.random.RandomState(42)
+        pointingRaList = rng.random_sample(nSamples)*360.0
+        pointingDecList = rng.random_sample(nSamples)*180.0 - 90.0
+        rotSkyPosList = rng.random_sample(nSamples)*360.0
 
         for raPointing, decPointing, rotSkyPos in \
         zip(pointingRaList, pointingDecList, rotSkyPosList):
