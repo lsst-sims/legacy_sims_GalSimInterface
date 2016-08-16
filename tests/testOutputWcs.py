@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import os
 import unittest
 import lsst.utils.tests
@@ -28,8 +28,8 @@ class outputWcsFileDBObj(fileDBObject):
     decColName = 'dec'
     #sedFilename
 
-    columns = [('raJ2000','ra*PI()/180.0', numpy.float),
-               ('decJ2000','dec*PI()/180.0', numpy.float)]
+    columns = [('raJ2000','ra*PI()/180.0', np.float),
+               ('decJ2000','dec*PI()/180.0', np.float)]
 
 
 
@@ -40,11 +40,11 @@ class outputWcsCat(GalSimStars):
     default_columns = GalSimStars.default_columns
 
     default_columns += [('sedFilename', 'sed_flat.txt', (str,12)),
-                        ('properMotionRa', 0.0, numpy.float),
-                        ('properMotionDec', 0.0, numpy.float),
-                        ('radialVelocity', 0.0, numpy.float),
-                        ('parallax', 0.0, numpy.float),
-                        ('magNorm', 14.0, numpy.float)
+                        ('properMotionRa', 0.0, np.float),
+                        ('properMotionDec', 0.0, np.float),
+                        ('radialVelocity', 0.0, np.float),
+                        ('parallax', 0.0, np.float),
+                        ('magNorm', 14.0, np.float)
                         ]
 
 
@@ -72,10 +72,10 @@ class GalSimOutputWcsTest(unittest.TestCase):
         imageName = '%s_%s_u.fits' % (imageRoot, detName)
 
         nSamples = 3
-        numpy.random.seed(42)
-        pointingRaList = numpy.random.random_sample(nSamples)*360.0
-        pointingDecList = numpy.random.random_sample(nSamples)*180.0 - 90.0
-        rotSkyPosList = numpy.random.random_sample(nSamples)*360.0
+        np.random.seed(42)
+        pointingRaList = np.random.random_sample(nSamples)*360.0
+        pointingDecList = np.random.random_sample(nSamples)*180.0 - 90.0
+        rotSkyPosList = np.random.random_sample(nSamples)*360.0
 
         for raPointing, decPointing, rotSkyPos in \
         zip(pointingRaList, pointingDecList, rotSkyPosList):
@@ -88,8 +88,8 @@ class GalSimOutputWcsTest(unittest.TestCase):
                                       mjd = 49250.0)
 
             fwhm = 0.7
-            create_text_catalog(obs, dbFileName, numpy.array([3.0]),
-                                numpy.array([1.0]))
+            create_text_catalog(obs, dbFileName, np.array([3.0]),
+                                np.array([1.0]))
 
             db = outputWcsFileDBObj(dbFileName, runtable='test')
 
@@ -111,8 +111,8 @@ class GalSimOutputWcsTest(unittest.TestCase):
             raImage = []
             decImage = []
 
-            for xx in numpy.arange(0.0, 4001.0, 100.0):
-                for yy in numpy.arange(0.0, 4001.0, 100.0):
+            for xx in np.arange(0.0, 4001.0, 100.0):
+                for yy in np.arange(0.0, 4001.0, 100.0):
                     xxTestList.append(xx)
                     yyTestList.append(yy)
 
@@ -121,11 +121,11 @@ class GalSimOutputWcsTest(unittest.TestCase):
                     raImage.append(skyPt.getX())
                     decImage.append(skyPt.getY())
 
-            xxTestList = numpy.array(xxTestList)
-            yyTestList = numpy.array(yyTestList)
+            xxTestList = np.array(xxTestList)
+            yyTestList = np.array(yyTestList)
 
-            raImage = numpy.radians(numpy.array(raImage))
-            decImage = numpy.radians(numpy.array(decImage))
+            raImage = np.radians(np.array(raImage))
+            decImage = np.radians(np.array(decImage))
 
             raControl, \
             decControl = _raDecFromPixelCoords(
@@ -139,7 +139,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
                                                     raImage, decImage))
 
 
-            medianError = numpy.median(errorList)
+            medianError = np.median(errorList)
             msg = 'medianError was %e' % medianError
             self.assertLess(medianError, 0.01, msg=msg)
 
