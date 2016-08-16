@@ -7,8 +7,7 @@ import lsst.utils.tests
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.photUtils import PhotometricParameters
 from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import _raDecFromPixelCoords, \
-                                 pupilCoordsFromPixelCoords
+from lsst.sims.coordUtils import _raDecFromPixelCoords, pupilCoordsFromPixelCoords
 from lsst.sims.GalSimInterface import GalSimDetector
 
 
@@ -36,7 +35,6 @@ class GalSimDetectorTest(unittest.TestCase):
                                        mjd=mjd,
                                        rotSkyPos=rotSkyPos)
 
-
     def tearDown(self):
         del self.camera
 
@@ -47,7 +45,7 @@ class GalSimDetectorTest(unittest.TestCase):
         """
 
         photParams = PhotometricParameters()
-        gsdet = GalSimDetector(self.camera[0], self.camera, \
+        gsdet = GalSimDetector(self.camera[0], self.camera,
                                self.obs, self.epoch,
                                photParams=photParams)
 
@@ -72,7 +70,6 @@ class GalSimDetectorTest(unittest.TestCase):
             xPixList.append(xx)
             yPixList.append(yy+dy)
             correctAnswer.append(False)
-
 
         nameList = [gsdet.name]*len(xPixList)
         xPixList = np.array(xPixList)
@@ -89,7 +86,6 @@ class GalSimDetectorTest(unittest.TestCase):
         for c, t in zip(correctAnswer, testAnswer):
             self.assertIs(c, t)
 
-
     def testContainsPupilCoordinates(self):
         """
         Test whether or not the method containsRaDec correctly identifies
@@ -97,7 +93,7 @@ class GalSimDetectorTest(unittest.TestCase):
         """
 
         photParams = PhotometricParameters()
-        gsdet = GalSimDetector(self.camera[0], self.camera, \
+        gsdet = GalSimDetector(self.camera[0], self.camera,
                                self.obs, self.epoch,
                                photParams=photParams)
 
@@ -123,16 +119,13 @@ class GalSimDetectorTest(unittest.TestCase):
             yPixList.append(yy+dy)
             correctAnswer.append(False)
 
-
         nameList = [gsdet.name]*len(xPixList)
         xPixList = np.array(xPixList)
         yPixList = np.array(yPixList)
 
         xPupilList, yPupilList = \
-               pupilCoordsFromPixelCoords(xPixList, yPixList,
-                                          nameList,
-                                          camera=self.camera)
-
+        pupilCoordsFromPixelCoords(xPixList, yPixList,
+                                   nameList, camera=self.camera)
 
         testAnswer = gsdet.containsPupilCoordinates(xPupilList, yPupilList)
 
