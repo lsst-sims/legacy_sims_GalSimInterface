@@ -1,7 +1,7 @@
 import numpy
 import os
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRadians
@@ -13,6 +13,11 @@ from lsst.sims.coordUtils import _raDecFromPixelCoords
 from lsst.sims.coordUtils.utils import ReturnCamera
 
 from  testUtils import create_text_catalog
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 class hlrFileDBObj(fileDBObject):
     idColKey = 'test_id'
@@ -160,17 +165,9 @@ class GalSimHlrTest(unittest.TestCase):
                 os.unlink(imageName)
 
 
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-
-
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(GalSimHlrTest)
-
-    return unittest.TestSuite(suites)
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
