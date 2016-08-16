@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 
 import astropy.io.fits as fits
 
@@ -13,6 +13,10 @@ from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.obs.lsstSim import LsstSimMapper
 
 from testUtils import create_text_catalog
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 
 class fitsHeaderFileDBObj(fileDBObject):
@@ -132,17 +136,9 @@ class FitsHeaderTest(unittest.TestCase):
             os.unlink(dbFileName)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(FitsHeaderTest)
-
-    return unittest.TestSuite(suites)
-
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
-
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
