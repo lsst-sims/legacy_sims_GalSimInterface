@@ -1,5 +1,5 @@
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 
 import numpy as np
 import os
@@ -12,6 +12,10 @@ from lsst.sims.photUtils import Sed, Bandpass
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from testUtils import create_text_catalog
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 
 class placementFileDBObj(fileDBObject):
@@ -225,15 +229,9 @@ class GalSimPlacementTest(unittest.TestCase):
                 os.unlink(imageName)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(GalSimPlacementTest)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-    return unittest.TestSuite(suites)
-
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
