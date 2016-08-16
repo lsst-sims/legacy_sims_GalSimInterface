@@ -5,15 +5,15 @@ import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
-from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRadians
-from lsst.sims.utils import haversine, arcsecFromRadians
+from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
+from lsst.sims.utils import haversine
 from lsst.sims.catalogs.db import fileDBObject
-from lsst.sims.GalSimInterface import GalSimStars, GalSimDetector, SNRdocumentPSF
+from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
-from  testUtils import create_text_catalog
+from testUtils import create_text_catalog
 
 
 def setup_module(module):
@@ -26,11 +26,10 @@ class outputWcsFileDBObj(fileDBObject):
     tableid = 'test'
     raColName = 'ra'
     decColName = 'dec'
-    #sedFilename
+    # sedFilename
 
-    columns = [('raJ2000','ra*PI()/180.0', np.float),
-               ('decJ2000','dec*PI()/180.0', np.float)]
-
+    columns = [('raJ2000', 'ra*PI()/180.0', np.float),
+               ('decJ2000', 'dec*PI()/180.0', np.float)]
 
 
 class outputWcsCat(GalSimStars):
@@ -39,13 +38,12 @@ class outputWcsCat(GalSimStars):
 
     default_columns = GalSimStars.default_columns
 
-    default_columns += [('sedFilename', 'sed_flat.txt', (str,12)),
+    default_columns += [('sedFilename', 'sed_flat.txt', (str, 12)),
                         ('properMotionRa', 0.0, np.float),
                         ('properMotionDec', 0.0, np.float),
                         ('radialVelocity', 0.0, np.float),
                         ('parallax', 0.0, np.float),
-                        ('magNorm', 14.0, np.float)
-                        ]
+                        ('magNorm', 14.0, np.float)]
 
 
 class GalSimOutputWcsTest(unittest.TestCase):
@@ -78,7 +76,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
         rotSkyPosList = rng.random_sample(nSamples)*360.0
 
         for raPointing, decPointing, rotSkyPos in \
-        zip(pointingRaList, pointingDecList, rotSkyPosList):
+            zip(pointingRaList, pointingDecList, rotSkyPosList):
 
             obs = ObservationMetaData(pointingRA = raPointing,
                                       pointingDec = decPointing,
@@ -103,7 +101,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
             cat.write_images(nameRoot=imageRoot)
 
             exposure = afwImage.ExposureD_readFits(imageName)
-            wcs  = exposure.getWcs()
+            wcs = exposure.getWcs()
 
             xxTestList = []
             yyTestList = []
@@ -116,7 +114,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
                     xxTestList.append(xx)
                     yyTestList.append(yy)
 
-                    pt = afwGeom.Point2D(xx ,yy)
+                    pt = afwGeom.Point2D(xx, yy)
                     skyPt = wcs.pixelToSky(pt).getPosition()
                     raImage.append(skyPt.getX())
                     decImage.append(skyPt.getY())
@@ -128,16 +126,13 @@ class GalSimOutputWcsTest(unittest.TestCase):
             decImage = np.radians(np.array(decImage))
 
             raControl, \
-            decControl = _raDecFromPixelCoords(
-                                               xxTestList, yyTestList,
+            decControl = _raDecFromPixelCoords(xxTestList, yyTestList,
                                                [detector.getName()]*len(xxTestList),
                                                camera=camera, obs_metadata=obs,
-                                               epoch=2000.0
-                                              )
+                                               epoch=2000.0)
 
             errorList = arcsecFromRadians(haversine(raControl, decControl,
                                                     raImage, decImage))
-
 
             medianError = np.median(errorList)
             msg = 'medianError was %e' % medianError
