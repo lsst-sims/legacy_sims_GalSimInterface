@@ -728,16 +728,16 @@ class GalSimInterfaceTest(unittest.TestCase):
         """
 
         # generate the database
-        np.random.seed(32)
-        rng = galsim.UniformDeviate(112)
+        np_rng = np.random.RandomState(32)
+        gs_rng = galsim.UniformDeviate(112)
         catSize = 3
         dbName = 'galSimPlacementTestDB.db'
         driver = 'sqlite'
         if os.path.exists(dbName):
             os.unlink(dbName)
 
-        displacedRA = (-40.0 + np.random.sample(catSize)*(120.0))/3600.0
-        displacedDec = (-20.0 + np.random.sample(catSize)*(80.0))/3600.0
+        displacedRA = (-40.0 + np_rng.random_sample(catSize)*(120.0))/3600.0
+        displacedDec = (-20.0 + np_rng.random_sample(catSize)*(80.0))/3600.0
         obs_metadata = makePhoSimTestDB(filename=dbName, displacedRA=displacedRA, displacedDec=displacedDec,
                                         bandpass=self.bandpassNameList,
                                         m5=self.m5, seeing=self.seeing)
@@ -784,7 +784,7 @@ class GalSimInterfaceTest(unittest.TestCase):
                     localImage = obj.drawImage(wcs=detector.wcs, method='phot',
                                                gain=detector.photParams.gain, image=localImage,
                                                offset=galsim.PositionD(dx, dy),
-                                               rng=rng)
+                                               rng=gs_rng)
 
                     controlImages['placementControl_' +
                                   cat.galSimInterpreter._getFileName(detector=detector, bandpassName=bp)] += \
