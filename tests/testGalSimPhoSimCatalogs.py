@@ -27,7 +27,7 @@ class GalSimPhoSimTest(unittest.TestCase):
         cls.dataDir = os.path.join(getPackageDir('sims_GalSimInterface'),
                                    'tests', 'scratchSpace')
         cls.n_objects = 5
-        np.random.seed(45)
+        rng = np.random.RandomState(45)
         pointingRA = 45.2
         pointingDec = -31.6
 
@@ -58,21 +58,21 @@ class GalSimPhoSimTest(unittest.TestCase):
                               ('parallax', np.float)])
 
         # generate some galaxy bulge data
-        redshift = np.random.random_sample(cls.n_objects)*1.5
-        rr = np.random.random_sample(cls.n_objects)*0.05
-        theta = np.random.random_sample(cls.n_objects)*2.0*np.pi
+        redshift = rng.random_sample(cls.n_objects)*1.5
+        rr = rng.random_sample(cls.n_objects)*0.05
+        theta = rng.random_sample(cls.n_objects)*2.0*np.pi
         ra = np.radians(pointingRA + rr*np.cos(theta))
         dec = np.radians(pointingDec + rr*np.sin(theta))
-        magNorm = np.random.random_sample(cls.n_objects)*7.0 + 18.0
-        sindex = np.random.random_sample(cls.n_objects)*4.0+1.0
-        hlr = radiansFromArcsec(np.random.random_sample(cls.n_objects)*10.0 + 1.0)
-        positionAngle = np.random.random_sample(cls.n_objects)*np.pi
-        internalAv = np.random.random_sample(cls.n_objects)*0.5+0.1
-        internalRv = np.random.random_sample(cls.n_objects)*0.5+2.7
-        majorAxis = radiansFromArcsec(np.random.random_sample(cls.n_objects)*2.0 + 0.5)
-        minorAxis = radiansFromArcsec(np.random.random_sample(cls.n_objects)*2.0 + 0.5)
-        galacticAv = np.random.random_sample(cls.n_objects)*0.5+0.1
-        galacticRv = np.random.random_sample(cls.n_objects)*0.5+2.7
+        magNorm = rng.random_sample(cls.n_objects)*7.0 + 18.0
+        sindex = rng.random_sample(cls.n_objects)*4.0+1.0
+        hlr = radiansFromArcsec(rng.random_sample(cls.n_objects)*10.0 + 1.0)
+        positionAngle = rng.random_sample(cls.n_objects)*np.pi
+        internalAv = rng.random_sample(cls.n_objects)*0.5+0.1
+        internalRv = rng.random_sample(cls.n_objects)*0.5+2.7
+        majorAxis = radiansFromArcsec(rng.random_sample(cls.n_objects)*2.0 + 0.5)
+        minorAxis = radiansFromArcsec(rng.random_sample(cls.n_objects)*2.0 + 0.5)
+        galacticAv = rng.random_sample(cls.n_objects)*0.5+0.1
+        galacticRv = rng.random_sample(cls.n_objects)*0.5+2.7
         properMotionRa = np.zeros(cls.n_objects)
         properMotionDec = np.zeros(cls.n_objects)
         radialVelocity = np.zeros(cls.n_objects)
@@ -90,21 +90,21 @@ class GalSimPhoSimTest(unittest.TestCase):
                                    properMotionRa[ix], properMotionDec[ix], radialVelocity[ix], parallax[ix]))
 
         # generate some galaxy disk data
-        redshift = np.random.random_sample(cls.n_objects)*1.5
-        rr = np.random.random_sample(cls.n_objects)*0.05
-        theta = np.random.random_sample(cls.n_objects)*2.0*np.pi
+        redshift = rng.random_sample(cls.n_objects)*1.5
+        rr = rng.random_sample(cls.n_objects)*0.05
+        theta = rng.random_sample(cls.n_objects)*2.0*np.pi
         ra = np.radians(pointingRA + rr*np.cos(theta))
         dec = np.radians(pointingDec + rr*np.sin(theta))
-        magNorm = np.random.random_sample(cls.n_objects)*7.0 + 18.0
-        sindex = np.random.random_sample(cls.n_objects)*4.0+1.0
-        hlr = radiansFromArcsec(np.random.random_sample(cls.n_objects)*10.0 + 1.0)
-        positionAngle = np.random.random_sample(cls.n_objects)*np.pi
-        internalAv = np.random.random_sample(cls.n_objects)*0.5+0.1
-        internalRv = np.random.random_sample(cls.n_objects)*0.5+2.7
-        majorAxis = radiansFromArcsec(np.random.random_sample(cls.n_objects)*2.0 + 0.5)
-        minorAxis = radiansFromArcsec(np.random.random_sample(cls.n_objects)*2.0 + 0.5)
-        galacticAv = np.random.random_sample(cls.n_objects)*0.5+0.1
-        galacticRv = np.random.random_sample(cls.n_objects)*0.5+2.7
+        magNorm = rng.random_sample(cls.n_objects)*7.0 + 18.0
+        sindex = rng.random_sample(cls.n_objects)*4.0+1.0
+        hlr = radiansFromArcsec(rng.random_sample(cls.n_objects)*10.0 + 1.0)
+        positionAngle = rng.random_sample(cls.n_objects)*np.pi
+        internalAv = rng.random_sample(cls.n_objects)*0.5+0.1
+        internalRv = rng.random_sample(cls.n_objects)*0.5+2.7
+        majorAxis = radiansFromArcsec(rng.random_sample(cls.n_objects)*2.0 + 0.5)
+        minorAxis = radiansFromArcsec(rng.random_sample(cls.n_objects)*2.0 + 0.5)
+        galacticAv = rng.random_sample(cls.n_objects)*0.5+0.1
+        galacticRv = rng.random_sample(cls.n_objects)*0.5+2.7
         properMotionRa = np.zeros(cls.n_objects)
         properMotionDec = np.zeros(cls.n_objects)
         radialVelocity = np.zeros(cls.n_objects)
@@ -122,12 +122,12 @@ class GalSimPhoSimTest(unittest.TestCase):
                                    properMotionRa[ix], properMotionDec[ix], radialVelocity[ix], parallax[ix]))
 
         # generate some agn data
-        redshift = np.random.random_sample(cls.n_objects)*1.5
-        rr = np.random.random_sample(cls.n_objects)*0.05
-        theta = np.random.random_sample(cls.n_objects)*2.0*np.pi
+        redshift = rng.random_sample(cls.n_objects)*1.5
+        rr = rng.random_sample(cls.n_objects)*0.05
+        theta = rng.random_sample(cls.n_objects)*2.0*np.pi
         ra = np.radians(pointingRA + rr*np.cos(theta))
         dec = np.radians(pointingDec + rr*np.sin(theta))
-        magNorm = np.random.random_sample(cls.n_objects)*7.0 + 18.0
+        magNorm = rng.random_sample(cls.n_objects)*7.0 + 18.0
         sindex = np.zeros(cls.n_objects)
         hlr = np.zeros(cls.n_objects)
         positionAngle = np.zeros(cls.n_objects)
@@ -135,8 +135,8 @@ class GalSimPhoSimTest(unittest.TestCase):
         internalRv = np.zeros(cls.n_objects)
         majorAxis = np.zeros(cls.n_objects)
         minorAxis = np.zeros(cls.n_objects)
-        galacticAv = np.random.random_sample(cls.n_objects)*0.5+0.1
-        galacticRv = np.random.random_sample(cls.n_objects)*0.5+2.7
+        galacticAv = rng.random_sample(cls.n_objects)*0.5+0.1
+        galacticRv = rng.random_sample(cls.n_objects)*0.5+2.7
         properMotionRa = np.zeros(cls.n_objects)
         properMotionDec = np.zeros(cls.n_objects)
         radialVelocity = np.zeros(cls.n_objects)
@@ -154,12 +154,12 @@ class GalSimPhoSimTest(unittest.TestCase):
                                    properMotionRa[ix], properMotionDec[ix], radialVelocity[ix], parallax[ix]))
 
         # generate some star data
-        redshift = np.random.random_sample(cls.n_objects)*1.5
-        rr = np.random.random_sample(cls.n_objects)*0.05
-        theta = np.random.random_sample(cls.n_objects)*2.0*np.pi
+        redshift = rng.random_sample(cls.n_objects)*1.5
+        rr = rng.random_sample(cls.n_objects)*0.05
+        theta = rng.random_sample(cls.n_objects)*2.0*np.pi
         ra = np.radians(pointingRA + rr*np.cos(theta))
         dec = np.radians(pointingDec + rr*np.sin(theta))
-        magNorm = np.random.random_sample(cls.n_objects)*7.0 + 18.0
+        magNorm = rng.random_sample(cls.n_objects)*7.0 + 18.0
         sindex = np.zeros(cls.n_objects)
         hlr = np.zeros(cls.n_objects)
         positionAngle = np.zeros(cls.n_objects)
@@ -167,12 +167,12 @@ class GalSimPhoSimTest(unittest.TestCase):
         internalRv = np.zeros(cls.n_objects)
         majorAxis = np.zeros(cls.n_objects)
         minorAxis = np.zeros(cls.n_objects)
-        galacticAv = np.random.random_sample(cls.n_objects)*0.5+0.1
-        galacticRv = np.random.random_sample(cls.n_objects)*0.5+2.7
-        properMotionRa = radiansFromArcsec(np.random.random_sample(cls.n_objects)*0.0002)
-        properMotionDec = radiansFromArcsec(np.random.random_sample(cls.n_objects)*0.0002)
-        radialVelocity = np.random.random_sample(cls.n_objects)*200.0
-        parallax = radiansFromArcsec(np.random.random_sample(cls.n_objects)*0.0002)
+        galacticAv = rng.random_sample(cls.n_objects)*0.5+0.1
+        galacticRv = rng.random_sample(cls.n_objects)*0.5+2.7
+        properMotionRa = radiansFromArcsec(rng.random_sample(cls.n_objects)*0.0002)
+        properMotionDec = radiansFromArcsec(rng.random_sample(cls.n_objects)*0.0002)
+        radialVelocity = rng.random_sample(cls.n_objects)*200.0
+        parallax = radiansFromArcsec(rng.random_sample(cls.n_objects)*0.0002)
         cls.star_name = os.path.join(cls.dataDir, 'galSimPhoSim_test_star.dat')
         with open(cls.star_name, 'w') as output_file:
             output_file.write('# header\n')
