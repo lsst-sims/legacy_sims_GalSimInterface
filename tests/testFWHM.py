@@ -4,15 +4,15 @@ import unittest
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
-from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRadians
-from lsst.sims.utils import haversine, arcsecFromRadians
+from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
+from lsst.sims.utils import haversine
 from lsst.sims.catalogs.db import fileDBObject
-from lsst.sims.GalSimInterface import GalSimStars, GalSimDetector, SNRdocumentPSF
+from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
-from  testUtils import create_text_catalog
+from testUtils import create_text_catalog
 
 
 def setup_module(module):
@@ -25,12 +25,11 @@ class fwhmFileDBObj(fileDBObject):
     tableid = 'test'
     raColName = 'ra'
     decColName = 'dec'
-    #sedFilename
+    # sedFilename
 
-    columns = [('raJ2000','ra*PI()/180.0', np.float),
-               ('decJ2000','dec*PI()/180.0', np.float),
+    columns = [('raJ2000', 'ra*PI()/180.0', np.float),
+               ('decJ2000', 'dec*PI()/180.0', np.float),
                ('magNorm', 'mag_norm', np.float)]
-
 
 
 class fwhmCat(GalSimStars):
@@ -39,12 +38,11 @@ class fwhmCat(GalSimStars):
 
     default_columns = GalSimStars.default_columns
 
-    default_columns += [('sedFilename', 'sed_flat.txt', (str,12)),
+    default_columns += [('sedFilename', 'sed_flat.txt', (str, 12)),
                         ('properMotionRa', 0.0, np.float),
                         ('properMotionDec', 0.0, np.float),
                         ('radialVelocity', 0.0, np.float),
-                        ('parallax', 0.0, np.float),
-                        ]
+                        ('parallax', 0.0, np.float)]
 
 
 class GalSimFwhmTest(unittest.TestCase):
@@ -80,7 +78,7 @@ class GalSimFwhmTest(unittest.TestCase):
         """
         im = afwImage.ImageF(fileName).getArray()
         maxFlux = im.max()
-        self.assertGreater(maxFlux, 100.0) # make sure the image is not blank
+        self.assertGreater(maxFlux, 100.0)  # make sure the image is not blank
 
         # this looks backwards, but remember: the way numpy handles
         # arrays, the first index indicates what row it is in (the y coordinate)
@@ -94,7 +92,7 @@ class GalSimFwhmTest(unittest.TestCase):
                                               obs_metadata=obs,
                                               epoch=epoch)
 
-        half_flux=0.5*maxFlux
+        half_flux = 0.5*maxFlux
 
         # only need to consider orientations between 0 and pi because the objects
         # will be circularly symmetric (and FWHM is a circularly symmetric measure, anyway)
@@ -102,16 +100,16 @@ class GalSimFwhmTest(unittest.TestCase):
 
             slope = np.tan(theta)
 
-            if np.abs(slope<1.0):
-                xPixList = np.array([ix for ix in range(0, im.shape[1]) \
-                                if int(slope*(ix-maxPixel[0]) + maxPixel[1])>=0 and \
-                                int(slope*(ix-maxPixel[0])+maxPixel[1])<im.shape[0]])
+            if np.abs(slope < 1.0):
+                xPixList = np.array([ix for ix in range(0, im.shape[1])
+                                     if int(slope*(ix-maxPixel[0]) + maxPixel[1]) >= 0 and
+                                     int(slope*(ix-maxPixel[0])+maxPixel[1]) < im.shape[0]])
 
                 yPixList = np.array([int(slope*(ix-maxPixel[0])+maxPixel[1]) for ix in xPixList])
             else:
-                yPixList = np.array([iy for iy in range(0, im.shape[0]) \
-                                if int((iy-maxPixel[1])/slope + maxPixel[0])>=0 and \
-                                int((iy-maxPixel[1])/slope + maxPixel[0])<im.shape[1]])
+                yPixList = np.array([iy for iy in range(0, im.shape[0])
+                                     if int((iy-maxPixel[1])/slope + maxPixel[0]) >= 0 and
+                                     int((iy-maxPixel[1])/slope + maxPixel[0]) < im.shape[1]])
 
                 xPixList = np.array([int((iy-maxPixel[1])/slope + maxPixel[0]) for iy in yPixList])
 
@@ -121,13 +119,13 @@ class GalSimFwhmTest(unittest.TestCase):
 
             distanceList = arcsecFromRadians(haversine(raList, decList, raMax[0], decMax[0]))
 
-            fluxList = np.array([im[iy][ix] for ix,iy in zip(xPixList, yPixList)])
+            fluxList = np.array([im[iy][ix] for ix, iy in zip(xPixList, yPixList)])
 
             distanceToLeft = None
             distanceToRight = None
 
-            for ix in range(1,len(xPixList)):
-                if fluxList[ix]<half_flux and fluxList[ix+1]>=half_flux:
+            for ix in range(1, len(xPixList)):
+                if fluxList[ix] < half_flux and fluxList[ix+1] >= half_flux:
                     break
 
             newOrigin = ix+1
@@ -137,7 +135,7 @@ class GalSimFwhmTest(unittest.TestCase):
             distanceToLeft = mm*half_flux + bb
 
             for ix in range(newOrigin, len(xPixList)-1):
-                if fluxList[ix]>=half_flux and fluxList[ix+1]<half_flux:
+                if fluxList[ix] >= half_flux and fluxList[ix+1] < half_flux:
                     break
 
             mm = (distanceList[ix]-distanceList[ix+1])/(fluxList[ix]-fluxList[ix+1])
@@ -145,10 +143,9 @@ class GalSimFwhmTest(unittest.TestCase):
             distanceToRight = mm*half_flux + bb
 
             msg = "measured fwhm %e; expected fwhm %e; maxFlux %e\n" % \
-            (distanceToLeft+distanceToRight, fwhm, maxFlux)
+                  (distanceToLeft+distanceToRight, fwhm, maxFlux)
 
             self.assertLess(np.abs(distanceToLeft+distanceToRight-fwhm), 0.1*fwhm, msg=msg)
-
 
     def testFwhmOfImage(self):
         """
@@ -173,7 +170,7 @@ class GalSimFwhmTest(unittest.TestCase):
                                   rotSkyPos = 33.0,
                                   mjd = 49250.0)
 
-        create_text_catalog(obs, dbFileName, np.array([3.0]), \
+        create_text_catalog(obs, dbFileName, np.array([3.0]),
                             np.array([1.0]), mag_norm=[13.0])
 
         db = fwhmFileDBObj(dbFileName, runtable='test')
@@ -196,7 +193,6 @@ class GalSimFwhmTest(unittest.TestCase):
 
             if os.path.exists(imageName):
                 os.unlink(imageName)
-
 
         if os.path.exists(dbFileName):
             os.unlink(dbFileName)
