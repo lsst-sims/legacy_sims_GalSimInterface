@@ -6,7 +6,7 @@ import unittest
 import galsim
 from collections import OrderedDict
 import lsst.utils
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
@@ -17,6 +17,10 @@ from lsst.sims.GalSimInterface import GalSimGalaxies, GalSimStars, GalSimAgn, \
 from lsst.sims.catUtils.utils import calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj, \
                                      testGalaxyAgnDBObj, testStarsDBObj
 import lsst.afw.image as afwImage
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 
 class testGalaxyCatalog(GalSimGalaxies):
@@ -894,15 +898,9 @@ class GalSimInterfaceTest(unittest.TestCase):
         self.assertLess(midP1, 0.5*maxValue, msg=msg)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(GalSimInterfaceTest)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-    return unittest.TestSuite(suites)
-
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
