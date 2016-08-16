@@ -1,6 +1,6 @@
 import unittest
 import os
-import numpy
+import numpy as np
 from lsst.utils import getPackageDir
 import lsst.utils.tests
 
@@ -75,8 +75,8 @@ class GalSimDetectorTest(unittest.TestCase):
 
 
         nameList = [gsdet.name]*len(xPixList)
-        xPixList = numpy.array(xPixList)
-        yPixList = numpy.array(yPixList)
+        xPixList = np.array(xPixList)
+        yPixList = np.array(yPixList)
 
         raList, decList = _raDecFromPixelCoords(xPixList, yPixList,
                                                 nameList,
@@ -125,8 +125,8 @@ class GalSimDetectorTest(unittest.TestCase):
 
 
         nameList = [gsdet.name]*len(xPixList)
-        xPixList = numpy.array(xPixList)
-        yPixList = numpy.array(yPixList)
+        xPixList = np.array(xPixList)
+        yPixList = np.array(yPixList)
 
         xPupilList, yPupilList = \
                pupilCoordsFromPixelCoords(xPixList, yPixList,
