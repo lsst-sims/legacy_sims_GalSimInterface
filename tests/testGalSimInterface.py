@@ -12,10 +12,10 @@ from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaul
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
 from lsst.sims.catalogs.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.GalSimInterface import GalSimGalaxies, GalSimStars, GalSimAgn, \
-                                               SNRdocumentPSF, ExampleCCDNoise
-from lsst.sims.catUtils.utils import calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj, \
-                                     testGalaxyAgnDBObj, testStarsDBObj
+from lsst.sims.GalSimInterface import (GalSimGalaxies, GalSimStars, GalSimAgn,
+                                       SNRdocumentPSF, ExampleCCDNoise)
+from lsst.sims.catUtils.utils import (calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj,
+                                      testGalaxyAgnDBObj, testStarsDBObj)
 import lsst.afw.image as afwImage
 
 
@@ -353,7 +353,8 @@ class GalSimInterfaceTest(unittest.TestCase):
                            (controlCounts[ff]-galsimCounts[ff])/countSigma, nameRoot)
 
                     if catalog.noise_and_background is not None \
-                    and catalog.noise_and_background.addBackground:
+                        and catalog.noise_and_background.addBackground:
+
                         msg += 'background per pixel %e pixels %e %s' % \
                                (backgroundCounts[ff[-6]], galsimPixels[ff], ff)
 
@@ -761,9 +762,10 @@ class GalSimInterfaceTest(unittest.TestCase):
                 for detector in cat.galSimInterpreter.detectors:
                     for bandpass in cat.galSimInterpreter.bandpassDict:
                         controlImages['placementControl_' +
-                                      cat.galSimInterpreter._getFileName(
-                                      detector=detector, bandpassName=bandpass)] = \
-                                      cat.galSimInterpreter.blankImage(detector=detector)
+                                      cat.galSimInterpreter._getFileName(detector=detector,
+                                                                         bandpassName=bandpass)] = \
+                            cat.galSimInterpreter.blankImage(detector=detector)
+
                 firstLine = False
 
             for bp in cat.galSimInterpreter.bandpassDict:
@@ -787,8 +789,8 @@ class GalSimInterfaceTest(unittest.TestCase):
                                                rng=gs_rng)
 
                     controlImages['placementControl_' +
-                                  cat.galSimInterpreter._getFileName(detector=detector, bandpassName=bp)] += \
-                                  localImage
+                                  cat.galSimInterpreter._getFileName(detector=detector,
+                                                                     bandpassName=bp)] += localImage
 
         self.assertGreater(len(controlImages), 0)
 
