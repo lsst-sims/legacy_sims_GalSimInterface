@@ -2,7 +2,7 @@ from __future__ import with_statement
 import os
 import numpy as np
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec
@@ -10,6 +10,10 @@ from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimPhoSimGalaxies, GalSimPhoSimStars, GalSimPhoSimAgn
 from lsst.sims.GalSimInterface import SNRdocumentPSF
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D, PhoSimCatalogPoint, PhoSimCatalogZPoint
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 
 class GalSimPhoSimTest(unittest.TestCase):
@@ -285,17 +289,9 @@ class GalSimPhoSimTest(unittest.TestCase):
             os.unlink(phosim_cat_name)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(GalSimPhoSimTest)
-
-    return unittest.TestSuite(suites)
-
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
-
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
