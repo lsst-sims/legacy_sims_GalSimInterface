@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import os
 import unittest
 import lsst.utils.tests
@@ -27,11 +27,11 @@ class hlrFileDBObj(fileDBObject):
     decColName = 'dec'
     #sedFilename
 
-    columns = [('raJ2000','ra*PI()/180.0', numpy.float),
-               ('decJ2000','dec*PI()/180.0', numpy.float),
-               ('halfLightRadius', 'hlr*PI()/648000.0', numpy.float),
-               ('magNorm', 'mag_norm', numpy.float),
-               ('positionAngle', 'pa*PI()/180.0', numpy.float)]
+    columns = [('raJ2000','ra*PI()/180.0', np.float),
+               ('decJ2000','dec*PI()/180.0', np.float),
+               ('halfLightRadius', 'hlr*PI()/648000.0', np.float),
+               ('magNorm', 'mag_norm', np.float),
+               ('positionAngle', 'pa*PI()/180.0', np.float)]
 
 
 
@@ -84,8 +84,8 @@ class GalSimHlrTest(unittest.TestCase):
         im = afwImage.ImageF(fileName).getArray()
         totalFlux = im.sum()
 
-        _maxPixel = numpy.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
-        maxPixel = numpy.array([_maxPixel[1], _maxPixel[0]])
+        _maxPixel = np.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
+        maxPixel = np.array([_maxPixel[1], _maxPixel[0]])
 
         raMax, decMax = _raDecFromPixelCoords(maxPixel[0:1],
                                               maxPixel[1:2],
@@ -94,7 +94,7 @@ class GalSimHlrTest(unittest.TestCase):
                                               obs_metadata=obs,
                                               epoch=epoch)
 
-        activePoints = numpy.where(im>1.0e-10)
+        activePoints = np.where(im>1.0e-10)
         self.assertGreater(len(activePoints), 0)
 
         xPixList = activePoints[1] # this looks backwards, but remember: the way numpy handles
@@ -109,7 +109,7 @@ class GalSimHlrTest(unittest.TestCase):
         distanceList = arcsecFromRadians(haversine(raList, decList, raMax[0], decMax[0]))
 
         dexContained = [ix for ix, dd in enumerate(distanceList) if dd<=hlr]
-        measuredHalfFlux = numpy.array([im[yPixList[dex]][xPixList[dex]] for dex in dexContained]).sum()
+        measuredHalfFlux = np.array([im[yPixList[dex]][xPixList[dex]] for dex in dexContained]).sum()
         return totalFlux, measuredHalfFlux
 
 
@@ -141,7 +141,7 @@ class GalSimHlrTest(unittest.TestCase):
         hlrTestList = [1.0, 2.0, 4.0]
 
         for hlr in hlrTestList:
-            create_text_catalog(obs, dbFileName, numpy.array([3.0]), numpy.array([1.0]),
+            create_text_catalog(obs, dbFileName, np.array([3.0]), np.array([1.0]),
                                 hlr=[hlr])
 
             db = hlrFileDBObj(dbFileName, runtable='test')
@@ -154,8 +154,8 @@ class GalSimHlrTest(unittest.TestCase):
 
             totalFlux, hlrFlux = self.get_flux_in_half_light_radius(imageName, hlr, detector, camera, obs)
             self.assertGreater(totalFlux, 1000.0) # make sure the image is not blank
-            sigmaFlux = numpy.sqrt(0.5*totalFlux/cat.photParams.gain) #divide by gain because Poisson stats apply to photons
-            self.assertLess(numpy.abs(hlrFlux-0.5*totalFlux), 4.0*sigmaFlux)
+            sigmaFlux = np.sqrt(0.5*totalFlux/cat.photParams.gain) #divide by gain because Poisson stats apply to photons
+            self.assertLess(np.abs(hlrFlux-0.5*totalFlux), 4.0*sigmaFlux)
 
             if os.path.exists(catName):
                 os.unlink(catName)
