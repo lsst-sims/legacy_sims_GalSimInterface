@@ -171,9 +171,9 @@ class GalSimPositionAngleTest(unittest.TestCase):
         detector = camera[0]
         detName = detector.getName()
 
-        np.random.seed(42)
-        paList = np.random.random_sample(2)*360.0
-        rotSkyPosList = np.random.random_sample(2)*360.0
+        rng = np.random.RandomState(42)
+        paList = rng.random_sample(2)*360.0
+        rotSkyPosList = rng.random_sample(2)*360.0
 
         for pa in paList:
             for rotSkyPos in rotSkyPosList:
@@ -189,8 +189,8 @@ class GalSimPositionAngleTest(unittest.TestCase):
 
 
                 create_text_catalog(obs, dbFileName,
-                                    np.random.random_sample(1)*20.0-10.0,
-                                    np.random.random_sample(1)*20.0-10.0,
+                                    rng.random_sample(1)*20.0-10.0,
+                                    rng.random_sample(1)*20.0-10.0,
                                     pa=[pa],
                                     mag_norm=[17.0])
 
