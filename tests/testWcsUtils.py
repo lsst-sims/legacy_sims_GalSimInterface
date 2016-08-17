@@ -1,7 +1,7 @@
 import unittest
 import os
 import numpy
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 import lsst.afw.geom as afwGeom
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData, haversine, arcsecFromRadians
@@ -14,6 +14,11 @@ try:
     _USE_LSST_CAMERA = True
 except:
     _USE_LSST_CAMERA = False
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 class WcsTest(unittest.TestCase):
 
@@ -33,6 +38,11 @@ class WcsTest(unittest.TestCase):
                                        mjd=49250.0, rotSkyPos=0.0)
         cls.epoch = 2000.0
 
+
+    @classmethod
+    def tearDownClass(cls):
+        del cls.detector
+        del cls.camera
 
     def testTanSipWcs(self):
         """
@@ -91,14 +101,9 @@ class WcsTest(unittest.TestCase):
         self.assertGreater(maxDistanceTan-maxDistanceTanSip, 1.0e-10, msg=msg)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(WcsTest)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-    return unittest.TestSuite(suites)
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
