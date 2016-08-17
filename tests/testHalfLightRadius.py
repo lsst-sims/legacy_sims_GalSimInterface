@@ -1,18 +1,23 @@
-import numpy
+import numpy as np
 import os
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRadians
-from lsst.sims.utils import haversine, arcsecFromRadians
+from lsst.sims.utils import haversine
 from lsst.sims.catalogs.db import fileDBObject
-from lsst.sims.GalSimInterface import GalSimGalaxies, GalSimDetector
+from lsst.sims.GalSimInterface import GalSimGalaxies
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
-from  testUtils import create_text_catalog
+from testUtils import create_text_catalog
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 class hlrFileDBObj(fileDBObject):
     idColKey = 'test_id'
@@ -20,14 +25,13 @@ class hlrFileDBObj(fileDBObject):
     tableid = 'test'
     raColName = 'ra'
     decColName = 'dec'
-    #sedFilename
+    # sedFilename
 
-    columns = [('raJ2000','ra*PI()/180.0', numpy.float),
-               ('decJ2000','dec*PI()/180.0', numpy.float),
-               ('halfLightRadius', 'hlr*PI()/648000.0', numpy.float),
-               ('magNorm', 'mag_norm', numpy.float),
-               ('positionAngle', 'pa*PI()/180.0', numpy.float)]
-
+    columns = [('raJ2000', 'ra*PI()/180.0', np.float),
+               ('decJ2000', 'dec*PI()/180.0', np.float),
+               ('halfLightRadius', 'hlr*PI()/648000.0', np.float),
+               ('magNorm', 'mag_norm', np.float),
+               ('positionAngle', 'pa*PI()/180.0', np.float)]
 
 
 class hlrCat(GalSimGalaxies):
@@ -36,8 +40,8 @@ class hlrCat(GalSimGalaxies):
     default_columns = [('sedFilename', 'sed_flat.txt', (str, 12)),
                        ('magNorm', 21.0, float),
                        ('galacticAv', 0.1, float),
-                       ('galacticRv', 3.1 , float),
-                       ('galSimType', 'sersic', (str,11)),
+                       ('galacticRv', 3.1, float),
+                       ('galSimType', 'sersic', (str, 11)),
                        ('internalAv', 0.1, float),
                        ('internalRv', 3.1, float),
                        ('redshift', 0.0, float),
@@ -46,9 +50,7 @@ class hlrCat(GalSimGalaxies):
                        ('sindex', 4.0, float)]
 
 
-
 class GalSimHlrTest(unittest.TestCase):
-
 
     def get_flux_in_half_light_radius(self, fileName, hlr, detector, camera, obs, epoch=2000.0):
         """
@@ -79,8 +81,8 @@ class GalSimHlrTest(unittest.TestCase):
         im = afwImage.ImageF(fileName).getArray()
         totalFlux = im.sum()
 
-        _maxPixel = numpy.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
-        maxPixel = numpy.array([_maxPixel[1], _maxPixel[0]])
+        _maxPixel = np.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
+        maxPixel = np.array([_maxPixel[1], _maxPixel[0]])
 
         raMax, decMax = _raDecFromPixelCoords(maxPixel[0:1],
                                               maxPixel[1:2],
@@ -89,13 +91,12 @@ class GalSimHlrTest(unittest.TestCase):
                                               obs_metadata=obs,
                                               epoch=epoch)
 
-        activePoints = numpy.where(im>1.0e-10)
+        activePoints = np.where(im > 1.0e-10)
         self.assertGreater(len(activePoints), 0)
 
-        xPixList = activePoints[1] # this looks backwards, but remember: the way numpy handles
-        yPixList = activePoints[0] # arrays, the first index indicates what row it is in (the y coordinate)
+        xPixList = activePoints[1]  # this looks backwards, but remember: the way numpy handles
+        yPixList = activePoints[0]  # arrays, the first index indicates what row it is in (the y coordinate)
         chipNameList = [detector.getName()]*len(xPixList)
-
 
         raList, decList = _raDecFromPixelCoords(xPixList, yPixList, chipNameList,
                                                 camera=camera, obs_metadata=obs,
@@ -103,10 +104,9 @@ class GalSimHlrTest(unittest.TestCase):
 
         distanceList = arcsecFromRadians(haversine(raList, decList, raMax[0], decMax[0]))
 
-        dexContained = [ix for ix, dd in enumerate(distanceList) if dd<=hlr]
-        measuredHalfFlux = numpy.array([im[yPixList[dex]][xPixList[dex]] for dex in dexContained]).sum()
+        dexContained = [ix for ix, dd in enumerate(distanceList) if dd <= hlr]
+        measuredHalfFlux = np.array([im[yPixList[dex]][xPixList[dex]] for dex in dexContained]).sum()
         return totalFlux, measuredHalfFlux
-
 
     def testHalfLightRadiusOfImage(self):
         """
@@ -136,7 +136,7 @@ class GalSimHlrTest(unittest.TestCase):
         hlrTestList = [1.0, 2.0, 4.0]
 
         for hlr in hlrTestList:
-            create_text_catalog(obs, dbFileName, numpy.array([3.0]), numpy.array([1.0]),
+            create_text_catalog(obs, dbFileName, np.array([3.0]), np.array([1.0]),
                                 hlr=[hlr])
 
             db = hlrFileDBObj(dbFileName, runtable='test')
@@ -148,9 +148,11 @@ class GalSimHlrTest(unittest.TestCase):
             cat.write_images(nameRoot=imageRoot)
 
             totalFlux, hlrFlux = self.get_flux_in_half_light_radius(imageName, hlr, detector, camera, obs)
-            self.assertGreater(totalFlux, 1000.0) # make sure the image is not blank
-            sigmaFlux = numpy.sqrt(0.5*totalFlux/cat.photParams.gain) #divide by gain because Poisson stats apply to photons
-            self.assertLess(numpy.abs(hlrFlux-0.5*totalFlux), 4.0*sigmaFlux)
+            self.assertGreater(totalFlux, 1000.0)  # make sure the image is not blank
+
+            # divide by gain because Poisson stats apply to photons
+            sigmaFlux = np.sqrt(0.5*totalFlux/cat.photParams.gain)
+            self.assertLess(np.abs(hlrFlux-0.5*totalFlux), 4.0*sigmaFlux)
 
             if os.path.exists(catName):
                 os.unlink(catName)
@@ -160,17 +162,9 @@ class GalSimHlrTest(unittest.TestCase):
                 os.unlink(imageName)
 
 
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-
-
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(GalSimHlrTest)
-
-    return unittest.TestSuite(suites)
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

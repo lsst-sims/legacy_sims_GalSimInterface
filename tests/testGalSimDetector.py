@@ -1,15 +1,19 @@
 import unittest
 import os
-import numpy
+import numpy as np
 from lsst.utils import getPackageDir
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.photUtils import PhotometricParameters
 from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import _raDecFromPixelCoords, \
-                                 pupilCoordsFromPixelCoords
+from lsst.sims.coordUtils import _raDecFromPixelCoords, pupilCoordsFromPixelCoords
 from lsst.sims.GalSimInterface import GalSimDetector
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 class GalSimDetectorTest(unittest.TestCase):
 
@@ -31,6 +35,8 @@ class GalSimDetectorTest(unittest.TestCase):
                                        mjd=mjd,
                                        rotSkyPos=rotSkyPos)
 
+    def tearDown(self):
+        del self.camera
 
     def testContainsRaDec(self):
         """
@@ -39,7 +45,7 @@ class GalSimDetectorTest(unittest.TestCase):
         """
 
         photParams = PhotometricParameters()
-        gsdet = GalSimDetector(self.camera[0], self.camera, \
+        gsdet = GalSimDetector(self.camera[0], self.camera,
                                self.obs, self.epoch,
                                photParams=photParams)
 
@@ -65,10 +71,9 @@ class GalSimDetectorTest(unittest.TestCase):
             yPixList.append(yy+dy)
             correctAnswer.append(False)
 
-
         nameList = [gsdet.name]*len(xPixList)
-        xPixList = numpy.array(xPixList)
-        yPixList = numpy.array(yPixList)
+        xPixList = np.array(xPixList)
+        yPixList = np.array(yPixList)
 
         raList, decList = _raDecFromPixelCoords(xPixList, yPixList,
                                                 nameList,
@@ -81,7 +86,6 @@ class GalSimDetectorTest(unittest.TestCase):
         for c, t in zip(correctAnswer, testAnswer):
             self.assertIs(c, t)
 
-
     def testContainsPupilCoordinates(self):
         """
         Test whether or not the method containsRaDec correctly identifies
@@ -89,7 +93,7 @@ class GalSimDetectorTest(unittest.TestCase):
         """
 
         photParams = PhotometricParameters()
-        gsdet = GalSimDetector(self.camera[0], self.camera, \
+        gsdet = GalSimDetector(self.camera[0], self.camera,
                                self.obs, self.epoch,
                                photParams=photParams)
 
@@ -115,30 +119,23 @@ class GalSimDetectorTest(unittest.TestCase):
             yPixList.append(yy+dy)
             correctAnswer.append(False)
 
-
         nameList = [gsdet.name]*len(xPixList)
-        xPixList = numpy.array(xPixList)
-        yPixList = numpy.array(yPixList)
+        xPixList = np.array(xPixList)
+        yPixList = np.array(yPixList)
 
         xPupilList, yPupilList = \
-               pupilCoordsFromPixelCoords(xPixList, yPixList,
-                                          nameList,
-                                          camera=self.camera)
-
+        pupilCoordsFromPixelCoords(xPixList, yPixList,
+                                   nameList, camera=self.camera)
 
         testAnswer = gsdet.containsPupilCoordinates(xPupilList, yPupilList)
 
         for c, t in zip(correctAnswer, testAnswer):
             self.assertIs(c, t)
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(GalSimDetectorTest)
 
-    return unittest.TestSuite(suites)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

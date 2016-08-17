@@ -6,17 +6,21 @@ import unittest
 import galsim
 from collections import OrderedDict
 import lsst.utils
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
 from lsst.sims.catalogs.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.GalSimInterface import GalSimGalaxies, GalSimStars, GalSimAgn, \
-                                               SNRdocumentPSF, ExampleCCDNoise
-from lsst.sims.catUtils.utils import calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj, \
-                                     testGalaxyAgnDBObj, testStarsDBObj
+from lsst.sims.GalSimInterface import (GalSimGalaxies, GalSimStars, GalSimAgn,
+                                       SNRdocumentPSF, ExampleCCDNoise)
+from lsst.sims.catUtils.utils import (calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj,
+                                      testGalaxyAgnDBObj, testStarsDBObj)
 import lsst.afw.image as afwImage
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 
 class testGalaxyCatalog(GalSimGalaxies):
@@ -349,7 +353,8 @@ class GalSimInterfaceTest(unittest.TestCase):
                            (controlCounts[ff]-galsimCounts[ff])/countSigma, nameRoot)
 
                     if catalog.noise_and_background is not None \
-                    and catalog.noise_and_background.addBackground:
+                        and catalog.noise_and_background.addBackground:
+
                         msg += 'background per pixel %e pixels %e %s' % \
                                (backgroundCounts[ff[-6]], galsimPixels[ff], ff)
 
@@ -724,16 +729,16 @@ class GalSimInterfaceTest(unittest.TestCase):
         """
 
         # generate the database
-        np.random.seed(32)
-        rng = galsim.UniformDeviate(112)
+        np_rng = np.random.RandomState(32)
+        gs_rng = galsim.UniformDeviate(112)
         catSize = 3
         dbName = 'galSimPlacementTestDB.db'
         driver = 'sqlite'
         if os.path.exists(dbName):
             os.unlink(dbName)
 
-        displacedRA = (-40.0 + np.random.sample(catSize)*(120.0))/3600.0
-        displacedDec = (-20.0 + np.random.sample(catSize)*(80.0))/3600.0
+        displacedRA = (-40.0 + np_rng.random_sample(catSize)*(120.0))/3600.0
+        displacedDec = (-20.0 + np_rng.random_sample(catSize)*(80.0))/3600.0
         obs_metadata = makePhoSimTestDB(filename=dbName, displacedRA=displacedRA, displacedDec=displacedDec,
                                         bandpass=self.bandpassNameList,
                                         m5=self.m5, seeing=self.seeing)
@@ -757,9 +762,10 @@ class GalSimInterfaceTest(unittest.TestCase):
                 for detector in cat.galSimInterpreter.detectors:
                     for bandpass in cat.galSimInterpreter.bandpassDict:
                         controlImages['placementControl_' +
-                                      cat.galSimInterpreter._getFileName(
-                                      detector=detector, bandpassName=bandpass)] = \
-                                      cat.galSimInterpreter.blankImage(detector=detector)
+                                      cat.galSimInterpreter._getFileName(detector=detector,
+                                                                         bandpassName=bandpass)] = \
+                            cat.galSimInterpreter.blankImage(detector=detector)
+
                 firstLine = False
 
             for bp in cat.galSimInterpreter.bandpassDict:
@@ -780,11 +786,11 @@ class GalSimInterfaceTest(unittest.TestCase):
                     localImage = obj.drawImage(wcs=detector.wcs, method='phot',
                                                gain=detector.photParams.gain, image=localImage,
                                                offset=galsim.PositionD(dx, dy),
-                                               rng=rng)
+                                               rng=gs_rng)
 
                     controlImages['placementControl_' +
-                                  cat.galSimInterpreter._getFileName(detector=detector, bandpassName=bp)] += \
-                                  localImage
+                                  cat.galSimInterpreter._getFileName(detector=detector,
+                                                                     bandpassName=bp)] += localImage
 
         self.assertGreater(len(controlImages), 0)
 
@@ -894,15 +900,9 @@ class GalSimInterfaceTest(unittest.TestCase):
         self.assertLess(midP1, 0.5*maxValue, msg=msg)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(GalSimInterfaceTest)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-    return unittest.TestSuite(suites)
-
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

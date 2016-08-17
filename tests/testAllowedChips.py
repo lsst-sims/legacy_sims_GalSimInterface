@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 import os
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 
 from lsst.utils import getPackageDir
 
@@ -14,6 +14,10 @@ from lsst.sims.coordUtils import raDecFromPixelCoords
 from lsst.sims.photUtils import Sed, Bandpass, BandpassDict, PhotometricParameters
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from testUtils import create_text_catalog
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 
 class allowedChipsFileDBObj(fileDBObject):
@@ -104,6 +108,7 @@ class allowedChipsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        del cls.camera
         if os.path.exists(cls.dbFileName):
             os.unlink(cls.dbFileName)
 
@@ -204,17 +209,9 @@ class allowedChipsTest(unittest.TestCase):
             os.unlink(control_cat_name)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(allowedChipsTest)
-
-    return unittest.TestSuite(suites)
-
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
-
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

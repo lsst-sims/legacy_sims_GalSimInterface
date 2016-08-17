@@ -1,18 +1,23 @@
-import numpy
+import numpy as np
 import os
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
-from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRadians
-from lsst.sims.utils import haversine, arcsecFromRadians
+from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
+from lsst.sims.utils import haversine
 from lsst.sims.catalogs.db import fileDBObject
-from lsst.sims.GalSimInterface import GalSimStars, GalSimDetector, SNRdocumentPSF
+from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
-from  testUtils import create_text_catalog
+from testUtils import create_text_catalog
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 class fwhmFileDBObj(fileDBObject):
     idColKey = 'test_id'
@@ -20,12 +25,11 @@ class fwhmFileDBObj(fileDBObject):
     tableid = 'test'
     raColName = 'ra'
     decColName = 'dec'
-    #sedFilename
+    # sedFilename
 
-    columns = [('raJ2000','ra*PI()/180.0', numpy.float),
-               ('decJ2000','dec*PI()/180.0', numpy.float),
-               ('magNorm', 'mag_norm', numpy.float)]
-
+    columns = [('raJ2000', 'ra*PI()/180.0', np.float),
+               ('decJ2000', 'dec*PI()/180.0', np.float),
+               ('magNorm', 'mag_norm', np.float)]
 
 
 class fwhmCat(GalSimStars):
@@ -34,12 +38,11 @@ class fwhmCat(GalSimStars):
 
     default_columns = GalSimStars.default_columns
 
-    default_columns += [('sedFilename', 'sed_flat.txt', (str,12)),
-                        ('properMotionRa', 0.0, numpy.float),
-                        ('properMotionDec', 0.0, numpy.float),
-                        ('radialVelocity', 0.0, numpy.float),
-                        ('parallax', 0.0, numpy.float),
-                        ]
+    default_columns += [('sedFilename', 'sed_flat.txt', (str, 12)),
+                        ('properMotionRa', 0.0, np.float),
+                        ('properMotionDec', 0.0, np.float),
+                        ('radialVelocity', 0.0, np.float),
+                        ('parallax', 0.0, np.float)]
 
 
 class GalSimFwhmTest(unittest.TestCase):
@@ -75,12 +78,12 @@ class GalSimFwhmTest(unittest.TestCase):
         """
         im = afwImage.ImageF(fileName).getArray()
         maxFlux = im.max()
-        self.assertGreater(maxFlux, 100.0) # make sure the image is not blank
+        self.assertGreater(maxFlux, 100.0)  # make sure the image is not blank
 
         # this looks backwards, but remember: the way numpy handles
         # arrays, the first index indicates what row it is in (the y coordinate)
-        _maxPixel = numpy.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
-        maxPixel = numpy.array([_maxPixel[1], _maxPixel[0]])
+        _maxPixel = np.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
+        maxPixel = np.array([_maxPixel[1], _maxPixel[0]])
 
         raMax, decMax = _raDecFromPixelCoords(maxPixel[:1],
                                               maxPixel[1:2],
@@ -89,26 +92,26 @@ class GalSimFwhmTest(unittest.TestCase):
                                               obs_metadata=obs,
                                               epoch=epoch)
 
-        half_flux=0.5*maxFlux
+        half_flux = 0.5*maxFlux
 
         # only need to consider orientations between 0 and pi because the objects
         # will be circularly symmetric (and FWHM is a circularly symmetric measure, anyway)
-        for theta in numpy.arange(0.0, numpy.pi, 0.3*numpy.pi):
+        for theta in np.arange(0.0, np.pi, 0.3*np.pi):
 
-            slope = numpy.tan(theta)
+            slope = np.tan(theta)
 
-            if numpy.abs(slope<1.0):
-                xPixList = numpy.array([ix for ix in range(0, im.shape[1]) \
-                                if int(slope*(ix-maxPixel[0]) + maxPixel[1])>=0 and \
-                                int(slope*(ix-maxPixel[0])+maxPixel[1])<im.shape[0]])
+            if np.abs(slope < 1.0):
+                xPixList = np.array([ix for ix in range(0, im.shape[1])
+                                     if int(slope*(ix-maxPixel[0]) + maxPixel[1]) >= 0 and
+                                     int(slope*(ix-maxPixel[0])+maxPixel[1]) < im.shape[0]])
 
-                yPixList = numpy.array([int(slope*(ix-maxPixel[0])+maxPixel[1]) for ix in xPixList])
+                yPixList = np.array([int(slope*(ix-maxPixel[0])+maxPixel[1]) for ix in xPixList])
             else:
-                yPixList = numpy.array([iy for iy in range(0, im.shape[0]) \
-                                if int((iy-maxPixel[1])/slope + maxPixel[0])>=0 and \
-                                int((iy-maxPixel[1])/slope + maxPixel[0])<im.shape[1]])
+                yPixList = np.array([iy for iy in range(0, im.shape[0])
+                                     if int((iy-maxPixel[1])/slope + maxPixel[0]) >= 0 and
+                                     int((iy-maxPixel[1])/slope + maxPixel[0]) < im.shape[1]])
 
-                xPixList = numpy.array([int((iy-maxPixel[1])/slope + maxPixel[0]) for iy in yPixList])
+                xPixList = np.array([int((iy-maxPixel[1])/slope + maxPixel[0]) for iy in yPixList])
 
             chipNameList = [detector.getName()]*len(xPixList)
             raList, decList = _raDecFromPixelCoords(xPixList, yPixList, chipNameList,
@@ -116,13 +119,13 @@ class GalSimFwhmTest(unittest.TestCase):
 
             distanceList = arcsecFromRadians(haversine(raList, decList, raMax[0], decMax[0]))
 
-            fluxList = numpy.array([im[iy][ix] for ix,iy in zip(xPixList, yPixList)])
+            fluxList = np.array([im[iy][ix] for ix, iy in zip(xPixList, yPixList)])
 
             distanceToLeft = None
             distanceToRight = None
 
-            for ix in range(1,len(xPixList)):
-                if fluxList[ix]<half_flux and fluxList[ix+1]>=half_flux:
+            for ix in range(1, len(xPixList)):
+                if fluxList[ix] < half_flux and fluxList[ix+1] >= half_flux:
                     break
 
             newOrigin = ix+1
@@ -132,7 +135,7 @@ class GalSimFwhmTest(unittest.TestCase):
             distanceToLeft = mm*half_flux + bb
 
             for ix in range(newOrigin, len(xPixList)-1):
-                if fluxList[ix]>=half_flux and fluxList[ix+1]<half_flux:
+                if fluxList[ix] >= half_flux and fluxList[ix+1] < half_flux:
                     break
 
             mm = (distanceList[ix]-distanceList[ix+1])/(fluxList[ix]-fluxList[ix+1])
@@ -140,10 +143,9 @@ class GalSimFwhmTest(unittest.TestCase):
             distanceToRight = mm*half_flux + bb
 
             msg = "measured fwhm %e; expected fwhm %e; maxFlux %e\n" % \
-            (distanceToLeft+distanceToRight, fwhm, maxFlux)
+                  (distanceToLeft+distanceToRight, fwhm, maxFlux)
 
-            self.assertLess(numpy.abs(distanceToLeft+distanceToRight-fwhm), 0.1*fwhm, msg=msg)
-
+            self.assertLess(np.abs(distanceToLeft+distanceToRight-fwhm), 0.1*fwhm, msg=msg)
 
     def testFwhmOfImage(self):
         """
@@ -168,8 +170,8 @@ class GalSimFwhmTest(unittest.TestCase):
                                   rotSkyPos = 33.0,
                                   mjd = 49250.0)
 
-        create_text_catalog(obs, dbFileName, numpy.array([3.0]), \
-                            numpy.array([1.0]), mag_norm=[13.0])
+        create_text_catalog(obs, dbFileName, np.array([3.0]),
+                            np.array([1.0]), mag_norm=[13.0])
 
         db = fwhmFileDBObj(dbFileName, runtable='test')
 
@@ -192,21 +194,13 @@ class GalSimFwhmTest(unittest.TestCase):
             if os.path.exists(imageName):
                 os.unlink(imageName)
 
-
         if os.path.exists(dbFileName):
             os.unlink(dbFileName)
 
 
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(GalSimFwhmTest)
-
-    return unittest.TestSuite(suites)
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

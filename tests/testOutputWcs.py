@@ -1,19 +1,24 @@
-import numpy
+import numpy as np
 import os
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
-from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRadians
-from lsst.sims.utils import haversine, arcsecFromRadians
+from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
+from lsst.sims.utils import haversine
 from lsst.sims.catalogs.db import fileDBObject
-from lsst.sims.GalSimInterface import GalSimStars, GalSimDetector, SNRdocumentPSF
+from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
-from  testUtils import create_text_catalog
+from testUtils import create_text_catalog
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 class outputWcsFileDBObj(fileDBObject):
     idColKey = 'test_id'
@@ -21,11 +26,10 @@ class outputWcsFileDBObj(fileDBObject):
     tableid = 'test'
     raColName = 'ra'
     decColName = 'dec'
-    #sedFilename
+    # sedFilename
 
-    columns = [('raJ2000','ra*PI()/180.0', numpy.float),
-               ('decJ2000','dec*PI()/180.0', numpy.float)]
-
+    columns = [('raJ2000', 'ra*PI()/180.0', np.float),
+               ('decJ2000', 'dec*PI()/180.0', np.float)]
 
 
 class outputWcsCat(GalSimStars):
@@ -34,13 +38,12 @@ class outputWcsCat(GalSimStars):
 
     default_columns = GalSimStars.default_columns
 
-    default_columns += [('sedFilename', 'sed_flat.txt', (str,12)),
-                        ('properMotionRa', 0.0, numpy.float),
-                        ('properMotionDec', 0.0, numpy.float),
-                        ('radialVelocity', 0.0, numpy.float),
-                        ('parallax', 0.0, numpy.float),
-                        ('magNorm', 14.0, numpy.float)
-                        ]
+    default_columns += [('sedFilename', 'sed_flat.txt', (str, 12)),
+                        ('properMotionRa', 0.0, np.float),
+                        ('properMotionDec', 0.0, np.float),
+                        ('radialVelocity', 0.0, np.float),
+                        ('parallax', 0.0, np.float),
+                        ('magNorm', 14.0, np.float)]
 
 
 class GalSimOutputWcsTest(unittest.TestCase):
@@ -67,13 +70,13 @@ class GalSimOutputWcsTest(unittest.TestCase):
         imageName = '%s_%s_u.fits' % (imageRoot, detName)
 
         nSamples = 3
-        numpy.random.seed(42)
-        pointingRaList = numpy.random.random_sample(nSamples)*360.0
-        pointingDecList = numpy.random.random_sample(nSamples)*180.0 - 90.0
-        rotSkyPosList = numpy.random.random_sample(nSamples)*360.0
+        rng = np.random.RandomState(42)
+        pointingRaList = rng.random_sample(nSamples)*360.0
+        pointingDecList = rng.random_sample(nSamples)*180.0 - 90.0
+        rotSkyPosList = rng.random_sample(nSamples)*360.0
 
         for raPointing, decPointing, rotSkyPos in \
-        zip(pointingRaList, pointingDecList, rotSkyPosList):
+            zip(pointingRaList, pointingDecList, rotSkyPosList):
 
             obs = ObservationMetaData(pointingRA = raPointing,
                                       pointingDec = decPointing,
@@ -83,8 +86,8 @@ class GalSimOutputWcsTest(unittest.TestCase):
                                       mjd = 49250.0)
 
             fwhm = 0.7
-            create_text_catalog(obs, dbFileName, numpy.array([3.0]),
-                                numpy.array([1.0]))
+            create_text_catalog(obs, dbFileName, np.array([3.0]),
+                                np.array([1.0]))
 
             db = outputWcsFileDBObj(dbFileName, runtable='test')
 
@@ -98,7 +101,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
             cat.write_images(nameRoot=imageRoot)
 
             exposure = afwImage.ExposureD_readFits(imageName)
-            wcs  = exposure.getWcs()
+            wcs = exposure.getWcs()
 
             xxTestList = []
             yyTestList = []
@@ -106,35 +109,32 @@ class GalSimOutputWcsTest(unittest.TestCase):
             raImage = []
             decImage = []
 
-            for xx in numpy.arange(0.0, 4001.0, 100.0):
-                for yy in numpy.arange(0.0, 4001.0, 100.0):
+            for xx in np.arange(0.0, 4001.0, 100.0):
+                for yy in np.arange(0.0, 4001.0, 100.0):
                     xxTestList.append(xx)
                     yyTestList.append(yy)
 
-                    pt = afwGeom.Point2D(xx ,yy)
+                    pt = afwGeom.Point2D(xx, yy)
                     skyPt = wcs.pixelToSky(pt).getPosition()
                     raImage.append(skyPt.getX())
                     decImage.append(skyPt.getY())
 
-            xxTestList = numpy.array(xxTestList)
-            yyTestList = numpy.array(yyTestList)
+            xxTestList = np.array(xxTestList)
+            yyTestList = np.array(yyTestList)
 
-            raImage = numpy.radians(numpy.array(raImage))
-            decImage = numpy.radians(numpy.array(decImage))
+            raImage = np.radians(np.array(raImage))
+            decImage = np.radians(np.array(decImage))
 
             raControl, \
-            decControl = _raDecFromPixelCoords(
-                                               xxTestList, yyTestList,
+            decControl = _raDecFromPixelCoords(xxTestList, yyTestList,
                                                [detector.getName()]*len(xxTestList),
                                                camera=camera, obs_metadata=obs,
-                                               epoch=2000.0
-                                              )
+                                               epoch=2000.0)
 
             errorList = arcsecFromRadians(haversine(raControl, decControl,
                                                     raImage, decImage))
 
-
-            medianError = numpy.median(errorList)
+            medianError = np.median(errorList)
             msg = 'medianError was %e' % medianError
             self.assertLess(medianError, 0.01, msg=msg)
 
@@ -146,17 +146,9 @@ class GalSimOutputWcsTest(unittest.TestCase):
                 os.unlink(imageName)
 
 
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-
-
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(GalSimOutputWcsTest)
-
-    return unittest.TestSuite(suites)
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

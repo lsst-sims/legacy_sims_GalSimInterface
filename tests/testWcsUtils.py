@@ -1,7 +1,7 @@
 import unittest
 import os
-import numpy
-import lsst.utils.tests as utilsTests
+import numpy as np
+import lsst.utils.tests
 import lsst.afw.geom as afwGeom
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData, haversine, arcsecFromRadians
@@ -14,6 +14,11 @@ try:
     _USE_LSST_CAMERA = True
 except:
     _USE_LSST_CAMERA = False
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 class WcsTest(unittest.TestCase):
 
@@ -29,10 +34,14 @@ class WcsTest(unittest.TestCase):
             cls.detector = cls.camera[0]
 
         cls.obs = ObservationMetaData(pointingRA=25.0, pointingDec=-10.0,
-                                       boundType='circle', boundLength=1.0,
-                                       mjd=49250.0, rotSkyPos=0.0)
+                                      boundType='circle', boundLength=1.0,
+                                      mjd=49250.0, rotSkyPos=0.0)
         cls.epoch = 2000.0
 
+    @classmethod
+    def tearDownClass(cls):
+        del cls.detector
+        del cls.camera
 
     def testTanSipWcs(self):
         """
@@ -40,7 +49,6 @@ class WcsTest(unittest.TestCase):
         a detector with distortions and verifying that the TAN-SIP WCS better approximates
         the truth.
         """
-
 
         tanWcs = tanWcsFromDetector(self.detector, self.camera, self.obs, self.epoch)
         tanSipWcs = tanSipWcsFromDetector(self.detector, self.camera, self.obs, self.epoch)
@@ -52,12 +60,12 @@ class WcsTest(unittest.TestCase):
 
         xPixList = []
         yPixList = []
-        for xx in numpy.arange(0.0, 4001.0, 100.0):
-            for yy in numpy.arange(0.0, 4001.0, 100.0):
+        for xx in np.arange(0.0, 4001.0, 100.0):
+            for yy in np.arange(0.0, 4001.0, 100.0):
                 xPixList.append(xx)
                 yPixList.append(yy)
 
-                pt = afwGeom.Point2D(xx ,yy)
+                pt = afwGeom.Point2D(xx, yy)
                 skyPt = tanWcs.pixelToSky(pt).getPosition()
                 tanWcsRa.append(skyPt.getX())
                 tanWcsDec.append(skyPt.getY())
@@ -66,14 +74,14 @@ class WcsTest(unittest.TestCase):
                 tanSipWcsRa.append(skyPt.getX())
                 tanSipWcsDec.append(skyPt.getY())
 
-        tanWcsRa = numpy.radians(numpy.array(tanWcsRa))
-        tanWcsDec = numpy.radians(numpy.array(tanWcsDec))
+        tanWcsRa = np.radians(np.array(tanWcsRa))
+        tanWcsDec = np.radians(np.array(tanWcsDec))
 
-        tanSipWcsRa = numpy.radians(numpy.array(tanSipWcsRa))
-        tanSipWcsDec = numpy.radians(numpy.array(tanSipWcsDec))
+        tanSipWcsRa = np.radians(np.array(tanSipWcsRa))
+        tanSipWcsDec = np.radians(np.array(tanSipWcsDec))
 
-        xPixList = numpy.array(xPixList)
-        yPixList = numpy.array(yPixList)
+        xPixList = np.array(xPixList)
+        yPixList = np.array(yPixList)
 
         raTest, decTest = _raDecFromPixelCoords(xPixList, yPixList,
                                                 [self.detector.getName()]*len(xPixList),
@@ -91,14 +99,9 @@ class WcsTest(unittest.TestCase):
         self.assertGreater(maxDistanceTan-maxDistanceTanSip, 1.0e-10, msg=msg)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(WcsTest)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-    return unittest.TestSuite(suites)
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
