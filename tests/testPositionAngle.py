@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import os
 import unittest
 import lsst.utils.tests
@@ -26,11 +26,11 @@ class paFileDBObj(fileDBObject):
     decColName = 'dec'
     #sedFilename
 
-    columns = [('raJ2000','ra*PI()/180.0', numpy.float),
-               ('decJ2000','dec*PI()/180.0', numpy.float),
-               ('halfLightRadius', 'hlr*PI()/648000.0', numpy.float),
-               ('magNorm', 'mag_norm', numpy.float),
-               ('positionAngle', 'pa*PI()/180.0', numpy.float)]
+    columns = [('raJ2000','ra*PI()/180.0', np.float),
+               ('decJ2000','dec*PI()/180.0', np.float),
+               ('halfLightRadius', 'hlr*PI()/648000.0', np.float),
+               ('magNorm', 'mag_norm', np.float),
+               ('positionAngle', 'pa*PI()/180.0', np.float)]
 
 
 
@@ -84,13 +84,13 @@ class GalSimPositionAngleTest(unittest.TestCase):
         """
 
         im = afwImage.ImageF(imageName).getArray()
-        activePixels = numpy.where(im>1.0e-10)
+        activePixels = np.where(im>1.0e-10)
         self.assertGreater(len(activePixels), 0)
         xPixList = activePixels[1]
         yPixList = activePixels[0]
 
-        xCenterPix = numpy.array([im.shape[1]/2])
-        yCenterPix = numpy.array([im.shape[0]/2])
+        xCenterPix = np.array([im.shape[1]/2])
+        yCenterPix = np.array([im.shape[0]/2])
 
         raCenter, decCenter = _raDecFromPixelCoords(xCenterPix, yCenterPix,
                                                     [afwDetector.getName()],
@@ -108,49 +108,49 @@ class GalSimPositionAngleTest(unittest.TestCase):
 
         # find the angle between the (1,1) vector in pixel space and the
         # north axis of the image
-        theta = numpy.arctan2(-1.0*(raCenterP1[0]-raCenter[0]), decCenterP1[0]-decCenter[0])
+        theta = np.arctan2(-1.0*(raCenterP1[0]-raCenter[0]), decCenterP1[0]-decCenter[0])
 
         # rotate the (1,1) vector in pixel space so that it is pointing
         # along the north axis
-        north = numpy.array([numpy.cos(theta)-numpy.sin(theta), numpy.cos(theta)+numpy.sin(theta)])
-        north = north/numpy.sqrt(north[0]*north[0]+north[1]*north[1])
+        north = np.array([np.cos(theta)-np.sin(theta), np.cos(theta)+np.sin(theta)])
+        north = north/np.sqrt(north[0]*north[0]+north[1]*north[1])
 
         # find the west axis of the image
-        west = numpy.array([north[1], -1.0*north[0]])
+        west = np.array([north[1], -1.0*north[0]])
 
         # now find the covariance matrix of the x, y  pixel space distribution
         # of flux on the image
-        maxPixel = numpy.array([im.argmax()%im.shape[1], im.argmax()/im.shape[1]])
+        maxPixel = np.array([im.argmax()%im.shape[1], im.argmax()/im.shape[1]])
 
-        xx = numpy.array([im[iy][ix]*numpy.power(ix-maxPixel[0],2) \
+        xx = np.array([im[iy][ix]*np.power(ix-maxPixel[0],2) \
                          for ix, iy in zip(xPixList, yPixList)]).sum()
 
-        xy = numpy.array([im[iy][ix]*(ix-maxPixel[0])*(iy-maxPixel[1]) \
+        xy = np.array([im[iy][ix]*(ix-maxPixel[0])*(iy-maxPixel[1]) \
                           for ix, iy in zip(xPixList, yPixList)]).sum()
 
-        yy = numpy.array([im[iy][ix]*(iy-maxPixel[1])*(iy-maxPixel[1]) \
+        yy = np.array([im[iy][ix]*(iy-maxPixel[1])*(iy-maxPixel[1]) \
                           for ix, iy in zip(xPixList, yPixList)]).sum()
 
-        covar = numpy.array([[xx, xy],[xy, yy]])
+        covar = np.array([[xx, xy],[xy, yy]])
 
         # find the eigen vectors of this covarinace matrix;
         # treat the one with the largest eigen value as the
         # semi-major axis of the object
-        eigenVals, eigenVecs = numpy.linalg.eig(covar)
+        eigenVals, eigenVecs = np.linalg.eig(covar)
 
         iMax = eigenVals.argmax()
         majorAxis = eigenVecs[:,iMax]
 
-        majorAxis = majorAxis/numpy.sqrt(majorAxis[0]*majorAxis[0]+majorAxis[1]*majorAxis[1])
+        majorAxis = majorAxis/np.sqrt(majorAxis[0]*majorAxis[0]+majorAxis[1]*majorAxis[1])
 
 
         # return the angle between the north axis of the image
         # and the semi-major axis of the object
-        cosTheta = numpy.dot(majorAxis, north)
-        sinTheta = numpy.dot(majorAxis, west)
-        theta = numpy.arctan2(sinTheta, cosTheta)
+        cosTheta = np.dot(majorAxis, north)
+        sinTheta = np.dot(majorAxis, west)
+        theta = np.arctan2(sinTheta, cosTheta)
 
-        return numpy.degrees(theta)
+        return np.degrees(theta)
 
 
     def testPositionAngle(self):
@@ -171,9 +171,9 @@ class GalSimPositionAngleTest(unittest.TestCase):
         detector = camera[0]
         detName = detector.getName()
 
-        numpy.random.seed(42)
-        paList = numpy.random.random_sample(2)*360.0
-        rotSkyPosList = numpy.random.random_sample(2)*360.0
+        np.random.seed(42)
+        paList = np.random.random_sample(2)*360.0
+        rotSkyPosList = np.random.random_sample(2)*360.0
 
         for pa in paList:
             for rotSkyPos in rotSkyPosList:
@@ -189,8 +189,8 @@ class GalSimPositionAngleTest(unittest.TestCase):
 
 
                 create_text_catalog(obs, dbFileName,
-                                    numpy.random.random_sample(1)*20.0-10.0,
-                                    numpy.random.random_sample(1)*20.0-10.0,
+                                    np.random.random_sample(1)*20.0-10.0,
+                                    np.random.random_sample(1)*20.0-10.0,
                                     pa=[pa],
                                     mag_norm=[17.0])
 
@@ -206,7 +206,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
 
                 # need to compare against all angles displaced by either 180 or 360 degrees
                 # from expected answer
-                deviation = numpy.abs(numpy.array([
+                deviation = np.abs(np.array([
                                                   pa-paTest,
                                                   pa-180.0-paTest,
                                                   pa+180.0-paTest,
