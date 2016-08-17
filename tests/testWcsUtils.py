@@ -34,10 +34,9 @@ class WcsTest(unittest.TestCase):
             cls.detector = cls.camera[0]
 
         cls.obs = ObservationMetaData(pointingRA=25.0, pointingDec=-10.0,
-                                       boundType='circle', boundLength=1.0,
-                                       mjd=49250.0, rotSkyPos=0.0)
+                                      boundType='circle', boundLength=1.0,
+                                      mjd=49250.0, rotSkyPos=0.0)
         cls.epoch = 2000.0
-
 
     @classmethod
     def tearDownClass(cls):
@@ -50,7 +49,6 @@ class WcsTest(unittest.TestCase):
         a detector with distortions and verifying that the TAN-SIP WCS better approximates
         the truth.
         """
-
 
         tanWcs = tanWcsFromDetector(self.detector, self.camera, self.obs, self.epoch)
         tanSipWcs = tanSipWcsFromDetector(self.detector, self.camera, self.obs, self.epoch)
@@ -67,7 +65,7 @@ class WcsTest(unittest.TestCase):
                 xPixList.append(xx)
                 yPixList.append(yy)
 
-                pt = afwGeom.Point2D(xx ,yy)
+                pt = afwGeom.Point2D(xx, yy)
                 skyPt = tanWcs.pixelToSky(pt).getPosition()
                 tanWcsRa.append(skyPt.getX())
                 tanWcsDec.append(skyPt.getY())
