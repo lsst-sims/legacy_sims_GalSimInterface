@@ -1,6 +1,6 @@
 import unittest
 import os
-import numpy
+import numpy as np
 import lsst.utils.tests
 import lsst.afw.geom as afwGeom
 from lsst.utils import getPackageDir
@@ -62,8 +62,8 @@ class WcsTest(unittest.TestCase):
 
         xPixList = []
         yPixList = []
-        for xx in numpy.arange(0.0, 4001.0, 100.0):
-            for yy in numpy.arange(0.0, 4001.0, 100.0):
+        for xx in np.arange(0.0, 4001.0, 100.0):
+            for yy in np.arange(0.0, 4001.0, 100.0):
                 xPixList.append(xx)
                 yPixList.append(yy)
 
@@ -76,14 +76,14 @@ class WcsTest(unittest.TestCase):
                 tanSipWcsRa.append(skyPt.getX())
                 tanSipWcsDec.append(skyPt.getY())
 
-        tanWcsRa = numpy.radians(numpy.array(tanWcsRa))
-        tanWcsDec = numpy.radians(numpy.array(tanWcsDec))
+        tanWcsRa = np.radians(np.array(tanWcsRa))
+        tanWcsDec = np.radians(np.array(tanWcsDec))
 
-        tanSipWcsRa = numpy.radians(numpy.array(tanSipWcsRa))
-        tanSipWcsDec = numpy.radians(numpy.array(tanSipWcsDec))
+        tanSipWcsRa = np.radians(np.array(tanSipWcsRa))
+        tanSipWcsDec = np.radians(np.array(tanSipWcsDec))
 
-        xPixList = numpy.array(xPixList)
-        yPixList = numpy.array(yPixList)
+        xPixList = np.array(xPixList)
+        yPixList = np.array(yPixList)
 
         raTest, decTest = _raDecFromPixelCoords(xPixList, yPixList,
                                                 [self.detector.getName()]*len(xPixList),
