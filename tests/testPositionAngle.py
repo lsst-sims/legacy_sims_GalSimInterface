@@ -11,7 +11,7 @@ from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
-from  testUtils import create_text_catalog
+from testUtils import create_text_catalog
 
 
 def setup_module(module):
@@ -24,14 +24,13 @@ class paFileDBObj(fileDBObject):
     tableid = 'test'
     raColName = 'ra'
     decColName = 'dec'
-    #sedFilename
+    # sedFilename
 
-    columns = [('raJ2000','ra*PI()/180.0', np.float),
-               ('decJ2000','dec*PI()/180.0', np.float),
+    columns = [('raJ2000', 'ra*PI()/180.0', np.float),
+               ('decJ2000', 'dec*PI()/180.0', np.float),
                ('halfLightRadius', 'hlr*PI()/648000.0', np.float),
                ('magNorm', 'mag_norm', np.float),
                ('positionAngle', 'pa*PI()/180.0', np.float)]
-
 
 
 class paCat(GalSimGalaxies):
@@ -41,7 +40,7 @@ class paCat(GalSimGalaxies):
                        ('magNorm', 21.0, float),
                        ('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
-                       ('galSimType', 'sersic', (str,11)),
+                       ('galSimType', 'sersic', (str, 11)),
                        ('internalAv', 0.1, float),
                        ('internalRv', 3.1, float),
                        ('redshift', 0.0, float),
@@ -50,11 +49,9 @@ class paCat(GalSimGalaxies):
                        ('sindex', 4.0, float)]
 
 
-
 class GalSimPositionAngleTest(unittest.TestCase):
 
-
-    def get_position_angle(self, imageName, afwCamera, afwDetector, \
+    def get_position_angle(self, imageName, afwCamera, afwDetector,
                            obs_metadata, epoch):
         """
         Read in a FITS image containing one extended object.
@@ -84,7 +81,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
         """
 
         im = afwImage.ImageF(imageName).getArray()
-        activePixels = np.where(im>1.0e-10)
+        activePixels = np.where(im > 1.0e-10)
         self.assertGreater(len(activePixels), 0)
         xPixList = activePixels[1]
         yPixList = activePixels[0]
@@ -100,11 +97,11 @@ class GalSimPositionAngleTest(unittest.TestCase):
 
         xCenterP1 = xCenterPix+1
         yCenterP1 = yCenterPix+1
-        raCenterP1,decCenterP1 = _raDecFromPixelCoords(xCenterP1, yCenterP1,
-                                                       [afwDetector.getName()],
-                                                       camera=afwCamera,
-                                                       obs_metadata=obs_metadata,
-                                                       epoch=epoch)
+        raCenterP1, decCenterP1 = _raDecFromPixelCoords(xCenterP1, yCenterP1,
+                                                        [afwDetector.getName()],
+                                                        camera=afwCamera,
+                                                        obs_metadata=obs_metadata,
+                                                        epoch=epoch)
 
         # find the angle between the (1,1) vector in pixel space and the
         # north axis of the image
@@ -122,16 +119,16 @@ class GalSimPositionAngleTest(unittest.TestCase):
         # of flux on the image
         maxPixel = np.array([im.argmax()%im.shape[1], im.argmax()/im.shape[1]])
 
-        xx = np.array([im[iy][ix]*np.power(ix-maxPixel[0],2) \
-                         for ix, iy in zip(xPixList, yPixList)]).sum()
+        xx = np.array([im[iy][ix]*np.power(ix-maxPixel[0], 2)
+                       for ix, iy in zip(xPixList, yPixList)]).sum()
 
-        xy = np.array([im[iy][ix]*(ix-maxPixel[0])*(iy-maxPixel[1]) \
-                          for ix, iy in zip(xPixList, yPixList)]).sum()
+        xy = np.array([im[iy][ix]*(ix-maxPixel[0])*(iy-maxPixel[1])
+                       for ix, iy in zip(xPixList, yPixList)]).sum()
 
-        yy = np.array([im[iy][ix]*(iy-maxPixel[1])*(iy-maxPixel[1]) \
-                          for ix, iy in zip(xPixList, yPixList)]).sum()
+        yy = np.array([im[iy][ix]*(iy-maxPixel[1])*(iy-maxPixel[1])
+                       for ix, iy in zip(xPixList, yPixList)]).sum()
 
-        covar = np.array([[xx, xy],[xy, yy]])
+        covar = np.array([[xx, xy], [xy, yy]])
 
         # find the eigen vectors of this covarinace matrix;
         # treat the one with the largest eigen value as the
@@ -139,10 +136,9 @@ class GalSimPositionAngleTest(unittest.TestCase):
         eigenVals, eigenVecs = np.linalg.eig(covar)
 
         iMax = eigenVals.argmax()
-        majorAxis = eigenVecs[:,iMax]
+        majorAxis = eigenVecs[:, iMax]
 
         majorAxis = majorAxis/np.sqrt(majorAxis[0]*majorAxis[0]+majorAxis[1]*majorAxis[1])
-
 
         # return the angle between the north axis of the image
         # and the semi-major axis of the object
@@ -151,7 +147,6 @@ class GalSimPositionAngleTest(unittest.TestCase):
         theta = np.arctan2(sinTheta, cosTheta)
 
         return np.degrees(theta)
-
 
     def testPositionAngle(self):
         """
@@ -187,7 +182,6 @@ class GalSimPositionAngleTest(unittest.TestCase):
                                           rotSkyPos = rotSkyPos,
                                           mjd = 49250.0)
 
-
                 create_text_catalog(obs, dbFileName,
                                     rng.random_sample(1)*20.0-10.0,
                                     rng.random_sample(1)*20.0-10.0,
@@ -206,13 +200,12 @@ class GalSimPositionAngleTest(unittest.TestCase):
 
                 # need to compare against all angles displaced by either 180 or 360 degrees
                 # from expected answer
-                deviation = np.abs(np.array([
-                                                  pa-paTest,
-                                                  pa-180.0-paTest,
-                                                  pa+180.0-paTest,
-                                                  pa-360.0-paTest,
-                                                  pa+360.0-paTest
-                                                  ])).min()
+                deviation = np.abs(np.array([pa-paTest,
+                                             pa-180.0-paTest,
+                                             pa+180.0-paTest,
+                                             pa-360.0-paTest,
+                                             pa+360.0-paTest])).min()
+
                 self.assertLess(deviation, 2.0)
 
                 if os.path.exists(catName):
