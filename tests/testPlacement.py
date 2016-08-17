@@ -167,11 +167,11 @@ class GalSimPlacementTest(unittest.TestCase):
         controlSed.addCCMDust(a_int, b_int, A_v=0.1, R_v=3.1)
 
         nSamples = 3
-        np.random.seed(42)
-        pointingRaList = np.random.random_sample(nSamples)*360.0
-        pointingDecList = np.random.random_sample(nSamples)*180.0 - 90.0
-        rotSkyPosList = np.random.random_sample(nSamples)*360.0
-        fwhmList = np.random.random_sample(nSamples)*1.0 + 0.3
+        rng = np.random.RandomState(42)
+        pointingRaList = rng.random_sample(nSamples)*360.0
+        pointingDecList = rng.random_sample(nSamples)*180.0 - 90.0
+        rotSkyPosList = rng.random_sample(nSamples)*360.0
+        fwhmList = rng.random_sample(nSamples)*1.0 + 0.3
 
         actualCounts = None
 
@@ -185,8 +185,8 @@ class GalSimPlacementTest(unittest.TestCase):
                                       mjd=49250.0,
                                       rotSkyPos=rotSkyPos)
 
-            xDisplacementList = np.random.random_sample(nSamples)*60.0-30.0
-            yDisplacementList = np.random.random_sample(nSamples)*60.0-30.0
+            xDisplacementList = rng.random_sample(nSamples)*60.0-30.0
+            yDisplacementList = rng.random_sample(nSamples)*60.0-30.0
             create_text_catalog(obs, dbFileName, xDisplacementList, yDisplacementList,
                                 mag_norm=[self.magNorm]*len(xDisplacementList))
             db = placementFileDBObj(dbFileName, runtable='test')
