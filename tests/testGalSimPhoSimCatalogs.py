@@ -277,7 +277,7 @@ class GalSimPhoSimTest(unittest.TestCase):
                 galsim_lines = galsim_input.readlines()
                 phosim_lines = phosim_input.readlines()
                 self.assertEqual(len(galsim_lines), len(phosim_lines))
-                self.assertEqual(len(galsim_lines), 4*self.n_objects+8)
+                self.assertEqual(len(galsim_lines), 4*self.n_objects+7)
                 for line in galsim_lines:
                     self.assertIn(line, phosim_lines)
                 for line in phosim_lines:

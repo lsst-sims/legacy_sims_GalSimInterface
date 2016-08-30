@@ -537,11 +537,11 @@ class GalSimDetector(object):
 
                 obshistid = 9999
 
-                if self.obs_metadata.phoSimMetaData is not None:
-                    if 'Opsim_obshistid' in self.obs_metadata.phoSimMetaData:
+                if self.obs_metadata.OpsimMetaData is not None:
+                    if 'obshistID' in self.obs_metadata.OpsimMetaData:
                         self._wcs.fitsHeader.set("OBSID",
-                                                 self.obs_metadata.phoSimMetaData['Opsim_obshistid'])
-                        obshistid = self.obs_metadata.phoSimMetaData['Opsim_obshistid']
+                                                 self.obs_metadata.OpsimMetaData['obshistID'])
+                        obshistid = self.obs_metadata.OpsimMetaData['obshistID']
 
                 bp = self.obs_metadata.bandpass
                 if not isinstance(bp, list) and not isinstance(bp, np.ndarray):
