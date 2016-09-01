@@ -217,11 +217,13 @@ class GalSimPhoSimTest(unittest.TestCase):
         gs_cat = GalSimPhoSimGalaxies(db, obs_metadata=self.obs)
         gs_cat.bandpassNames = self.obs.bandpass
         gs_cat.PSF = SNRdocumentPSF()
+        gs_cat.phoSimHeaderMap = {}
         gs_cat.write_catalog(galsim_cat_name)
 
         gs_cat_0 = gs_cat
 
         ps_cat = PhoSimCatalogSersic2D(db, obs_metadata=self.obs)
+        ps_cat.phoSimHeaderMap = {}
         ps_cat.write_catalog(phosim_cat_name)
 
         db = fileDBObject(self.disk_name, dtype=self.dtype, runtable='test_disks', idColKey='id')
@@ -277,7 +279,7 @@ class GalSimPhoSimTest(unittest.TestCase):
                 galsim_lines = galsim_input.readlines()
                 phosim_lines = phosim_input.readlines()
                 self.assertEqual(len(galsim_lines), len(phosim_lines))
-                self.assertEqual(len(galsim_lines), 4*self.n_objects+8)
+                self.assertEqual(len(galsim_lines), 4*self.n_objects+7)
                 for line in galsim_lines:
                     self.assertIn(line, phosim_lines)
                 for line in phosim_lines:

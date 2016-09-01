@@ -188,7 +188,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         sims_sed_library
         """
         #copied from the phoSim catalogs
-        return numpy.array([self.specFileMap[k] if self.specFileMap.has_key(k) else None
+        return numpy.array([self.specFileMap[k] if k in self.specFileMap else None
                          for k in self.column_by_name('sedFilename')])
 
     def _calculateGalSimSeds(self):
