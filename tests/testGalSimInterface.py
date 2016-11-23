@@ -10,7 +10,7 @@ import lsst.utils.tests
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
-from lsst.sims.catalogs.utils import makePhoSimTestDB
+from lsst.sims.catUtils.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.GalSimInterface import (GalSimGalaxies, GalSimStars, GalSimAgn,
                                        SNRdocumentPSF, ExampleCCDNoise)
@@ -150,15 +150,15 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
 
-        displacedRA = np.array([72.0/3600.0])
-        displacedDec = np.array([0.0])
+        deltaRA = np.array([72.0/3600.0])
+        deltaDec = np.array([0.0])
         defaults = LSSTdefaults()
         cls.bandpassNameList = ['u', 'g', 'r', 'i', 'z', 'y']
         cls.m5 = defaults._m5.values()
         cls.seeing = defaults._FWHMeff.values()
         cls.obs_metadata = makePhoSimTestDB(filename=cls.dbName, size=1,
-                                            displacedRA=displacedRA,
-                                            displacedDec=displacedDec,
+                                            deltaRA=deltaRA,
+                                            deltaDec=deltaDec,
                                             bandpass=cls.bandpassNameList,
                                             m5=cls.m5,
                                             seeing=cls.seeing)
@@ -639,10 +639,10 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(dbName):
             os.unlink(dbName)
 
-        displacedRA = np.array([72.0/3600.0, 55.0/3600.0, 75.0/3600.0])
-        displacedDec = np.array([0.0, 15.0/3600.0, -15.0/3600.0])
+        deltaRA = np.array([72.0/3600.0, 55.0/3600.0, 75.0/3600.0])
+        deltaDec = np.array([0.0, 15.0/3600.0, -15.0/3600.0])
         obs_metadata = makePhoSimTestDB(filename=dbName, size=1,
-                                        displacedRA=displacedRA, displacedDec=displacedDec,
+                                        deltaRA=deltaRA, deltaDec=deltaDec,
                                         bandpass=self.bandpassNameList,
                                         m5=self.m5, seeing=self.seeing)
 
@@ -675,10 +675,10 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(dbName1):
             os.unlink(dbName1)
 
-        displacedRA = np.array([72.0/3600.0, 55.0/3600.0, 75.0/3600.0])
-        displacedDec = np.array([0.0, 15.0/3600.0, -15.0/3600.0])
+        deltaRA = np.array([72.0/3600.0, 55.0/3600.0, 75.0/3600.0])
+        deltaDec = np.array([0.0, 15.0/3600.0, -15.0/3600.0])
         obs_metadata1 = makePhoSimTestDB(filename=dbName1, size=1,
-                                         displacedRA=displacedRA, displacedDec=displacedDec,
+                                         deltaRA=deltaRA, deltaDec=deltaDec,
                                          bandpass=self.bandpassNameList,
                                          m5=self.m5, seeing=self.seeing)
 
@@ -686,10 +686,10 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(dbName2):
             os.unlink(dbName2)
 
-        displacedRA = np.array([55.0/3600.0, 60.0/3600.0, 62.0/3600.0])
-        displacedDec = np.array([-3.0/3600.0, 10.0/3600.0, 10.0/3600.0])
+        deltaRA = np.array([55.0/3600.0, 60.0/3600.0, 62.0/3600.0])
+        deltaDec = np.array([-3.0/3600.0, 10.0/3600.0, 10.0/3600.0])
         obs_metadata2 = makePhoSimTestDB(filename=dbName2, size=1,
-                                         displacedRA=displacedRA, displacedDec=displacedDec,
+                                         deltaRA=deltaRA, deltaDec=deltaDec,
                                          bandpass=self.bandpassNameList,
                                          m5=self.m5, seeing=self.seeing)
 
@@ -737,9 +737,9 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(dbName):
             os.unlink(dbName)
 
-        displacedRA = (-40.0 + np_rng.random_sample(catSize)*(120.0))/3600.0
-        displacedDec = (-20.0 + np_rng.random_sample(catSize)*(80.0))/3600.0
-        obs_metadata = makePhoSimTestDB(filename=dbName, displacedRA=displacedRA, displacedDec=displacedDec,
+        deltaRA = (-40.0 + np_rng.random_sample(catSize)*(120.0))/3600.0
+        deltaDec = (-20.0 + np_rng.random_sample(catSize)*(80.0))/3600.0
+        obs_metadata = makePhoSimTestDB(filename=dbName, deltaRA=deltaRA, deltaDec=deltaDec,
                                         bandpass=self.bandpassNameList,
                                         m5=self.m5, seeing=self.seeing)
 
