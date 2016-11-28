@@ -79,14 +79,12 @@ class GalSimFwhmTest(unittest.TestCase):
         im = afwImage.ImageF(fileName).getArray()
         maxFlux = im.max()
         self.assertGreater(maxFlux, 100.0)  # make sure the image is not blank
+        valid = np.where(im > 0.25*maxFlux)
+        x_center = np.median(valid[1])
+        y_center = np.median(valid[0])
 
-        # this looks backwards, but remember: the way numpy handles
-        # arrays, the first index indicates what row it is in (the y coordinate)
-        _maxPixel = np.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
-        maxPixel = np.array([_maxPixel[1], _maxPixel[0]])
-
-        raMax, decMax = _raDecFromPixelCoords(maxPixel[:1],
-                                              maxPixel[1:2],
+        raMax, decMax = _raDecFromPixelCoords(x_center,
+                                              y_center,
                                               [detector.getName()],
                                               camera=camera,
                                               obs_metadata=obs,
@@ -102,22 +100,22 @@ class GalSimFwhmTest(unittest.TestCase):
 
             if np.abs(slope < 1.0):
                 xPixList = np.array([ix for ix in range(0, im.shape[1])
-                                     if int(slope*(ix-maxPixel[0]) + maxPixel[1]) >= 0 and
-                                     int(slope*(ix-maxPixel[0])+maxPixel[1]) < im.shape[0]])
+                                     if int(slope*(ix-x_center) + y_center) >= 0 and
+                                     int(slope*(ix-x_center)+y_center) < im.shape[0]])
 
-                yPixList = np.array([int(slope*(ix-maxPixel[0])+maxPixel[1]) for ix in xPixList])
+                yPixList = np.array([int(slope*(ix-x_center)+y_center) for ix in xPixList])
             else:
                 yPixList = np.array([iy for iy in range(0, im.shape[0])
-                                     if int((iy-maxPixel[1])/slope + maxPixel[0]) >= 0 and
-                                     int((iy-maxPixel[1])/slope + maxPixel[0]) < im.shape[1]])
+                                     if int((iy-y_center)/slope + x_center) >= 0 and
+                                     int((iy-y_center)/slope + x_center) < im.shape[1]])
 
-                xPixList = np.array([int((iy-maxPixel[1])/slope + maxPixel[0]) for iy in yPixList])
+                xPixList = np.array([int((iy-y_center)/slope + x_center) for iy in yPixList])
 
             chipNameList = [detector.getName()]*len(xPixList)
             raList, decList = _raDecFromPixelCoords(xPixList, yPixList, chipNameList,
                                                     camera=camera, obs_metadata=obs, epoch=epoch)
 
-            distanceList = arcsecFromRadians(haversine(raList, decList, raMax[0], decMax[0]))
+            distanceList = arcsecFromRadians(haversine(raList, decList, raMax, decMax))
 
             fluxList = np.array([im[iy][ix] for ix, iy in zip(xPixList, yPixList)])
 
