@@ -142,8 +142,8 @@ class GalSimFwhmTest(unittest.TestCase):
             bb = distanceList[ix] - mm * fluxList[ix]
             distanceToRight = mm*half_flux + bb
 
-            msg = "measured fwhm %e; expected fwhm %e; maxFlux %e\n" % \
-                  (distanceToLeft+distanceToRight, fwhm, maxFlux)
+            msg = "measured fwhm %e; expected fwhm %e; maxFlux %e; orientation %e pi\n" % \
+                  (distanceToLeft+distanceToRight, fwhm, maxFlux, theta/np.pi)
 
             self.assertLess(np.abs(distanceToLeft+distanceToRight-fwhm), 0.1*fwhm, msg=msg)
 
