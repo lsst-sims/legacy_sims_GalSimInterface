@@ -136,7 +136,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
     #There is no point in writing things to the InstanceCatalog that do not have SEDs and/or
     #do not land on any detectors
-    cannot_be_null = ['sedFilepath', 'fitsFiles']
+    cannot_be_null = ['sedFilepath']
 
     column_outputs = ['galSimType', 'uniqueId', 'raICRS', 'decICRS',
                       'chipName', 'x_pupil', 'y_pupil', 'sedFilepath',
