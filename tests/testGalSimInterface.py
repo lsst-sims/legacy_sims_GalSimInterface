@@ -147,7 +147,10 @@ class GalSimInterfaceTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.dbName = 'galSimTestDB.db'
+        cls.scratch_dir = os.path.join(getPackageDir('sims_GalSimInterface'),
+                                       'tests', 'scratchSpace')
+
+        cls.dbName = os.path.join(cls.scratch_dir, 'galSimTestDB.db')
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
 
@@ -434,7 +437,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         """
         Test that GalSimInterpreter puts the right number of counts on images of galaxy bulges
         """
-        catName = 'testBulgeCat.sav'
+        catName = os.path.join(self.scratch_dir, 'testBulgeCat.sav')
         gals = testGalaxyBulgeDBObj(driver=self.driver, database=self.dbName)
         cat = testGalaxyCatalog(gals, obs_metadata = self.obs_metadata)
         cat.write_catalog(catName)
@@ -446,7 +449,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         """
         Test that GalSimInterpreter puts the right number of counts on images of galaxy disks
         """
-        catName = 'testDiskCat.sav'
+        catName = os.path.join(self.scratch_dir, 'testDiskCat.sav')
         gals = testGalaxyDiskDBObj(driver=self.driver, database=self.dbName)
         cat = testGalaxyCatalog(gals, obs_metadata = self.obs_metadata)
         cat.write_catalog(catName)
@@ -458,7 +461,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         """
         Test that GalSimInterpreter puts the right number of counts on images of stars
         """
-        catName = 'testStarCat.sav'
+        catName = os.path.join(self.scratch_dir, 'testStarCat.sav')
         stars = testStarsDBObj(driver=self.driver, database=self.dbName)
         cat = testStarCatalog(stars, obs_metadata = self.obs_metadata)
         cat.write_catalog(catName)
@@ -470,7 +473,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         """
         Test GalSim catalog with alternate bandpasses
         """
-        catName = 'testFakeBandpassCat.sav'
+        catName = os.path.join(self.scratch_dir, 'testFakeBandpassCat.sav')
         m5 = [22.0, 23.0, 25.0]
         seeing = [0.6, 0.5, 0.7]
         bandpassNames = ['x', 'y', 'z']
@@ -496,7 +499,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         """
         Test GalSim catalog with alternate Seds
         """
-        catName = 'testFakeSedCat.sav'
+        catName = os.path.join(self.scratch_dir, 'testFakeSedCat.sav')
         m5 = [22.0, 23.0, 25.0]
         seeing = [0.6, 0.5, 0.7]
         bandpassNames = ['x', 'y', 'z']
@@ -524,7 +527,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         """
         Test that GalSimInterpreter puts the right number of counts on images of AGN
         """
-        catName = 'testAgnCat.sav'
+        catName = os.path.join(self.scratch_dir, 'testAgnCat.sav')
         agn = testGalaxyAgnDBObj(driver=self.driver, database=self.dbName)
         cat = testAgnCatalog(agn, obs_metadata = self.obs_metadata)
         cat.write_catalog(catName)
@@ -537,7 +540,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         Test that GalSimInterpreter puts the right number of counts on images of Galaxy bulges convolved
         with a PSF
         """
-        catName = 'testPSFcat.sav'
+        catName = os.path.join(self.scratch_dir, 'testPSFcat.sav')
         gals = testGalaxyBulgeDBObj(driver=self.driver, database=self.dbName)
         cat = psfCatalog(gals, obs_metadata = self.obs_metadata)
         cat.write_catalog(catName)
@@ -550,7 +553,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         Test that GalSimInterpreter puts the right number of counts on images of Galaxy bulges with
         a sky background
         """
-        catName = 'testBackgroundCat.sav'
+        catName = os.path.join(self.scratch_dir, 'testBackgroundCat.sav')
         gals = testGalaxyBulgeDBObj(driver=self.driver, database=self.dbName)
         cat = backgroundCatalog(gals, obs_metadata = self.obs_metadata)
         cat.write_catalog(catName)
@@ -564,8 +567,8 @@ class GalSimInterfaceTest(unittest.TestCase):
         Make sure that the pixel-by-pixel difference between the two is
         as expected from Poisson statistics.
         """
-        noisyCatName = 'testNoisyCatalog.sav'
-        cleanCatName = 'testCleanCatalog.sav'
+        noisyCatName = os.path.join(self.scratch_dir, 'testNoisyCatalog.sav')
+        cleanCatName = os.path.join(self.scratch_dir, 'testCleanCatalog.sav')
 
         gals = testGalaxyBulgeDBObj(driver=self.driver, database=self.dbName)
 
@@ -634,7 +637,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         """
         Test that GalSimInterpreter puts the right number of counts on images of multiple objects
         """
-        dbName = 'galSimTestMultipleDB.db'
+        dbName = os.path.join(self.scratch_dir, 'galSimTestMultipleDB.db')
         driver = 'sqlite'
 
         if os.path.exists(dbName):
@@ -649,7 +652,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         gals = testGalaxyBulgeDBObj(driver=driver, database=dbName)
         cat = testGalaxyCatalog(gals, obs_metadata=obs_metadata)
-        catName = 'multipleCatalog.sav'
+        catName = os.path.join(self.scratch_dir, 'multipleCatalog.sav')
         cat.write_catalog(catName)
         self.catalogTester(catName=catName, catalog=cat, nameRoot='multiple')
         if os.path.exists(catName):
@@ -657,7 +660,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         stars = testStarsDBObj(driver=driver, database=dbName)
         cat = testStarCatalog(stars, obs_metadata=obs_metadata)
-        catName = 'multipleStarCatalog.sav'
+        catName = os.path.join(self.scratch_dir, 'multipleStarCatalog.sav')
         cat.write_catalog(catName)
         self.catalogTester(catName=catName, catalog=cat, nameRoot='multipleStars')
         if os.path.exists(catName):
@@ -672,7 +675,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         containing different types of objects
         """
         driver = 'sqlite'
-        dbName1 = 'galSimTestCompound1DB.db'
+        dbName1 = os.path.join(self.scratch_dir, 'galSimTestCompound1DB.db')
         if os.path.exists(dbName1):
             os.unlink(dbName1)
 
@@ -683,7 +686,7 @@ class GalSimInterfaceTest(unittest.TestCase):
                                          bandpass=self.bandpassNameList,
                                          m5=self.m5, seeing=self.seeing)
 
-        dbName2 = 'galSimTestCompound2DB.db'
+        dbName2 = os.path.join(self.scratch_dir, 'galSimTestCompound2DB.db')
         if os.path.exists(dbName2):
             os.unlink(dbName2)
 
@@ -696,7 +699,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         gals = testGalaxyBulgeDBObj(driver=driver, database=dbName1)
         cat1 = testGalaxyCatalog(gals, obs_metadata=obs_metadata1)
-        catName = 'compoundCatalog.sav'
+        catName = os.path.join(self.scratch_dir, 'compoundCatalog.sav')
         cat1.write_catalog(catName)
 
         stars = testStarsDBObj(driver=driver, database=dbName2)
