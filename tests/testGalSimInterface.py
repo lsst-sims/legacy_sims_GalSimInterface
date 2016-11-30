@@ -8,6 +8,7 @@ from collections import OrderedDict
 import lsst.utils
 import lsst.utils.tests
 from lsst.utils import getPackageDir
+from lsst.sims.catalogs.db import _close_all_connections
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
@@ -171,6 +172,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        _close_all_connections()
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
 
