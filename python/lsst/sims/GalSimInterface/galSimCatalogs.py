@@ -349,12 +349,10 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             izip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight, \
                 minorAxis, majorAxis, positionAngle, sedList, sindex):
 
-            if ss is None or name in self.objectHasBeenDrawn:
-                #do not draw objects that have no SED or have already been drawn
-                output.append(None)
-                if name in self.objectHasBeenDrawn:
-                    raise RuntimeError('Trying to draw %s more than once ' % str(name))
-
+            if name in self.objectHasBeenDrawn:
+                raise RuntimeError('Trying to draw %s more than once ' % str(name))
+            elif ss is None:
+                raise RuntimeError('Trying to draw an object with SED == None')
             else:
 
                 self.objectHasBeenDrawn.append(name)
