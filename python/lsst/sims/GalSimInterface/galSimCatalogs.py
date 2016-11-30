@@ -47,7 +47,7 @@ def _is_null(argument):
             return True
         elif argument.strip().lower() == 'none':
             return True
-    elif np.isnan(argument):
+    elif nuumpy.isnan(argument):
         return True
 
     return False
