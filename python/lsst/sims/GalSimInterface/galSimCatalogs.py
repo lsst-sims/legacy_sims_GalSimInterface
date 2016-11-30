@@ -16,7 +16,7 @@ import copy
 from itertools import izip
 import lsst.utils
 from lsst.sims.utils import arcsecFromRadians
-from lsst.sims.catalogs.definitions import InstanceCatalog, is_null
+from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catUtils.mixins import CameraCoords, AstrometryGalaxies, AstrometryStars, \
                                       EBVmixin
@@ -28,6 +28,30 @@ import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 
 __all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars"]
+
+
+def _is_null(argument):
+    """
+    Return True if 'argument' is some null value
+    (i.e. 'Null', None, nan).
+    False otherwise.
+    This is used by InstanceCatalog.write_catalog() to identify rows
+    with null values in key columns.
+    """
+    if argument is None:
+        return True
+    elif isinstance(argument, str) or isinstance(argument, unicode):
+        if argument.strip().lower() == 'null':
+            return True
+        elif argument.strip().lower() == 'nan':
+            return True
+        elif argument.strip().lower() == 'none':
+            return True
+    elif np.isnan(argument):
+        return True
+
+    return False
+
 
 class GalSimBase(InstanceCatalog, CameraCoords):
     """
@@ -197,7 +221,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         correct the SED for redshift, dust, etc.  Return an Sed object as defined in
         sims_photUtils/../../Sed.py
         """
-        if is_null(sedName):
+        if _is_null(sedName):
             return None
         sed = self._getSedCopy(sedName)
         imsimband = Bandpass()
