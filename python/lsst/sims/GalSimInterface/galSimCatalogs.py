@@ -353,14 +353,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 #do not draw objects that have no SED or have already been drawn
                 output.append(None)
                 if name in self.objectHasBeenDrawn:
-                    #15 December 2014
-                    #This should probably be an error.  However, something is wrong with
-                    #the SQL on fatboy such that it does return the same objects more than
-                    #once (at least in the case of stars).  Yusra is currently working to fix
-                    #the problem.  Until then, this will just warn you that the same object
-                    #appears twice in your catalog and will refrain from drawing it the second
-                    #time.
-                    print 'Trying to draw %s more than once ' % str(name)
+                    raise RuntimeError('Trying to draw %s more than once ' % str(name))
 
             else:
 
