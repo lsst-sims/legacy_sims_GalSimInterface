@@ -7,6 +7,7 @@ import galsim
 from collections import OrderedDict
 import lsst.utils
 import lsst.utils.tests
+from lsst.utils import getPackageDir
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
@@ -115,7 +116,7 @@ class testFakeBandpassCatalog(testStarCatalog):
     """
     bandpassNames = ['x', 'y', 'z']
 
-    bandpassDir = os.path.join(lsst.utils.getPackageDir('sims_catUtils'), 'tests', 'testThroughputs')
+    bandpassDir = os.path.join(getPackageDir('sims_catUtils'), 'tests', 'testThroughputs')
     bandpassRoot = 'fakeFilter_'
     componentList = ['fakeM1.dat', 'fakeM2.dat']
     atmoTransmissionName = 'fakeAtmo.dat'
@@ -126,7 +127,7 @@ class testFakeSedCatalog(testFakeBandpassCatalog):
     """
     tests the GalSim interface on fake seds and bandpasses
     """
-    sedDir = os.path.join(lsst.utils.getPackageDir('sims_catUtils'), 'tests', 'testSeds')
+    sedDir = os.path.join(getPackageDir('sims_catUtils'), 'tests', 'testSeds')
 
     def get_sedFilepath(self):
         """
@@ -178,7 +179,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         del cls.seeing
 
     def getFilesAndBandpasses(self, catalog, nameRoot=None,
-                              bandpassDir=os.path.join(lsst.utils.getPackageDir('throughputs'), 'baseline'),
+                              bandpassDir=os.path.join(getPackageDir('throughputs'), 'baseline'),
                               bandpassRoot='total_',):
 
         """
@@ -228,9 +229,9 @@ class GalSimInterfaceTest(unittest.TestCase):
         return listOfFiles, bandpassDict
 
     def catalogTester(self, catName=None, catalog=None, nameRoot=None,
-                      bandpassDir=os.path.join(lsst.utils.getPackageDir('throughputs'), 'baseline'),
+                      bandpassDir=os.path.join(getPackageDir('throughputs'), 'baseline'),
                       bandpassRoot='total_',
-                      sedDir=lsst.utils.getPackageDir('sims_sed_library')):
+                      sedDir=getPackageDir('sims_sed_library')):
         """
         Reads in a GalSim Instance Catalog.  Writes the images from that catalog.
         Then reads those images back in.  Uses AFW to calculate the number of counts
@@ -484,7 +485,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         stars = testStarsDBObj(driver=self.driver, database=self.dbName)
         cat = testFakeBandpassCatalog(stars, obs_metadata=obs_metadata)
         cat.write_catalog(catName)
-        bandpassDir = os.path.join(lsst.utils.getPackageDir('sims_catUtils'), 'tests', 'testThroughputs')
+        bandpassDir = os.path.join(getPackageDir('sims_catUtils'), 'tests', 'testThroughputs')
         self.catalogTester(catName=catName, catalog=cat, nameRoot='fakeBandpass',
                            bandpassDir=bandpassDir, bandpassRoot='fakeTotal_')
 
@@ -510,8 +511,8 @@ class GalSimInterfaceTest(unittest.TestCase):
         stars = testStarsDBObj(driver=self.driver, database=self.dbName)
         cat = testFakeSedCatalog(stars, obs_metadata=obs_metadata)
         cat.write_catalog(catName)
-        bandpassDir = os.path.join(lsst.utils.getPackageDir('sims_catUtils'), 'tests', 'testThroughputs')
-        sedDir = os.path.join(lsst.utils.getPackageDir('sims_catUtils'), 'tests', 'testSeds')
+        bandpassDir = os.path.join(getPackageDir('sims_catUtils'), 'tests', 'testThroughputs')
+        sedDir = os.path.join(getPackageDir('sims_catUtils'), 'tests', 'testSeds')
         self.catalogTester(catName=catName, catalog=cat, nameRoot='fakeBandpass',
                            bandpassDir=bandpassDir, bandpassRoot='fakeTotal_',
                            sedDir=sedDir)
@@ -597,7 +598,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         noise = ExampleCCDNoise(seed=42)
         m5 = 24.5
         bandpass = Bandpass()
-        bandpass.readThroughput(os.path.join(lsst.utils.getPackageDir('throughputs'),
+        bandpass.readThroughput(os.path.join(getPackageDir('throughputs'),
                                              'baseline', 'total_r.dat'))
         background = calcSkyCountsPerPixelForM5(m5, bandpass, FWHMeff=lsstDefaults.FWHMeff('r'),
                                                 photParams=photParams)
