@@ -322,6 +322,11 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
         This getter also passes objects to the GalSimInterpreter to actually draw the FITS
         images.
+
+        WARNING: do not include 'fitsFiles' in the cannot_be_null list of non-null columns.
+        If you do that, this method will be called several times by the catalog, as it
+        attempts to determine which rows are actually in the catalog.  That will cause
+        your images to have too much flux in them.
         """
         objectNames = self.column_by_name('uniqueId')
         raICRS = self.column_by_name('raICRS')
