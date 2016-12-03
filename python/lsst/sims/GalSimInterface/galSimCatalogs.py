@@ -236,8 +236,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             sed.redshiftSED(zz, dimming=True)
 
         # apply dust extinction (galactic)
-        a_int, b_int = sed.setupCCMab()
-        sed.addCCMDust(a_int, b_int, A_v=gAv, R_v=gRv)
+        if gAv != 0.0 and gRv != 0.0:
+            a_int, b_int = sed.setupCCMab()
+            sed.addCCMDust(a_int, b_int, A_v=gAv, R_v=gRv)
         return sed
 
     def _getSedCopy(self, sedName):
