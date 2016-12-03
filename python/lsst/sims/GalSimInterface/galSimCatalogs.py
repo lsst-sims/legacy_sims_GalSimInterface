@@ -13,6 +13,7 @@ GalSimStars
 import numpy
 import os
 import copy
+from itertools import izip
 import lsst.utils
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.catalogs.definitions import InstanceCatalog, is_null
@@ -274,10 +275,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     def _calculateGalSimSeds(self):
         """
         Apply any physical corrections to the objects' SEDS (redshift them, apply dust, etc.).
-        Return a list of Sed objects containing the SEDS
-        """
 
-        sedList = []
+        Return a generator that serves up the Sed objects in order.
+        """
         actualSEDnames = self.column_by_name('sedFilepath')
         redshift = self.column_by_name('redshift')
         internalAv = self.column_by_name('internalAv')
@@ -286,11 +286,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         galacticRv = self.column_by_name('galacticRv')
         magNorm = self.column_by_name('magNorm')
 
-        for (sedName, zz, iAv, iRv, gAv, gRv, norm) in \
-            zip(actualSEDnames, redshift, internalAv, internalRv, galacticAv, galacticRv, magNorm):
-            sedList.append(self._calcGalSimSed(sedName, zz, iAv, iRv, gAv, gRv, norm))
-        return sedList
-
+        return (self._calcGalSimSed(*args) for args in
+                zip(actualSEDnames, redshift, internalAv, internalRv,
+                    galacticAv, galacticRv, magNorm))
 
     def get_fitsFiles(self):
         """
@@ -311,13 +309,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         positionAngle = self.column_by_name('positionAngle')
         sindex = self.column_by_name('sindex')
 
-        actualSEDnames = self.column_by_name('sedFilepath')
-        redshift = self.column_by_name('redshift')
-        internalAv = self.column_by_name('internalAv')
-        internalRv = self.column_by_name('internalRv')
-        galacticAv = self.column_by_name('galacticAv')
-        galacticRv = self.column_by_name('galacticRv')
-        magNorm = self.column_by_name('magNorm')
+        sedList = self._calculateGalSimSeds()
 
         if self.hasBeenInitialized is False and len(objectNames)>0:
             #This needs to be here in case, instead of writing the whole catalog with write_catalog(),
@@ -328,13 +320,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
 
         output = []
-        for (name, ra, dec, xp, yp, hlr, minor, major, pa, sn, \
-             sedName, zz, iAv, iRv, gAv, gRv, norm) in \
-            zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight, \
-                minorAxis, majorAxis, positionAngle, sindex, \
-                actualSEDnames, redshift, internalAv, internalRv, \
-                galacticAv, galacticRv, magNorm):
-            ss = self._calcGalSimSed(sedName, zz, iAv, iRv, gAv, gRv, norm)
+        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn) in \
+            izip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight, \
+                minorAxis, majorAxis, positionAngle, sedList, sindex):
 
             if ss is None or name in self.objectHasBeenDrawn:
                 #do not draw objects that have no SED or have already been drawn
