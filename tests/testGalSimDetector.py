@@ -4,6 +4,7 @@ import numpy as np
 from lsst.utils import getPackageDir
 import lsst.utils.tests
 
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.photUtils import PhotometricParameters
 from lsst.sims.coordUtils.utils import ReturnCamera
@@ -16,6 +17,10 @@ def setup_module(module):
 
 
 class GalSimDetectorTest(unittest.TestCase):
+
+    @classmethod
+    def tearDownClass(cls):
+        sims_clean_up()
 
     def setUp(self):
         baseDir = os.path.join(getPackageDir('sims_GalSimInterface'),

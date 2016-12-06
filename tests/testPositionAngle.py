@@ -4,6 +4,7 @@ import unittest
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimGalaxies
@@ -50,6 +51,10 @@ class paCat(GalSimGalaxies):
 
 
 class GalSimPositionAngleTest(unittest.TestCase):
+
+    @classmethod
+    def tearDownClass(cls):
+        sims_clean_up()
 
     def get_position_angle(self, imageName, afwCamera, afwDetector,
                            obs_metadata, epoch):

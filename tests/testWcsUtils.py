@@ -4,6 +4,7 @@ import numpy as np
 import lsst.utils.tests
 import lsst.afw.geom as afwGeom
 from lsst.utils import getPackageDir
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, haversine, arcsecFromRadians
 from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.sims.coordUtils import _raDecFromPixelCoords
@@ -40,6 +41,7 @@ class WcsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        sims_clean_up()
         del cls.detector
         del cls.camera
 

@@ -5,6 +5,7 @@ import numpy as np
 import os
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, arcsecFromRadians, haversine
 from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.sims.coordUtils import _pixelCoordsFromRaDec, _raDecFromPixelCoords
@@ -49,6 +50,10 @@ class placementCatalog(GalSimStars):
 
 
 class GalSimPlacementTest(unittest.TestCase):
+
+    @classmethod
+    def tearDownClass(cls):
+        sims_clean_up()
 
     def setUp(self):
         self.magNorm = 19.0

@@ -5,6 +5,7 @@ import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
 from lsst.sims.utils import haversine
 from lsst.sims.catalogs.db import fileDBObject
@@ -47,6 +48,10 @@ class outputWcsCat(GalSimStars):
 
 
 class GalSimOutputWcsTest(unittest.TestCase):
+
+    @classmethod
+    def tearDownClass(cls):
+        sims_clean_up()
 
     def testOutputWcsOfImage(self):
         """
