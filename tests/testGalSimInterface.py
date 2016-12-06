@@ -758,7 +758,7 @@ class GalSimInterfaceTest(unittest.TestCase):
             yPupil = line[6]
 
             if firstLine:
-                sedList = cat._calculateGalSimSeds()
+                sedList = list(cat._calculateGalSimSeds())
                 for detector in cat.galSimInterpreter.detectors:
                     for bandpass in cat.galSimInterpreter.bandpassDict:
                         controlImages['placementControl_' +

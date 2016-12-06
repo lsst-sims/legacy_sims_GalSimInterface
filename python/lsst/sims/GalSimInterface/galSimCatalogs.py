@@ -13,6 +13,7 @@ GalSimStars
 import numpy
 import os
 import copy
+from itertools import izip
 import lsst.utils
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.catalogs.definitions import InstanceCatalog, is_null
@@ -191,13 +192,93 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         return numpy.array([self.specFileMap[k] if k in self.specFileMap else None
                          for k in self.column_by_name('sedFilename')])
 
+    def _calcSingleGalSimSed(self, sedName, zz, iAv, iRv, gAv, gRv, norm):
+        """
+        correct the SED for redshift, dust, etc.  Return an Sed object as defined in
+        sims_photUtils/../../Sed.py
+        """
+        if is_null(sedName):
+            return None
+        sed = self._getSedCopy(sedName)
+        imsimband = Bandpass()
+        imsimband.imsimBandpass()
+        #normalize the SED
+        #Consulting the file sed.py in GalSim/galsim/ it appears that GalSim expects
+        #its SEDs to ultimately be in units of ergs/nm so that, when called, they can
+        #be converted to photons/nm (see the function __call__() and the assignment of
+        #self._rest_photons in the __init__() of galsim's sed.py file).  Thus, we need
+        #to read in our SEDs, normalize them, and then multiply by the exposure time
+        #and the effective area to get from ergs/s/cm^2/nm to ergs/nm.
+        #
+        #The gain parameter should convert between photons and ADU (so: it is the
+        #traditional definition of "gain" -- electrons per ADU -- multiplied by the
+        #quantum efficiency of the detector).  Because we fold the quantum efficiency
+        #of the detector into our total_[u,g,r,i,z,y].dat bandpass files
+        #(see the readme in the THROUGHPUTS_DIR/baseline/), we only need to multiply
+        #by the electrons per ADU gain.
+        #
+        #We will take these parameters from an instantiation of the PhotometricParameters
+        #class (which can be reassigned by defining a daughter class of this class)
+        #
+        fNorm = sed.calcFluxNorm(norm, imsimband)
+        sed.multiplyFluxNorm(fNorm)
+
+        # apply dust extinction (internal)
+        if iAv != 0.0 and iRv != 0.0:
+            a_int, b_int = sed.setupCCMab()
+            sed.addCCMDust(a_int, b_int, A_v=iAv, R_v=iRv)
+
+        # 22 June 2015
+        # apply redshift; there is no need to apply the distance modulus from
+        # sims/photUtils/CosmologyWrapper; magNorm takes that into account
+        # however, magNorm does not take into account cosmological dimming
+        if zz != 0.0:
+            sed.redshiftSED(zz, dimming=True)
+
+        # apply dust extinction (galactic)
+        if gAv != 0.0 and gRv != 0.0:
+            a_int, b_int = sed.setupCCMab()
+            sed.addCCMDust(a_int, b_int, A_v=gAv, R_v=gRv)
+        return sed
+
+    def _getSedCopy(self, sedName):
+        """
+        Return a copy of the requested SED, either from the cached
+        version or creating a new one and caching a copy for later
+        reuse.
+        """
+        if sedName in self.uniqueSeds:
+            # we have already read in this file; no need to do it again
+            sed = Sed(wavelen=self.uniqueSeds[sedName].wavelen,
+                      flambda=self.uniqueSeds[sedName].flambda,
+                      fnu=self.uniqueSeds[sedName].fnu,
+                      name=self.uniqueSeds[sedName].name)
+        else:
+            # load the SED of the object
+            sed = Sed()
+            sedFile = os.path.join(self.sedDir, sedName)
+            sed.readSED_flambda(sedFile)
+
+            flambdaCopy = copy.deepcopy(sed.flambda)
+
+            #If the SED is zero inside of the bandpass, GalSim raises an error.
+            #This sets a minimum flux value of 1.0e-30 so that the SED is never technically
+            #zero inside of the bandpass.
+            sed.flambda = numpy.array([ff if ff>1.0e-30 else 1.0e-30 for ff in flambdaCopy])
+            sed.fnu = None
+
+            #copy the unnormalized file to uniqueSeds so we don't have to read it in again
+            sedCopy = Sed(wavelen=sed.wavelen, flambda=sed.flambda,
+                          fnu=sed.fnu, name=sed.name)
+            self.uniqueSeds[sedName] = sedCopy
+        return sed
+
     def _calculateGalSimSeds(self):
         """
         Apply any physical corrections to the objects' SEDS (redshift them, apply dust, etc.).
-        Return a list of Sed objects containing the SEDS
-        """
 
-        sedList = []
+        Return a generator that serves up the Sed objects in order.
+        """
         actualSEDnames = self.column_by_name('sedFilepath')
         redshift = self.column_by_name('redshift')
         internalAv = self.column_by_name('internalAv')
@@ -206,83 +287,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         galacticRv = self.column_by_name('galacticRv')
         magNorm = self.column_by_name('magNorm')
 
-        #for setting magNorm
-        imsimband = Bandpass()
-        imsimband.imsimBandpass()
-
-        outputNames=[]
-
-        for (sedName, zz, iAv, iRv, gAv, gRv, norm) in \
-            zip(actualSEDnames, redshift, internalAv, internalRv, galacticAv, galacticRv, magNorm):
-
-            if is_null(sedName):
-                sedList.append(None)
-            else:
-                if sedName in self.uniqueSeds:
-                    #we have already read in this file; no need to do it again
-                    sed = Sed(wavelen=self.uniqueSeds[sedName].wavelen,
-                              flambda=self.uniqueSeds[sedName].flambda,
-                              fnu=self.uniqueSeds[sedName].fnu,
-                              name=self.uniqueSeds[sedName].name)
-                else:
-                    #load the SED of the object
-                    sed = Sed()
-                    sedFile = os.path.join(self.sedDir, sedName)
-                    sed.readSED_flambda(sedFile)
-
-                    flambdaCopy = copy.deepcopy(sed.flambda)
-
-                    #If the SED is zero inside of the bandpass, GalSim raises an error.
-                    #This sets a minimum flux value of 1.0e-30 so that the SED is never technically
-                    #zero inside of the bandpass.
-                    sed.flambda = numpy.array([ff if ff>1.0e-30 else 1.0e-30 for ff in flambdaCopy])
-                    sed.fnu = None
-
-                    #copy the unnormalized file to uniqueSeds so we don't have to read it in again
-                    sedCopy = Sed(wavelen=sed.wavelen, flambda=sed.flambda,
-                                  fnu=sed.fnu, name=sed.name)
-                    self.uniqueSeds[sedName] = sedCopy
-
-                #normalize the SED
-                #Consulting the file sed.py in GalSim/galsim/ it appears that GalSim expects
-                #its SEDs to ultimately be in units of ergs/nm so that, when called, they can
-                #be converted to photons/nm (see the function __call__() and the assignment of
-                #self._rest_photons in the __init__() of galsim's sed.py file).  Thus, we need
-                #to read in our SEDs, normalize them, and then multiply by the exposure time
-                #and the effective area to get from ergs/s/cm^2/nm to ergs/nm.
-                #
-                #The gain parameter should convert between photons and ADU (so: it is the
-                #traditional definition of "gain" -- electrons per ADU -- multiplied by the
-                #quantum efficiency of the detector).  Because we fold the quantum efficiency
-                #of the detector into our total_[u,g,r,i,z,y].dat bandpass files
-                #(see the readme in the THROUGHPUTS_DIR/baseline/), we only need to multiply
-                #by the electrons per ADU gain.
-                #
-                #We will take these parameters from an instantiation of the PhotometricParameters
-                #class (which can be reassigned by defining a daughter class of this class)
-                #
-                fNorm = sed.calcFluxNorm(norm, imsimband)
-                sed.multiplyFluxNorm(fNorm)
-
-                #apply dust extinction (internal)
-                if iAv != 0.0 and iRv != 0.0:
-                    a_int, b_int = sed.setupCCMab()
-                    sed.addCCMDust(a_int, b_int, A_v=iAv, R_v=iRv)
-
-                #22 June 2015
-                #apply redshift; there is no need to apply the distance modulus from
-                #sims/photUtils/CosmologyWrapper; magNorm takes that into account
-                #however, magNorm does not take into account cosmological dimming
-                if zz != 0.0:
-                    sed.redshiftSED(zz, dimming=True)
-
-                #apply dust extinction (galactic)
-                a_int, b_int = sed.setupCCMab()
-                sed.addCCMDust(a_int, b_int, A_v=gAv, R_v=gRv)
-                sedList.append(sed)
-
-        return sedList
-
+        return (self._calcSingleGalSimSed(*args) for args in
+                zip(actualSEDnames, redshift, internalAv, internalRv,
+                    galacticAv, galacticRv, magNorm))
 
     def get_fitsFiles(self):
         """
@@ -303,8 +310,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         positionAngle = self.column_by_name('positionAngle')
         sindex = self.column_by_name('sindex')
 
-        #correct the SEDs for redshift, dust, etc.  Return a list of Sed objects as defined in
-        #sims_photUtils/../../Sed.py
         sedList = self._calculateGalSimSeds()
 
         if self.hasBeenInitialized is False and len(objectNames)>0:
@@ -317,7 +322,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
         output = []
         for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn) in \
-            zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight, \
+            izip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight, \
                 minorAxis, majorAxis, positionAngle, sedList, sindex):
 
             if ss is None or name in self.objectHasBeenDrawn:
