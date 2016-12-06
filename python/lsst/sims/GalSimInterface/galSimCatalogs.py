@@ -192,7 +192,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         return numpy.array([self.specFileMap[k] if k in self.specFileMap else None
                          for k in self.column_by_name('sedFilename')])
 
-    def _calcGalSimSed(self, sedName, zz, iAv, iRv, gAv, gRv, norm):
+    def _calcSingleGalSimSed(self, sedName, zz, iAv, iRv, gAv, gRv, norm):
         """
         correct the SED for redshift, dust, etc.  Return an Sed object as defined in
         sims_photUtils/../../Sed.py
@@ -287,7 +287,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         galacticRv = self.column_by_name('galacticRv')
         magNorm = self.column_by_name('magNorm')
 
-        return (self._calcGalSimSed(*args) for args in
+        return (self._calcSingleGalSimSed(*args) for args in
                 zip(actualSEDnames, redshift, internalAv, internalRv,
                     galacticAv, galacticRv, magNorm))
 
