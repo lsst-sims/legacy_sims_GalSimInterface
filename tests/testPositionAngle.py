@@ -64,7 +64,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
         Determine its north and east axes by examining how RA and Dec change
         with pixel position.
 
-        Determin the semi-major axis of the object by treating the distribution
+        Determine the semi-major axis of the object by treating the distribution
         of flux as a covariance matrix and finding its eigen vectors.
 
         Return the angle between the semi-major axis and the north axis of
