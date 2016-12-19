@@ -117,8 +117,8 @@ class GalSimPositionAngleTest(unittest.TestCase):
         north = np.array([np.cos(theta)-np.sin(theta), np.cos(theta)+np.sin(theta)])
         north = north/np.sqrt(north[0]*north[0]+north[1]*north[1])
 
-        # find the west axis of the image
-        west = np.array([north[1], -1.0*north[0]])
+        # find the east axis of the image
+        east = np.array([-1.0*north[1], north[0]])
 
         # now find the covariance matrix of the x, y  pixel space distribution
         # of flux on the image
@@ -148,7 +148,8 @@ class GalSimPositionAngleTest(unittest.TestCase):
         # return the angle between the north axis of the image
         # and the semi-major axis of the object
         cosTheta = np.dot(majorAxis, north)
-        sinTheta = np.dot(majorAxis, west)
+        sinTheta = np.dot(majorAxis, east)
+
         theta = np.arctan2(sinTheta, cosTheta)
 
         return np.degrees(theta)
