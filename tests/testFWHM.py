@@ -4,6 +4,7 @@ import unittest
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
 from lsst.sims.utils import haversine
 from lsst.sims.catalogs.db import fileDBObject
@@ -46,6 +47,10 @@ class fwhmCat(GalSimStars):
 
 
 class GalSimFwhmTest(unittest.TestCase):
+
+    @classmethod
+    def tearDownClass(cls):
+        sims_clean_up()
 
     def verify_fwhm(self, fileName, fwhm, detector, camera, obs, epoch=2000.0):
         """

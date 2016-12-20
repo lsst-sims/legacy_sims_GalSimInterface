@@ -5,6 +5,7 @@ import unittest
 import lsst.utils.tests
 
 from lsst.utils import getPackageDir
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimPhoSimGalaxies, GalSimPhoSimStars, GalSimPhoSimAgn
@@ -188,6 +189,8 @@ class GalSimPhoSimTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        sims_clean_up()
+
         if os.path.exists(cls.bulge_name):
             os.unlink(cls.bulge_name)
 

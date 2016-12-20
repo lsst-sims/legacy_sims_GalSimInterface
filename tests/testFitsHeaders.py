@@ -6,6 +6,7 @@ import lsst.utils.tests
 import astropy.io.fits as fits
 
 from lsst.utils import getPackageDir
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
@@ -50,6 +51,10 @@ class fitsHeaderCatalog(GalSimStars):
 
 
 class FitsHeaderTest(unittest.TestCase):
+
+    @classmethod
+    def tearDownClass(cls):
+        sims_clean_up()
 
     def testFitsHeader(self):
         """

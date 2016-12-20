@@ -4,6 +4,7 @@ import unittest
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRadians
 from lsst.sims.utils import haversine
 from lsst.sims.catalogs.db import fileDBObject
@@ -51,6 +52,10 @@ class hlrCat(GalSimGalaxies):
 
 
 class GalSimHlrTest(unittest.TestCase):
+
+    @classmethod
+    def tearDownClass(cls):
+        sims_clean_up()
 
     def get_flux_in_half_light_radius(self, fileName, hlr, detector, camera, obs, epoch=2000.0):
         """
