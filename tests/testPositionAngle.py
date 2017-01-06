@@ -64,7 +64,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
         Determine its north and east axes by examining how RA and Dec change
         with pixel position.
 
-        Determin the semi-major axis of the object by treating the distribution
+        Determine the semi-major axis of the object by treating the distribution
         of flux as a covariance matrix and finding its eigen vectors.
 
         Return the angle between the semi-major axis and the north axis of
@@ -117,8 +117,8 @@ class GalSimPositionAngleTest(unittest.TestCase):
         north = np.array([np.cos(theta)-np.sin(theta), np.cos(theta)+np.sin(theta)])
         north = north/np.sqrt(north[0]*north[0]+north[1]*north[1])
 
-        # find the west axis of the image
-        west = np.array([north[1], -1.0*north[0]])
+        # find the east axis of the image
+        east = np.array([-1.0*north[1], north[0]])
 
         # now find the covariance matrix of the x, y  pixel space distribution
         # of flux on the image
@@ -148,7 +148,8 @@ class GalSimPositionAngleTest(unittest.TestCase):
         # return the angle between the north axis of the image
         # and the semi-major axis of the object
         cosTheta = np.dot(majorAxis, north)
-        sinTheta = np.dot(majorAxis, west)
+        sinTheta = np.dot(majorAxis, east)
+
         theta = np.arctan2(sinTheta, cosTheta)
 
         return np.degrees(theta)
@@ -172,53 +173,52 @@ class GalSimPositionAngleTest(unittest.TestCase):
         detName = detector.getName()
 
         rng = np.random.RandomState(42)
-        paList = rng.random_sample(2)*360.0
-        rotSkyPosList = rng.random_sample(2)*360.0
+        paList = rng.random_sample(7)*360.0
+        rotSkyPosList = rng.random_sample(77)*360.0
 
-        for pa in paList:
-            for rotSkyPos in rotSkyPosList:
+        for pa, rotSkyPos in zip(paList, rotSkyPosList):
 
-                imageName = '%s_%s_u.fits' % (imageRoot, detName)
+            imageName = '%s_%s_u.fits' % (imageRoot, detName)
 
-                obs = ObservationMetaData(pointingRA = 75.0,
-                                          pointingDec = -12.0,
-                                          boundType = 'circle',
-                                          boundLength = 4.0,
-                                          rotSkyPos = rotSkyPos,
-                                          mjd = 49250.0)
+            obs = ObservationMetaData(pointingRA = 75.0,
+                                      pointingDec = -12.0,
+                                      boundType = 'circle',
+                                      boundLength = 4.0,
+                                      rotSkyPos = rotSkyPos,
+                                      mjd = 49250.0)
 
-                create_text_catalog(obs, dbFileName,
-                                    rng.random_sample(1)*20.0-10.0,
-                                    rng.random_sample(1)*20.0-10.0,
-                                    pa=[pa],
-                                    mag_norm=[17.0])
+            create_text_catalog(obs, dbFileName,
+                                rng.random_sample(1)*20.0-10.0,
+                                rng.random_sample(1)*20.0-10.0,
+                                pa=[pa],
+                                mag_norm=[17.0])
 
-                db = paFileDBObj(dbFileName, runtable='test')
+            db = paFileDBObj(dbFileName, runtable='test')
 
-                cat = paCat(db, obs_metadata=obs)
-                cat.camera = camera
+            cat = paCat(db, obs_metadata=obs)
+            cat.camera = camera
 
-                cat.write_catalog(catName)
-                cat.write_images(nameRoot=imageRoot)
+            cat.write_catalog(catName)
+            cat.write_images(nameRoot=imageRoot)
 
-                paTest = self.get_position_angle(imageName, camera, detector, obs, 2000.0)
+            paTest = self.get_position_angle(imageName, camera, detector, obs, 2000.0)
 
-                # need to compare against all angles displaced by either 180 or 360 degrees
-                # from expected answer
-                deviation = np.abs(np.array([pa-paTest,
-                                             pa-180.0-paTest,
-                                             pa+180.0-paTest,
-                                             pa-360.0-paTest,
-                                             pa+360.0-paTest])).min()
+            # need to compare against all angles displaced by either 180 or 360 degrees
+            # from expected answer
+            deviation = np.abs(np.array([pa-paTest,
+                                         pa-180.0-paTest,
+                                         pa+180.0-paTest,
+                                         pa-360.0-paTest,
+                                         pa+360.0-paTest])).min()
 
-                self.assertLess(deviation, 2.0)
+            self.assertLess(deviation, 3.0)
 
-                if os.path.exists(catName):
-                    os.unlink(catName)
-                if os.path.exists(dbFileName):
-                    os.unlink(dbFileName)
-                if os.path.exists(imageName):
-                    os.unlink(imageName)
+            if os.path.exists(catName):
+                os.unlink(catName)
+            if os.path.exists(dbFileName):
+                os.unlink(dbFileName)
+            if os.path.exists(imageName):
+                os.unlink(imageName)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):

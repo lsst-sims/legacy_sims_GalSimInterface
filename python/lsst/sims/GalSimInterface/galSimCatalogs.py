@@ -156,7 +156,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
     sedDir = lsst.utils.getPackageDir('sims_sed_library')
 
-    bandpassNames = ['u', 'g', 'r', 'i', 'z', 'y']
+    bandpassNames = None
     bandpassDir = os.path.join(lsst.utils.getPackageDir('throughputs'), 'baseline')
     bandpassRoot = 'filter_'
     componentList = ['detector.dat', 'm1.dat', 'm2.dat', 'm3.dat',
@@ -326,6 +326,12 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         attempts to determine which rows are actually in the catalog.  That will cause
         your images to have too much flux in them.
         """
+        if self.bandpassNames is None:
+            if isinstance(self.obs_metadata.bandpass, list):
+                self.bandpassNames = [self.obs_metadata.bandpass]
+            else:
+                self.bandpassNames = self.obs_metadata.bandpass
+
         objectNames = self.column_by_name('uniqueId')
         raICRS = self.column_by_name('raICRS')
         decICRS = self.column_by_name('decICRS')
