@@ -17,6 +17,7 @@ from itertools import izip
 import lsst.utils
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.catalogs.definitions import InstanceCatalog
+from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catUtils.mixins import (CameraCoords, AstrometryGalaxies, AstrometryStars,
                                        EBVmixin)
 from lsst.sims.GalSimInterface import GalSimInterpreter, GalSimDetector, GalSimCelestialObject
@@ -205,6 +206,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         self._initializeGalSimInterpreter()
         self.hasBeenInitialized = True
 
+    @cached
     def get_sedFilepath(self):
         """
         Maps the name of the SED as stored in the database to the file stored in
@@ -313,6 +315,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 zip(actualSEDnames, redshift, internalAv, internalRv,
                     galacticAv, galacticRv, magNorm))
 
+    @cached
     def get_fitsFiles(self):
         """
         This getter returns a column listing the names of the detectors whose corresponding
