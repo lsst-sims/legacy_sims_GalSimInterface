@@ -29,7 +29,7 @@ class testGalSimStars(GalSimStars):
 obsMD = OpSim3_61DBObject()
 obs_metadata = obsMD.getObservationMetaData(88625744, 0.1, makeCircBounds = True)
 
-#grab a database of galaxies (in this case, galaxy bulges)
+#grab a database of stars
 stars = CatalogDBObject.from_objid('allstars')
 
 #now append a bunch of objects with 2D sersic profiles to our output file

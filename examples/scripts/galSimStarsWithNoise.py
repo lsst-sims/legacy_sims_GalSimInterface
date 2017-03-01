@@ -48,7 +48,7 @@ obs_metadata = ObservationMetaData(pointingRA=raw_obs_metadata.pointingRA,
                                    seeing=[defaults.seeing('u'), defaults.seeing('g')])
 
 
-#grab a database of galaxies (in this case, galaxy bulges)
+#grab a database of stars
 stars = CatalogDBObject.from_objid('allstars')
 
 #now append a bunch of objects with 2D sersic profiles to our output file
