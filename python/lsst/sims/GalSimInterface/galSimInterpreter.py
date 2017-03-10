@@ -7,6 +7,7 @@ GalSimInterpreter -- a class which takes objects passed by a GalSim Instance Cat
 GalSimDetector -- a class which stored information about a detector in a way that
 GalSimInterpreter expects.
 """
+from __future__ import print_function
 
 import numpy as np
 import galsim
@@ -393,9 +394,9 @@ class GalSimInterpreter(object):
         elif gsObject.galSimType == 'pointSource':
             centeredObj = self.drawPointSource(gsObject)
         else:
-            print "Apologies: the GalSimInterpreter does not yet have a method to draw "
-            print gsObject.galSimType
-            print " objects\n"
+            print("Apologies: the GalSimInterpreter does not yet have a method to draw ")
+            print(gsObject.galSimType)
+            print(" objects\n")
             centeredObj = None
 
         return centeredObj
