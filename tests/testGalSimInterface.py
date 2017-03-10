@@ -1,4 +1,6 @@
 from __future__ import with_statement
+from builtins import zip
+from builtins import range
 import os
 import copy
 import numpy as np
@@ -159,8 +161,8 @@ class GalSimInterfaceTest(unittest.TestCase):
         deltaDec = np.array([0.0])
         defaults = LSSTdefaults()
         cls.bandpassNameList = ['u', 'g', 'r', 'i', 'z', 'y']
-        cls.m5 = defaults._m5.values()
-        cls.seeing = defaults._FWHMeff.values()
+        cls.m5 = list(defaults._m5.values())
+        cls.seeing = list(defaults._FWHMeff.values())
         cls.obs_metadata = makePhoSimTestDB(filename=cls.dbName, size=1,
                                             deltaRA=deltaRA,
                                             deltaDec=deltaDec,

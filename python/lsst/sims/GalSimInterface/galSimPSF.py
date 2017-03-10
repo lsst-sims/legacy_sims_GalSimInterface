@@ -3,6 +3,7 @@ This file defines the model classes that wrap PSFs from
 galsim into the CatSim interface
 """
 
+from builtins import object
 import numpy
 import galsim
 

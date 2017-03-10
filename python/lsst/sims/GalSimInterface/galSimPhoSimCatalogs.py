@@ -1,3 +1,4 @@
+from builtins import object
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogPoint
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D

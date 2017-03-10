@@ -26,6 +26,7 @@ This is a modified version of the approximateWcs.py script from
 meas_astrom
 """
 
+from builtins import range
 import numpy as np
 import lsst.afw.image as afwImage
 import lsst.afw.table as afwTable

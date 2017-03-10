@@ -1,3 +1,5 @@
+from builtins import zip
+from builtins import range
 import numpy as np
 import os
 import unittest

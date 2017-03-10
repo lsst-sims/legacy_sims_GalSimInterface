@@ -3,6 +3,7 @@ This file defines the model classes that wrap noise models from
 galsim into the CatSim interface
 """
 
+from builtins import object
 import numpy
 import galsim
 from lsst.sims.photUtils import calcSkyCountsPerPixelForM5, PhotometricParameters, \

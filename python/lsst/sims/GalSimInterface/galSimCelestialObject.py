@@ -1,3 +1,4 @@
+from builtins import object
 import numpy
 from lsst.sims.utils import arcsecFromRadians
 

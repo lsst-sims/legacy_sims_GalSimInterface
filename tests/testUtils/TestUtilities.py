@@ -1,3 +1,4 @@
+from builtins import zip
 import os
 import numpy
 from lsst.afw.cameraGeom import PIXELS, FOCAL_PLANE
