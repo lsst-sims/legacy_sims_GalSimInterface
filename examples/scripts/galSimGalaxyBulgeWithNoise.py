@@ -3,9 +3,11 @@ This script shows how incorporate noise in images of galaxies
 """
 
 import os
+from lsst.utils import getPackageDir
 from lsst.sims.catalogs.db import CatalogDBObject
+from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catUtils.baseCatalogModels import GalaxyBulgeObj, OpSim3_61DBObject
+from lsst.sims.catUtils.baseCatalogModels import GalaxyBulgeObj
 from lsst.sims.GalSimInterface import GalSimGalaxies, ExampleCCDNoise, \
                                                SNRdocumentPSF
 
@@ -30,8 +32,11 @@ class testGalSimGalaxiesNoisy(testGalSimGalaxiesNoiseless):
     noise_and_background = ExampleCCDNoise(99)
 
 #select an OpSim pointing
-obsMD = OpSim3_61DBObject()
-raw_obs_metadata = obsMD.getObservationMetaData(88625744, 0.05, makeCircBounds = True)
+opsimdb = os.path.join(getPackageDir('sims_data'), 'OpSimData',
+                       'opsimblitz1_1133_sqlite.db')
+obs_gen = ObservationMetaDataGenerator(database=opsimdb, driver='sqlite')
+obs_list = obs_gen.getObservationMetaData(obsHistID=10, boundLength=0.05)
+raw_obs_metadata = obs_list[0]
 
 defaults = LSSTdefaults()
 obs_metadata = ObservationMetaData(pointingRA=raw_obs_metadata.pointingRA,
@@ -42,7 +47,7 @@ obs_metadata = ObservationMetaData(pointingRA=raw_obs_metadata.pointingRA,
                                    rotSkyPos=raw_obs_metadata.rotSkyPos,
                                    bandpassName=['u','g'],
                                    m5=[defaults.m5('u'), defaults.m5('g')],
-                                   seeing=[defaults.seeing('u'), defaults.seeing('g')])
+                                   seeing=[defaults.FWHMeff('u'), defaults.FWHMeff('g')])
 
 #grab a database of galaxies (in this case, galaxy bulges)
 gals = CatalogDBObject.from_objid('galaxyBulge')
