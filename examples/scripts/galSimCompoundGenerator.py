@@ -2,6 +2,7 @@
 This script shows how to use our GalSim interface to create FITS images
 that contain stars and galaxies
 """
+from __future__ import print_function
 
 import os
 import galsim
@@ -66,7 +67,7 @@ stars_galSim = testGalSimStars(stars, obs_metadata=obs_metadata)
 catName = 'galSim_compound_example.txt'
 stars_galSim.write_catalog(catName, chunk_size=100)
 
-print 'done with stars'
+print('done with stars')
 
 bulges = CatalogDBObject.from_objid('galaxyBulge')
 bulge_galSim = testGalSimGalaxies(bulges, obs_metadata=obs_metadata)
@@ -80,14 +81,14 @@ bulge_galSim.copyGalSimInterpreter(stars_galSim)
 bulge_galSim.write_catalog(catName, write_header=False,
                             write_mode='a')
 
-print 'done with bulges'
+print('done with bulges')
 
 disks = CatalogDBObject.from_objid('galaxyDisk')
 disk_galSim = testGalSimGalaxies(disks, obs_metadata=obs_metadata)
 disk_galSim.copyGalSimInterpreter(bulge_galSim)
 disk_galSim.write_catalog(catName, write_header=False, write_mode='a')
 
-print 'done with disks'
+print('done with disks')
 
 agn = CatalogDBObject.from_objid('galaxyAgn')
 agn_galSim = testGalSimAgn(agn, obs_metadata=obs_metadata)
