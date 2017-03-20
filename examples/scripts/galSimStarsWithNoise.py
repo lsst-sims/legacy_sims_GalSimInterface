@@ -3,9 +3,10 @@ This script illustrates how to add noise to a series of FITS images using stars
 """
 
 import os
-import galsim
+from lsst.utils import getPackageDir
 from lsst.sims.catalogs.db import CatalogDBObject
 from lsst.sims.utils import ObservationMetaData
+from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.catUtils.baseCatalogModels import StarObj, OpSim3_61DBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF, ExampleCCDNoise
 from lsst.sims.photUtils import LSSTdefaults
@@ -32,9 +33,11 @@ class testGalSimStarsWithNoise(testGalSimStarsNoiseless):
     noise_and_background = ExampleCCDNoise(seed=99)
 
 #select an OpSim pointing
-obsMD = OpSim3_61DBObject()
-raw_obs_metadata = obsMD.getObservationMetaData(88625744, 0.1, makeCircBounds = True)
-
+opsimdb = os.path.join(getPackageDir('sims_data'), 'OpSimData',
+                       'opsimblitz1_1133_sqlite.db')
+obs_gen = ObservationMetaDataGenerator(database=opsimdb, driver='sqlite')
+obs_list = obs_gen.getObservationMetaData(obsHistID=10, boundLength=0.05)
+raw_obs_metadata = obs_list[0]
 
 defaults = LSSTdefaults()
 obs_metadata = ObservationMetaData(pointingRA=raw_obs_metadata.pointingRA,
@@ -45,7 +48,7 @@ obs_metadata = ObservationMetaData(pointingRA=raw_obs_metadata.pointingRA,
                                    rotSkyPos=raw_obs_metadata.rotSkyPos,
                                    bandpassName=['u','g'],
                                    m5=[defaults.m5('u'), defaults.m5('g')],
-                                   seeing=[defaults.seeing('u'), defaults.seeing('g')])
+                                   seeing=[defaults.FWHMeff('u'), defaults.FWHMeff('g')])
 
 
 #grab a database of stars

@@ -10,10 +10,12 @@ GalSimAgn
 GalSimStars
 """
 
+from builtins import zip
+from builtins import str
 import numpy as np
 import os
 import copy
-from itertools import izip
+
 import lsst.utils
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.catalogs.definitions import InstanceCatalog
@@ -38,9 +40,14 @@ def _is_null(argument):
     This is used by InstanceCatalog.write_catalog() to identify rows
     with null values in key columns.
     """
+    try:
+        str_class = basestring
+    except:
+        str_class = str
+
     if argument is None:
         return True
-    elif isinstance(argument, str) or isinstance(argument, unicode):
+    elif isinstance(argument, str_class):
         if argument.strip().lower() == 'null':
             return True
         elif argument.strip().lower() == 'nan':
@@ -358,7 +365,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
         output = []
         for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn) in \
-            izip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight,
+            zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight,
                  minorAxis, majorAxis, positionAngle, sedList, sindex):
 
             if name in self.objectHasBeenDrawn:
@@ -477,7 +484,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                             raise RuntimeError('WARNING in GalSimCatalog; your obs_metadata does not have ' +
                                                'm5 values for all of your bandpasses \n' +
                                                'bandpass has: %s \n' % self.bandpassNames.__repr__() +
-                                               'm5 has: %s ' % self.obs_metadata.m5.keys().__repr__())
+                                               'm5 has: %s ' % list(self.obs_metadata.m5.keys()).__repr__())
 
                     if self.obs_metadata.seeing is None:
                         raise RuntimeError('WARNING  in GalSimCatalog; you did not specify seeing in your '
@@ -489,7 +496,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                             raise RuntimeError('WARNING in GalSimCatalog; your obs_metadata does not have ' +
                                                'seeing values for all of your bandpasses \n' +
                                                'bandpass has: %s \n' % self.bandpassNames.__repr__() +
-                                               'seeing has: %s ' % self.obs_metadata.seeing.keys().__repr__())
+                                               'seeing has: %s ' % list(self.obs_metadata.seeing.keys()).__repr__())
 
                 (self.bandpassDict,
                  hardwareDict) = BandpassDict.loadBandpassesFromFiles(bandpassNames=self.bandpassNames,

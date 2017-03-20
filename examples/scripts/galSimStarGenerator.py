@@ -3,10 +3,10 @@ This script shows how to use our GalSim interface to generate FITS images of sta
 """
 
 import os
-import galsim
+from lsst.utils import getPackageDir
 from lsst.sims.catalogs.db import CatalogDBObject
-from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catUtils.baseCatalogModels import StarObj, OpSim3_61DBObject
+from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
+from lsst.sims.catUtils.baseCatalogModels import StarObj
 from lsst.sims.GalSimInterface import SNRdocumentPSF, GalSimStars
 
 #if you want to use the actual LSST camera
@@ -26,8 +26,12 @@ class testGalSimStars(GalSimStars):
 
 
 #select an OpSim pointing
-obsMD = OpSim3_61DBObject()
-obs_metadata = obsMD.getObservationMetaData(88625744, 0.1, makeCircBounds = True)
+#select an OpSim pointing
+opsimdb = os.path.join(getPackageDir('sims_data'), 'OpSimData',
+                       'opsimblitz1_1133_sqlite.db')
+obs_gen = ObservationMetaDataGenerator(database=opsimdb, driver='sqlite')
+obs_list = obs_gen.getObservationMetaData(obsHistID=10, boundLength=0.05)
+obs_metadata = obs_list[0]
 
 #grab a database of stars
 stars = CatalogDBObject.from_objid('allstars')

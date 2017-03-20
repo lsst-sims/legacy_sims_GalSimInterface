@@ -2,13 +2,14 @@
 This script shows how to use our GalSim interface to create FITS images
 that contain stars and galaxies
 """
+from __future__ import print_function
 
 import os
 import galsim
+from lsst.utils import getPackageDir
 from lsst.sims.catalogs.db import CatalogDBObject
-from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catUtils.baseCatalogModels import StarObj, GalaxyBulgeObj, GalaxyDiskObj, GalaxyAgnObj, \
-                                                 OpSim3_61DBObject
+from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
+from lsst.sims.catUtils.baseCatalogModels import StarObj, GalaxyBulgeObj, GalaxyDiskObj, GalaxyAgnObj
 from lsst.sims.GalSimInterface import SNRdocumentPSF, GalSimStars, GalSimGalaxies, \
                                                GalSimAgn
 
@@ -54,8 +55,10 @@ class testGalSimAgn(GalSimAgn):
 
 
 #select an OpSim pointing
-obsMD = OpSim3_61DBObject()
-obs_metadata = obsMD.getObservationMetaData(88625744, 0.05, makeCircBounds = True)
+opsimdb = os.path.join(getPackageDir('sims_data'), 'OpSimData', 'opsimblitz1_1133_sqlite.db')
+obs_gen = ObservationMetaDataGenerator(database=opsimdb)
+obs_list = obs_gen.getObservationMetaData(obsHistID=10, boundLength=0.05)
+obs_metadata = obs_list[0]
 
 #grab a database of galaxies (in this case, galaxy bulges)
 stars = CatalogDBObject.from_objid('allstars')
@@ -66,7 +69,7 @@ stars_galSim = testGalSimStars(stars, obs_metadata=obs_metadata)
 catName = 'galSim_compound_example.txt'
 stars_galSim.write_catalog(catName, chunk_size=100)
 
-print 'done with stars'
+print('done with stars')
 
 bulges = CatalogDBObject.from_objid('galaxyBulge')
 bulge_galSim = testGalSimGalaxies(bulges, obs_metadata=obs_metadata)
@@ -80,14 +83,14 @@ bulge_galSim.copyGalSimInterpreter(stars_galSim)
 bulge_galSim.write_catalog(catName, write_header=False,
                             write_mode='a')
 
-print 'done with bulges'
+print('done with bulges')
 
 disks = CatalogDBObject.from_objid('galaxyDisk')
 disk_galSim = testGalSimGalaxies(disks, obs_metadata=obs_metadata)
 disk_galSim.copyGalSimInterpreter(bulge_galSim)
 disk_galSim.write_catalog(catName, write_header=False, write_mode='a')
 
-print 'done with disks'
+print('done with disks')
 
 agn = CatalogDBObject.from_objid('galaxyAgn')
 agn_galSim = testGalSimAgn(agn, obs_metadata=obs_metadata)
