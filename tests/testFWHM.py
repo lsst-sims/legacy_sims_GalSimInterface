@@ -8,10 +8,10 @@ from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
-from lsst.sims.utils import haversine
+from lsst.sims.utils import angularSeparation
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
-from lsst.sims.coordUtils import _raDecFromPixelCoords
+from lsst.sims.coordUtils import raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
@@ -57,12 +57,9 @@ class GalSimFwhmTest(unittest.TestCase):
     def verify_fwhm(self, fileName, fwhm, detector, camera, obs, epoch=2000.0):
         """
         Read in a FITS image with one object on it and verify that that object
-        has the expected Full Width at Half Maximum.  This is done by finding
-        the brightest pixel in the image, and then drawing 1-dimensional profiles
-        of the object centered on that pixel (but at different angles relative to
-        the axes of the image).  The code then walks along those profiles and keeps
-        track of the distance between the two points at which the flux is half of
-        the maximum.
+        has the expected Full Width at Half Maximum.  This is done by fitting
+        the image to the double Gaussian PSF model implemented in
+        SNRdocumentPSF(), varying the FWHM.
 
         @param [in] fileName is the name of the FITS image
 
@@ -86,71 +83,57 @@ class GalSimFwhmTest(unittest.TestCase):
         im = afwImage.ImageF(fileName).getArray()
         maxFlux = im.max()
         self.assertGreater(maxFlux, 100.0)  # make sure the image is not blank
-        valid = np.where(im > 0.25*maxFlux)
-        x_center = np.median(valid[1])
-        y_center = np.median(valid[0])
 
-        raMax, decMax = _raDecFromPixelCoords(x_center,
-                                              y_center,
-                                              [detector.getName()],
-                                              camera=camera,
-                                              obs_metadata=obs,
-                                              epoch=epoch)
+        im_flat = im.flatten()
+        x_arr = np.array([ii % im.shape[0] for ii in range(len(im_flat))])
+        y_arr = np.array([ii // im.shape[0] for ii in range(len(im_flat))])
 
-        half_flux = 0.5*maxFlux
+        valid_pix = np.where(im_flat>1.0e-20)
+        im_flat = im_flat[valid_pix].astype(float)
+        x_arr = x_arr[valid_pix]
+        y_arr = y_arr[valid_pix]
 
-        # only need to consider orientations between 0 and pi because the objects
-        # will be circularly symmetric (and FWHM is a circularly symmetric measure, anyway)
-        for theta in np.arange(0.0, np.pi, 0.3*np.pi):
+        total_flux = im_flat.sum()
 
-            slope = np.tan(theta)
+        x_center = (x_arr.astype(float)*im_flat).sum()/total_flux
+        y_center = (y_arr.astype(float)*im_flat).sum()/total_flux
 
-            if np.abs(slope < 1.0):
-                xPixList = np.array([ix for ix in range(0, im.shape[1])
-                                     if int(slope*(ix-x_center) + y_center) >= 0 and
-                                     int(slope*(ix-x_center)+y_center) < im.shape[0]])
+        ra_max, dec_max = raDecFromPixelCoords(x_center, y_center, detector.getName(),
+                                               camera=camera, obs_metadata=obs,
+                                               epoch=epoch)
 
-                yPixList = np.array([int(slope*(ix-x_center)+y_center) for ix in xPixList])
-            else:
-                yPixList = np.array([iy for iy in range(0, im.shape[0])
-                                     if int((iy-y_center)/slope + x_center) >= 0 and
-                                     int((iy-y_center)/slope + x_center) < im.shape[1]])
+        ra_p1, dec_p1 = raDecFromPixelCoords(x_center+1, y_center, detector.getName(),
+                                             camera=camera, obs_metadata=obs,
+                                             epoch=epoch)
 
-                xPixList = np.array([int((iy-y_center)/slope + x_center) for iy in yPixList])
+        pixel_scale = angularSeparation(ra_max, dec_max, ra_p1, dec_p1)
+        pixel_scale *= 3600.0  # convert to arcsec
 
-            chipNameList = [detector.getName()]*len(xPixList)
-            raList, decList = _raDecFromPixelCoords(xPixList, yPixList, chipNameList,
-                                                    camera=camera, obs_metadata=obs, epoch=epoch)
+        chisq_best = None
+        fwhm_best = None
 
-            distanceList = arcsecFromRadians(haversine(raList, decList, raMax, decMax))
+        total_flux = im_flat.sum()
 
-            fluxList = np.array([im[iy][ix] for ix, iy in zip(xPixList, yPixList)])
+        for fwhm_test in np.arange(0.01*fwhm, 3.0*fwhm, 0.01*fwhm):
+            alpha = fwhm_test/2.3835
 
-            distanceToLeft = None
-            distanceToRight = None
+            dd = np.power(x_arr-x_center,2).astype(float) + np.power(y_arr-y_center, 2).astype(float)
+            dd *= np.power(pixel_scale, 2)
 
-            for ix in range(1, len(xPixList)):
-                if fluxList[ix] < half_flux and fluxList[ix+1] >= half_flux:
-                    break
+            g1 = np.exp(-0.5*dd/(alpha*alpha))/(alpha*alpha*2.0*np.pi)
 
-            newOrigin = ix+1
+            g2 = np.exp(-0.5*dd/(4.0*alpha*alpha))/(4.0*alpha*alpha*2.0*np.pi)
 
-            mm = (distanceList[ix]-distanceList[ix+1])/(fluxList[ix]-fluxList[ix+1])
-            bb = distanceList[ix] - mm * fluxList[ix]
-            distanceToLeft = mm*half_flux + bb
+            model = 0.909*(g1 + 0.1*g2)*pixel_scale*pixel_scale
+            norm = model.sum()
+            model *= (total_flux/norm)
+            chisq = np.power((im_flat-model), 2).sum()
 
-            for ix in range(newOrigin, len(xPixList)-1):
-                if fluxList[ix] >= half_flux and fluxList[ix+1] < half_flux:
-                    break
+            if chisq_best is None or chisq<chisq_best:
+                chisq_best = chisq
+                fwhm_best = fwhm_test
 
-            mm = (distanceList[ix]-distanceList[ix+1])/(fluxList[ix]-fluxList[ix+1])
-            bb = distanceList[ix] - mm * fluxList[ix]
-            distanceToRight = mm*half_flux + bb
-
-            msg = "measured fwhm %e; expected fwhm %e; maxFlux %e; orientation %e pi\n" % \
-                  (distanceToLeft+distanceToRight, fwhm, maxFlux, theta/np.pi)
-
-            self.assertLess(np.abs(distanceToLeft+distanceToRight-fwhm), 0.1*fwhm, msg=msg)
+        self.assertLess(np.abs(fwhm-fwhm_best), 0.1*fwhm)
 
     def testFwhmOfImage(self):
         """
