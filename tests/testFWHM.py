@@ -147,6 +147,8 @@ class GalSimFwhmTest(unittest.TestCase):
         dbFileName = os.path.join(scratchDir, 'fwhm_test_InputCatalog.dat')
 
         baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
+
+        # instantiate a test camera with pixel_scale = 0.02 arcsec/pixel
         camera = ReturnCamera(baseDir)
 
         detector = camera[0]
