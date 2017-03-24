@@ -7,7 +7,8 @@ from builtins import object
 import numpy
 import galsim
 
-__all__ = ["PSFbase", "DoubleGaussianPSF", "SNRdocumentPSF",]
+__all__ = ["PSFbase", "DoubleGaussianPSF", "SNRdocumentPSF",
+           "Kolmogorov_and_Gaussian_PSF"]
 
 class PSFbase(object):
     """
@@ -164,3 +165,40 @@ class SNRdocumentPSF(DoubleGaussianPSF):
         gaussian2 = galsim.Gaussian(sigma=sigma)
 
         self._cached_psf = 0.909*(gaussian1 + 0.1*gaussian2)
+
+
+class Kolmogorov_and_Gaussian_PSF(PSFbase):
+    """
+    This PSF class is based on David Kirkby's presentation to the DESC Survey Simulations
+    working group on 23 March 2017.
+
+    https://confluence.slac.stanford.edu/pages/viewpage.action?spaceKey=LSSTDESC&title=SSim+2017-03-23
+
+    (you will need a SLAC Confluence account to access that link)
+    """
+
+    def __init__(self, airmass=1.2, rawSeeing=0.7, band='r'):
+        """
+        Parameters
+        ----------
+        airmass
+
+        rawSeeing is the FWHM seeing at zenith at 500 nm in arc seconds
+        (provided by OpSim)
+
+        band is the bandpass of the observation [u,g,r,i,z,y]
+        """
+        # This code was provided by David Kirkby in a private communication
+
+        wlen_eff = dict(u=365.49, g=480.03, r=622.20, i=754.06, z=868.21, y=991.66)[band]
+        FWHMatm = rawSeeing * (wlen_eff / 500.) ** -0.3 * airmass ** 0.6
+        FWHMsys = 0.4 * airmass ** 0.6
+
+        atm = galsim.Kolmogorov(fwhm=FWHMatm)
+        sys = galsim.Gaussian(fwhm=FWHMsys)
+        psf = galsim.Convolve((atm, sys))
+
+        self._cached_psf = psf
+
+    def _getPSF(self, xPupil=None, yPupil=None):
+        return self._cached_psf

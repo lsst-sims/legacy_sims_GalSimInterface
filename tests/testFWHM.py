@@ -11,6 +11,7 @@ from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
 from lsst.sims.utils import angularSeparation
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
+from lsst.sims.GalSimInterface import Kolmogorov_and_Gaussian_PSF
 from lsst.sims.coordUtils import raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
@@ -185,6 +186,61 @@ class GalSimFwhmTest(unittest.TestCase):
 
             if os.path.exists(imageName):
                 os.unlink(imageName)
+
+        if os.path.exists(dbFileName):
+            os.unlink(dbFileName)
+
+
+class KolmogrovGaussianTestCase(unittest.TestCase):
+    """
+    Just test that the Kolmogorov_and_Gaussian_PSF runs
+    """
+
+    @classmethod
+    def tearDownClass(cls):
+        sims_clean_up()
+
+    def testKolmogorovGaussianPSF(self):
+        scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
+        catName = os.path.join(scratchDir, 'kolmogorov_gaussian_test_Catalog.dat')
+        imageRoot = os.path.join(scratchDir, 'kolmogorov_gaussian_test_Image')
+        dbFileName = os.path.join(scratchDir, 'kolmogorov_gaussian_test_InputCatalog.dat')
+
+        baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
+
+        # instantiate a test camera with pixel_scale = 0.02 arcsec/pixel
+        camera = ReturnCamera(baseDir)
+
+        detector = camera[0]
+        detName = detector.getName()
+        imageName = '%s_%s_u.fits' % (imageRoot, detName)
+
+        obs = ObservationMetaData(pointingRA = 75.0,
+                                  pointingDec = -12.0,
+                                  boundType = 'circle',
+                                  boundLength = 4.0,
+                                  rotSkyPos = 33.0,
+                                  mjd = 49250.0)
+
+        create_text_catalog(obs, dbFileName, np.array([3.0]),
+                            np.array([1.0]), mag_norm=[13.0])
+
+        db = fwhmFileDBObj(dbFileName, runtable='test')
+
+        cat = fwhmCat(db, obs_metadata=obs)
+        cat.camera = camera
+
+        psf = Kolmogorov_and_Gaussian_PSF(rawSeeing=0.7, airmass=1.05, band='g')
+        cat.setPSF(psf)
+
+        cat.write_catalog(catName)
+        cat.write_images(nameRoot=imageRoot)
+
+        if os.path.exists(catName):
+            os.unlink(catName)
+
+        if os.path.exists(imageName):
+            os.unlink(imageName)
 
         if os.path.exists(dbFileName):
             os.unlink(dbFileName)
