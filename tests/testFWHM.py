@@ -114,15 +114,17 @@ class GalSimFwhmTest(unittest.TestCase):
 
         total_flux = im_flat.sum()
 
-        for fwhm_test in np.arange(0.01*fwhm, 3.0*fwhm, 0.01*fwhm):
+        for fwhm_test in np.arange(0.1*fwhm, 3.0*fwhm, 0.1*fwhm):
             alpha = fwhm_test/2.3835
 
             dd = np.power(x_arr-x_center,2).astype(float) + np.power(y_arr-y_center, 2).astype(float)
             dd *= np.power(pixel_scale, 2)
 
-            g1 = np.exp(-0.5*dd/(alpha*alpha))/(alpha*alpha*2.0*np.pi)
+            sigma = alpha
+            g1 = np.exp(-0.5*dd/(sigma*sigma))/(sigma*sigma*2.0*np.pi)
 
-            g2 = np.exp(-0.5*dd/(4.0*alpha*alpha))/(4.0*alpha*alpha*2.0*np.pi)
+            sigma = 2.0*alpha
+            g2 = np.exp(-0.5*dd/(sigma*sigma))/(sigma*sigma*2.0*np.pi)
 
             model = 0.909*(g1 + 0.1*g2)*pixel_scale*pixel_scale
             norm = model.sum()
@@ -163,12 +165,12 @@ class GalSimFwhmTest(unittest.TestCase):
 
         db = fwhmFileDBObj(dbFileName, runtable='test')
 
-        for fwhm in (0.5, 1.3):
+        for fwhm in (0.1, 0.14):
 
             cat = fwhmCat(db, obs_metadata=obs)
             cat.camera = camera
 
-            psf = SNRdocumentPSF(fwhm=fwhm)
+            psf = SNRdocumentPSF(fwhm=fwhm, pixel_scale=0.02)
             cat.setPSF(psf)
 
             cat.write_catalog(catName)

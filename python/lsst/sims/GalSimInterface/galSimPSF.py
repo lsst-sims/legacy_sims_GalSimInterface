@@ -139,7 +139,7 @@ class SNRdocumentPSF(DoubleGaussianPSF):
     www.astro.washington.edu/users/ivezic/Astr511/LSST_SNRdoc.pdf
     """
 
-    def __init__(self, fwhm=0.6):
+    def __init__(self, fwhm=0.6, pixel_scale=0.2):
         """
         @param [in] fwhm is the Full Width at Half Max of the total PSF.  This is given in
         arcseconds.  The default value of 0.6 comes from a FWHM of 3 pixels with a pixel scale
@@ -155,7 +155,12 @@ class SNRdocumentPSF(DoubleGaussianPSF):
         #for r at half the maximum of the PSF
         alpha = fwhm/2.3835
 
-        gaussian1 = galsim.Gaussian(sigma=alpha)
-        gaussian2 = galsim.Gaussian(sigma=2.0*alpha)
+        rms_pixel_size = pixel_scale*pixel_scale/6.0
+
+        sigma = numpy.sqrt(alpha*alpha - rms_pixel_size)
+        gaussian1 = galsim.Gaussian(sigma=sigma)
+
+        sigma = numpy.sqrt(4.0*alpha*alpha - rms_pixel_size)
+        gaussian2 = galsim.Gaussian(sigma=sigma)
 
         self._cached_psf = 0.909*(gaussian1 + 0.1*gaussian2)
