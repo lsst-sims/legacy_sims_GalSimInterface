@@ -407,9 +407,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         so that multiple types of object (stars, AGN, galaxy bulges, galaxy disks, etc.)
         can be drawn on the same FITS files.
 
-        Note: This method does not copy the member variables PSF or noise_and_background
-        from one catalog to another.  Those need to be defined in each catalog separately.
-
         @param [in] otherCatalog is another GalSim InstanceCatalog that already has
         an initialized GalSimInterpreter
 
@@ -420,6 +417,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         self.photParams = otherCatalog.photParams
         self.bandpassDict = otherCatalog.bandpassDict
         self.galSimInterpreter = otherCatalog.galSimInterpreter
+        self.PSF = otherCatalog.PSF
+        self.noise_and_background = otherCatalog.noise_and_background
 
     def _initializeGalSimInterpreter(self):
         """
