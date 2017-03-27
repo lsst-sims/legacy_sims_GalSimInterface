@@ -156,12 +156,12 @@ class SNRdocumentPSF(DoubleGaussianPSF):
         #for r at half the maximum of the PSF
         alpha = fwhm/2.3835
 
-        rms_pixel_size = pixel_scale*pixel_scale/6.0
+        eff_pixel_sigma_sq = pixel_scale*pixel_scale/6.0
 
-        sigma = numpy.sqrt(alpha*alpha - rms_pixel_size)
+        sigma = numpy.sqrt(alpha*alpha - eff_pixel_sigma_sq)
         gaussian1 = galsim.Gaussian(sigma=sigma)
 
-        sigma = numpy.sqrt(4.0*alpha*alpha - rms_pixel_size)
+        sigma = numpy.sqrt(4.0*alpha*alpha - eff_pixel_sigma_sq)
         gaussian2 = galsim.Gaussian(sigma=sigma)
 
         self._cached_psf = 0.909*(gaussian1 + 0.1*gaussian2)
