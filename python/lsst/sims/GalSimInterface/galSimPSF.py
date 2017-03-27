@@ -134,8 +134,8 @@ class SNRdocumentPSF(DoubleGaussianPSF):
     This is an example implementation of a wavelength- and position-independent
     Double Gaussian PSF.  See the documentation in PSFbase to learn how it is used.
 
-    This specific PSF comes from equation(30) of the signal-to-noise document, which
-    can be found at
+    This specific PSF comes from equation(30) of the signal-to-noise document (LSE-40),
+    which can be found at
 
     www.astro.washington.edu/users/ivezic/Astr511/LSST_SNRdoc.pdf
     """
