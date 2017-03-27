@@ -58,7 +58,7 @@ class GalSimFwhmTest(unittest.TestCase):
     def tearDownClass(cls):
         sims_clean_up()
 
-    def verify_fwhm(self, fileName, fwhm, detector, camera, obs, epoch=2000.0):
+    def verify_fwhm(self, fileName, fwhm, pixel_scale):
         """
         Read in a FITS image with one object on it and verify that that object
         has the expected Full Width at Half Maximum.  This is done by fitting
@@ -69,17 +69,7 @@ class GalSimFwhmTest(unittest.TestCase):
 
         @param [in] fwhm is the expected Full Width at Half Maximum in arcseconds
 
-        @param [in] detector is an instantiation of the afw.cameraGeom Detector
-        class characterizing the detector corresponding to this image
-
-        @param [in] camera is an instantiation of the afw.cameraGeom Camera class
-        characterizing the camera to which detector belongs
-
-        @param [in] obs is an instantiation of ObservationMetaData characterizing
-        the telescope pointing
-
-        @param [in] epoch is the epoch in Julian years of the equinox against which
-        RA and Dec are measured.
+        @param [in] pixel_scale in arcsec
 
         This method will raise an exception if the measured Full Width at Half Maximum
         deviates from the expected value by more than ten percent.
@@ -173,7 +163,7 @@ class GalSimFwhmTest(unittest.TestCase):
             cat.write_catalog(catName)
             cat.write_images(nameRoot=imageRoot)
 
-            self.verify_fwhm(imageName, fwhm, detector, camera, obs)
+            self.verify_fwhm(imageName, fwhm, 0.02)
 
             if os.path.exists(catName):
                 os.unlink(catName)
