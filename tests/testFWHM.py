@@ -102,23 +102,12 @@ class GalSimFwhmTest(unittest.TestCase):
         x_center = (x_arr.astype(float)*im_flat).sum()/total_flux
         y_center = (y_arr.astype(float)*im_flat).sum()/total_flux
 
-        ra_max, dec_max = raDecFromPixelCoords(x_center, y_center, detector.getName(),
-                                               camera=camera, obs_metadata=obs,
-                                               epoch=epoch)
-
-        ra_p1, dec_p1 = raDecFromPixelCoords(x_center+1, y_center, detector.getName(),
-                                             camera=camera, obs_metadata=obs,
-                                             epoch=epoch)
-
-        pixel_scale = angularSeparation(ra_max, dec_max, ra_p1, dec_p1)
-        pixel_scale *= 3600.0  # convert to arcsec
-
         chisq_best = None
         fwhm_best = None
 
         total_flux = im_flat.sum()
 
-        for fwhm_test in np.arange(0.1*fwhm, 3.0*fwhm, 0.1*fwhm):
+        for fwhm_test in np.arange(0.9*fwhm, 1.1*fwhm, 0.01*fwhm):
             alpha = fwhm_test/2.3835
 
             dd = np.power(x_arr-x_center,2).astype(float) + np.power(y_arr-y_center, 2).astype(float)
@@ -135,7 +124,7 @@ class GalSimFwhmTest(unittest.TestCase):
             model *= (total_flux/norm)
             chisq = np.power((im_flat-model), 2).sum()
 
-            if chisq_best is None or chisq<chisq_best:
+            if chisq_best is None or np.isnan(chisq_best) or chisq<chisq_best:
                 chisq_best = chisq
                 fwhm_best = fwhm_test
 
