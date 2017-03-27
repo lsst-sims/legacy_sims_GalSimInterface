@@ -52,6 +52,8 @@ class fwhmCat(GalSimStars):
 
 class GalSimFwhmTest(unittest.TestCase):
 
+    longMessage = True
+
     @classmethod
     def tearDownClass(cls):
         sims_clean_up()
@@ -137,7 +139,9 @@ class GalSimFwhmTest(unittest.TestCase):
                 chisq_best = chisq
                 fwhm_best = fwhm_test
 
-        self.assertLess(np.abs(fwhm-fwhm_best), 0.1*fwhm)
+        msg = '\ntrue fwhm: %e\nfitted fwhm: %e\nchisq: %e\npixel scale: %e\n' \
+              % (fwhm, fwhm_best, chisq_best,pixel_scale)
+        self.assertLess(np.abs(fwhm-fwhm_best), 0.015*fwhm, msg=msg)
 
     def testFwhmOfImage(self):
         """
