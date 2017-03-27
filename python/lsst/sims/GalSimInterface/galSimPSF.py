@@ -191,8 +191,13 @@ class Kolmogorov_and_Gaussian_PSF(PSFbase):
         # This code was provided by David Kirkby in a private communication
 
         wlen_eff = dict(u=365.49, g=480.03, r=622.20, i=754.06, z=868.21, y=991.66)[band]
+        # wlen_eff is from Table 2 of LSE-40 (y=y2)
+
         FWHMatm = rawSeeing * (wlen_eff / 500.) ** -0.3 * airmass ** 0.6
+        # From LSST-20160 eqn (4.1)
+
         FWHMsys = 0.4 * airmass ** 0.6
+        # From LSST-20160 eqn (4.2)
 
         atm = galsim.Kolmogorov(fwhm=FWHMatm)
         sys = galsim.Gaussian(fwhm=FWHMsys)
