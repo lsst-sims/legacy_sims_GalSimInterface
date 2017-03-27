@@ -196,7 +196,7 @@ class Kolmogorov_and_Gaussian_PSF(PSFbase):
         FWHMatm = rawSeeing * (wlen_eff / 500.) ** -0.3 * airmass ** 0.6
         # From LSST-20160 eqn (4.1)
 
-        FWHMsys = 0.4 * airmass ** 0.6
+        FWHMsys = numpy.sqrt(0.25**2 + 0.3**2 + 0.08**2) * airmass ** 0.6
         # From LSST-20160 eqn (4.2)
 
         atm = galsim.Kolmogorov(fwhm=FWHMatm)
