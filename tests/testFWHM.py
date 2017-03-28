@@ -3,15 +3,17 @@ from builtins import range
 import numpy as np
 import os
 import unittest
+import galsim
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
-from lsst.sims.utils import haversine
+from lsst.sims.utils import angularSeparation
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
-from lsst.sims.coordUtils import _raDecFromPixelCoords
+from lsst.sims.GalSimInterface import Kolmogorov_and_Gaussian_PSF
+from lsst.sims.coordUtils import raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
 
@@ -50,35 +52,24 @@ class fwhmCat(GalSimStars):
 
 class GalSimFwhmTest(unittest.TestCase):
 
+    longMessage = True
+
     @classmethod
     def tearDownClass(cls):
         sims_clean_up()
 
-    def verify_fwhm(self, fileName, fwhm, detector, camera, obs, epoch=2000.0):
+    def verify_fwhm(self, fileName, fwhm, pixel_scale):
         """
         Read in a FITS image with one object on it and verify that that object
-        has the expected Full Width at Half Maximum.  This is done by finding
-        the brightest pixel in the image, and then drawing 1-dimensional profiles
-        of the object centered on that pixel (but at different angles relative to
-        the axes of the image).  The code then walks along those profiles and keeps
-        track of the distance between the two points at which the flux is half of
-        the maximum.
+        has the expected Full Width at Half Maximum.  This is done by fitting
+        the image to the double Gaussian PSF model implemented in
+        SNRdocumentPSF(), varying the FWHM.
 
         @param [in] fileName is the name of the FITS image
 
         @param [in] fwhm is the expected Full Width at Half Maximum in arcseconds
 
-        @param [in] detector is an instantiation of the afw.cameraGeom Detector
-        class characterizing the detector corresponding to this image
-
-        @param [in] camera is an instantiation of the afw.cameraGeom Camera class
-        characterizing the camera to which detector belongs
-
-        @param [in] obs is an instantiation of ObservationMetaData characterizing
-        the telescope pointing
-
-        @param [in] epoch is the epoch in Julian years of the equinox against which
-        RA and Dec are measured.
+        @param [in] pixel_scale in arcsec
 
         This method will raise an exception if the measured Full Width at Half Maximum
         deviates from the expected value by more than ten percent.
@@ -86,71 +77,50 @@ class GalSimFwhmTest(unittest.TestCase):
         im = afwImage.ImageF(fileName).getArray()
         maxFlux = im.max()
         self.assertGreater(maxFlux, 100.0)  # make sure the image is not blank
-        valid = np.where(im > 0.25*maxFlux)
-        x_center = np.median(valid[1])
-        y_center = np.median(valid[0])
 
-        raMax, decMax = _raDecFromPixelCoords(x_center,
-                                              y_center,
-                                              [detector.getName()],
-                                              camera=camera,
-                                              obs_metadata=obs,
-                                              epoch=epoch)
+        im_flat = im.flatten()
+        x_arr = np.array([ii % im.shape[0] for ii in range(len(im_flat))])
+        y_arr = np.array([ii // im.shape[0] for ii in range(len(im_flat))])
 
-        half_flux = 0.5*maxFlux
+        valid_pix = np.where(im_flat>1.0e-20)
+        im_flat = im_flat[valid_pix].astype(float)
+        x_arr = x_arr[valid_pix]
+        y_arr = y_arr[valid_pix]
 
-        # only need to consider orientations between 0 and pi because the objects
-        # will be circularly symmetric (and FWHM is a circularly symmetric measure, anyway)
-        for theta in np.arange(0.0, np.pi, 0.3*np.pi):
+        total_flux = im_flat.sum()
 
-            slope = np.tan(theta)
+        x_center = (x_arr.astype(float)*im_flat).sum()/total_flux
+        y_center = (y_arr.astype(float)*im_flat).sum()/total_flux
 
-            if np.abs(slope < 1.0):
-                xPixList = np.array([ix for ix in range(0, im.shape[1])
-                                     if int(slope*(ix-x_center) + y_center) >= 0 and
-                                     int(slope*(ix-x_center)+y_center) < im.shape[0]])
+        chisq_best = None
+        fwhm_best = None
 
-                yPixList = np.array([int(slope*(ix-x_center)+y_center) for ix in xPixList])
-            else:
-                yPixList = np.array([iy for iy in range(0, im.shape[0])
-                                     if int((iy-y_center)/slope + x_center) >= 0 and
-                                     int((iy-y_center)/slope + x_center) < im.shape[1]])
+        total_flux = im_flat.sum()
 
-                xPixList = np.array([int((iy-y_center)/slope + x_center) for iy in yPixList])
+        for fwhm_test in np.arange(0.9*fwhm, 1.1*fwhm, 0.01*fwhm):
+            alpha = fwhm_test/2.3835
 
-            chipNameList = [detector.getName()]*len(xPixList)
-            raList, decList = _raDecFromPixelCoords(xPixList, yPixList, chipNameList,
-                                                    camera=camera, obs_metadata=obs, epoch=epoch)
+            dd = np.power(x_arr-x_center,2).astype(float) + np.power(y_arr-y_center, 2).astype(float)
+            dd *= np.power(pixel_scale, 2)
 
-            distanceList = arcsecFromRadians(haversine(raList, decList, raMax, decMax))
+            sigma = alpha
+            g1 = np.exp(-0.5*dd/(sigma*sigma))/(sigma*sigma*2.0*np.pi)
 
-            fluxList = np.array([im[iy][ix] for ix, iy in zip(xPixList, yPixList)])
+            sigma = 2.0*alpha
+            g2 = np.exp(-0.5*dd/(sigma*sigma))/(sigma*sigma*2.0*np.pi)
 
-            distanceToLeft = None
-            distanceToRight = None
+            model = 0.909*(g1 + 0.1*g2)*pixel_scale*pixel_scale
+            norm = model.sum()
+            model *= (total_flux/norm)
+            chisq = np.power((im_flat-model), 2).sum()
 
-            for ix in range(1, len(xPixList)):
-                if fluxList[ix] < half_flux and fluxList[ix+1] >= half_flux:
-                    break
+            if chisq_best is None or np.isnan(chisq_best) or chisq<chisq_best:
+                chisq_best = chisq
+                fwhm_best = fwhm_test
 
-            newOrigin = ix+1
-
-            mm = (distanceList[ix]-distanceList[ix+1])/(fluxList[ix]-fluxList[ix+1])
-            bb = distanceList[ix] - mm * fluxList[ix]
-            distanceToLeft = mm*half_flux + bb
-
-            for ix in range(newOrigin, len(xPixList)-1):
-                if fluxList[ix] >= half_flux and fluxList[ix+1] < half_flux:
-                    break
-
-            mm = (distanceList[ix]-distanceList[ix+1])/(fluxList[ix]-fluxList[ix+1])
-            bb = distanceList[ix] - mm * fluxList[ix]
-            distanceToRight = mm*half_flux + bb
-
-            msg = "measured fwhm %e; expected fwhm %e; maxFlux %e; orientation %e pi\n" % \
-                  (distanceToLeft+distanceToRight, fwhm, maxFlux, theta/np.pi)
-
-            self.assertLess(np.abs(distanceToLeft+distanceToRight-fwhm), 0.1*fwhm, msg=msg)
+        msg = '\ntrue fwhm: %e\nfitted fwhm: %e\nchisq: %e\npixel scale: %e\n' \
+              % (fwhm, fwhm_best, chisq_best,pixel_scale)
+        self.assertLess(np.abs(fwhm-fwhm_best), 0.015*fwhm, msg=msg)
 
     def testFwhmOfImage(self):
         """
@@ -162,6 +132,8 @@ class GalSimFwhmTest(unittest.TestCase):
         dbFileName = os.path.join(scratchDir, 'fwhm_test_InputCatalog.dat')
 
         baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
+
+        # instantiate a test camera with pixel_scale = 0.02 arcsec/pixel
         camera = ReturnCamera(baseDir)
 
         detector = camera[0]
@@ -180,18 +152,18 @@ class GalSimFwhmTest(unittest.TestCase):
 
         db = fwhmFileDBObj(dbFileName, runtable='test')
 
-        for fwhm in (0.5, 1.3):
+        for fwhm in (0.1, 0.14):
 
             cat = fwhmCat(db, obs_metadata=obs)
             cat.camera = camera
 
-            psf = SNRdocumentPSF(fwhm=fwhm)
+            psf = SNRdocumentPSF(fwhm=fwhm, pixel_scale=0.02)
             cat.setPSF(psf)
 
             cat.write_catalog(catName)
             cat.write_images(nameRoot=imageRoot)
 
-            self.verify_fwhm(imageName, fwhm, detector, camera, obs)
+            self.verify_fwhm(imageName, fwhm, 0.02)
 
             if os.path.exists(catName):
                 os.unlink(catName)
@@ -201,6 +173,147 @@ class GalSimFwhmTest(unittest.TestCase):
 
         if os.path.exists(dbFileName):
             os.unlink(dbFileName)
+
+
+class KolmogrovGaussianTestCase(unittest.TestCase):
+    """
+    Just test that the Kolmogorov_and_Gaussian_PSF runs
+    """
+
+    @classmethod
+    def tearDownClass(cls):
+        sims_clean_up()
+
+    def testKolmogorovGaussianPSF(self):
+        scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
+        catName = os.path.join(scratchDir, 'kolmogorov_gaussian_test_Catalog.dat')
+        imageRoot = os.path.join(scratchDir, 'kolmogorov_gaussian_test_Image')
+        dbFileName = os.path.join(scratchDir, 'kolmogorov_gaussian_test_InputCatalog.dat')
+
+        baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
+
+        # instantiate a test camera with pixel_scale = 0.02 arcsec/pixel
+        camera = ReturnCamera(baseDir)
+
+        detector = camera[0]
+        detName = detector.getName()
+        imageName = '%s_%s_u.fits' % (imageRoot, detName)
+
+        obs = ObservationMetaData(pointingRA = 75.0,
+                                  pointingDec = -12.0,
+                                  boundType = 'circle',
+                                  boundLength = 4.0,
+                                  rotSkyPos = 33.0,
+                                  mjd = 49250.0)
+
+        create_text_catalog(obs, dbFileName, np.array([3.0]),
+                            np.array([1.0]), mag_norm=[13.0])
+
+        db = fwhmFileDBObj(dbFileName, runtable='test')
+
+        cat = fwhmCat(db, obs_metadata=obs)
+        cat.camera = camera
+
+        psf = Kolmogorov_and_Gaussian_PSF(rawSeeing=0.7, airmass=1.05, band='g')
+        cat.setPSF(psf)
+
+        cat.write_catalog(catName)
+        cat.write_images(nameRoot=imageRoot)
+
+        if os.path.exists(catName):
+            os.unlink(catName)
+
+        if os.path.exists(imageName):
+            os.unlink(imageName)
+
+        if os.path.exists(dbFileName):
+            os.unlink(dbFileName)
+
+
+class AnalyticPsfTestCase(unittest.TestCase):
+    """
+    Test the FWHM of our PSF models when using GalSim's Fourier-space
+    image generation, not pixel shooting.
+    """
+
+    longMessage = True
+
+    def verify_analytic_fwhm(self, fwhm_in, pixel_scale, im):
+        """
+        Verify the FWHM of an object generated by GalSim's analytic image generation
+        (i.e. not by photonshooting).  This is done by fitting the image to the double
+        Gaussian PSF model implemented in SNRdocumentPSF(), varying the FWHM.
+
+        Parameters
+        ----------
+        fwhm_in is the expected FWHM in arcsec
+
+        pixel_scale is the pixel scale in arcsec
+
+        im is a numpy array containing the image fluxes (i.e. the output of galsim.Image.array)
+
+        Returns
+        -------
+
+        This method will raise an exception if the measured Full Width at Half Maximum
+        deviates from the expected value by more than one.
+        """
+        maxFlux = im.max()
+        #self.assertGreater(maxFlux, 100.0)  # make sure the image is not blank
+
+        im_flat = im.flatten()
+        x_arr = np.array([ii % im.shape[0] for ii in range(len(im_flat))])
+        y_arr = np.array([ii // im.shape[0] for ii in range(len(im_flat))])
+
+        valid_pix = np.where(im_flat>1.0e-20)
+        im_flat = im_flat[valid_pix].astype(float)
+        x_arr = x_arr[valid_pix]
+        y_arr = y_arr[valid_pix]
+
+        total_flux = im_flat.sum()
+
+        x_center = (x_arr.astype(float)*im_flat).sum()/total_flux
+        y_center = (y_arr.astype(float)*im_flat).sum()/total_flux
+
+        chisq_best = None
+        fwhm_best = None
+
+        total_flux = im_flat.sum()
+
+        for fwhm_test in np.arange(0.01*fwhm_in, 3.0*fwhm_in, 0.01*fwhm_in):
+            alpha = fwhm_test/2.3835
+
+            dd = np.power(x_arr-x_center,2).astype(float) + np.power(y_arr-y_center, 2).astype(float)
+            dd *= np.power(pixel_scale, 2)
+
+            sigma = alpha
+            g1 = np.exp(-0.5*dd/(sigma*sigma))/(sigma*sigma*2.0*np.pi)
+
+            sigma = 2.0*alpha
+            g2 = np.exp(-0.5*dd/(sigma*sigma))/(sigma*sigma*2.0*np.pi)
+
+            model = 0.909*(g1 + 0.1*g2)*pixel_scale*pixel_scale
+            norm = model.sum()
+            model *= (total_flux/norm)
+            chisq = np.power((im_flat-model), 2).sum()
+
+            if chisq_best is None or np.isnan(chisq_best) or chisq<chisq_best:
+                chisq_best = chisq
+                fwhm_best = fwhm_test
+
+        msg = '\ntrue fwhm: %e\nfitted fwhm: %e\nchisq: %e\n' \
+              % (fwhm_in, fwhm_best, chisq_best)
+        self.assertLess(np.abs(fwhm_in-fwhm_best), 0.01*fwhm_in, msg=msg)
+
+
+    def test_SNRdocumentPSF(self):
+        fwhm_in = 0.3
+        pixel_scale = 0.2
+        psf_gen = SNRdocumentPSF(fwhm=fwhm_in, pixel_scale=pixel_scale)
+        psf = psf_gen._getPSF()
+        image = galsim.ImageD(256, 256, scale=pixel_scale)
+        image = psf.drawImage(image)
+        self.verify_analytic_fwhm(fwhm_in, pixel_scale, image.array)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):

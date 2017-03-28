@@ -7,7 +7,8 @@ from builtins import object
 import numpy
 import galsim
 
-__all__ = ["PSFbase", "DoubleGaussianPSF", "SNRdocumentPSF",]
+__all__ = ["PSFbase", "DoubleGaussianPSF", "SNRdocumentPSF",
+           "Kolmogorov_and_Gaussian_PSF"]
 
 class PSFbase(object):
     """
@@ -133,13 +134,13 @@ class SNRdocumentPSF(DoubleGaussianPSF):
     This is an example implementation of a wavelength- and position-independent
     Double Gaussian PSF.  See the documentation in PSFbase to learn how it is used.
 
-    This specific PSF comes from equation(30) of the signal-to-noise document, which
-    can be found at
+    This specific PSF comes from equation(30) of the signal-to-noise document (LSE-40),
+    which can be found at
 
     www.astro.washington.edu/users/ivezic/Astr511/LSST_SNRdoc.pdf
     """
 
-    def __init__(self, fwhm=0.6):
+    def __init__(self, fwhm=0.6, pixel_scale=0.2):
         """
         @param [in] fwhm is the Full Width at Half Max of the total PSF.  This is given in
         arcseconds.  The default value of 0.6 comes from a FWHM of 3 pixels with a pixel scale
@@ -155,7 +156,54 @@ class SNRdocumentPSF(DoubleGaussianPSF):
         #for r at half the maximum of the PSF
         alpha = fwhm/2.3835
 
-        gaussian1 = galsim.Gaussian(sigma=alpha)
-        gaussian2 = galsim.Gaussian(sigma=2.0*alpha)
+        eff_pixel_sigma_sq = pixel_scale*pixel_scale/12.0
+
+        sigma = numpy.sqrt(alpha*alpha - eff_pixel_sigma_sq)
+        gaussian1 = galsim.Gaussian(sigma=sigma)
+
+        sigma = numpy.sqrt(4.0*alpha*alpha - eff_pixel_sigma_sq)
+        gaussian2 = galsim.Gaussian(sigma=sigma)
 
         self._cached_psf = 0.909*(gaussian1 + 0.1*gaussian2)
+
+
+class Kolmogorov_and_Gaussian_PSF(PSFbase):
+    """
+    This PSF class is based on David Kirkby's presentation to the DESC Survey Simulations
+    working group on 23 March 2017.
+
+    https://confluence.slac.stanford.edu/pages/viewpage.action?spaceKey=LSSTDESC&title=SSim+2017-03-23
+
+    (you will need a SLAC Confluence account to access that link)
+    """
+
+    def __init__(self, airmass=1.2, rawSeeing=0.7, band='r'):
+        """
+        Parameters
+        ----------
+        airmass
+
+        rawSeeing is the FWHM seeing at zenith at 500 nm in arc seconds
+        (provided by OpSim)
+
+        band is the bandpass of the observation [u,g,r,i,z,y]
+        """
+        # This code was provided by David Kirkby in a private communication
+
+        wlen_eff = dict(u=365.49, g=480.03, r=622.20, i=754.06, z=868.21, y=991.66)[band]
+        # wlen_eff is from Table 2 of LSE-40 (y=y2)
+
+        FWHMatm = rawSeeing * (wlen_eff / 500.) ** -0.3 * airmass ** 0.6
+        # From LSST-20160 eqn (4.1)
+
+        FWHMsys = numpy.sqrt(0.25**2 + 0.3**2 + 0.08**2) * airmass ** 0.6
+        # From LSST-20160 eqn (4.2)
+
+        atm = galsim.Kolmogorov(fwhm=FWHMatm)
+        sys = galsim.Gaussian(fwhm=FWHMsys)
+        psf = galsim.Convolve((atm, sys))
+
+        self._cached_psf = psf
+
+    def _getPSF(self, xPupil=None, yPupil=None):
+        return self._cached_psf
