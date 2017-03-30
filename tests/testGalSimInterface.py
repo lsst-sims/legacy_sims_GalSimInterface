@@ -161,14 +161,15 @@ class GalSimInterfaceTest(unittest.TestCase):
         deltaDec = np.array([0.0])
         defaults = LSSTdefaults()
         cls.bandpassNameList = ['u', 'g', 'r', 'i', 'z', 'y']
-        cls.m5 = list(defaults._m5.values())
-        cls.seeing = list(defaults._FWHMeff.values())
+        cls.m5 = [16.0+ix for ix in range(len(cls.bandpassNameList))]
+        cls.seeing = [defaults._FWHMeff[bb] for bb in cls.bandpassNameList]
         cls.obs_metadata = makePhoSimTestDB(filename=cls.dbName, size=1,
                                             deltaRA=deltaRA,
                                             deltaDec=deltaDec,
                                             bandpass=cls.bandpassNameList,
                                             m5=cls.m5,
-                                            seeing=cls.seeing)
+                                            seeing=cls.seeing,
+                                            seedVal=65)
 
         cls.driver = 'sqlite'
 
