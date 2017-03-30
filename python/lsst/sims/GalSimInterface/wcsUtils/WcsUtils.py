@@ -150,7 +150,7 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     # the 'except' block is required by the pybind11 stack.
     try:
         tanWcs = afwImage.cast_TanWcs(afwImage.makeWcs(fitsHeader))
-    except:
+    except AttributeError:
         tanWcs = afwImage.makeWcs(fitsHeader)
 
     return tanWcs

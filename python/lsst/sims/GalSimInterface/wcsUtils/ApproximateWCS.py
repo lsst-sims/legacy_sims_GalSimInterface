@@ -88,7 +88,7 @@ def approximateWcs(wcs, bbox, camera=None, detector=None, obs_metadata=None,
     # the 'except' block is how it works in pybind11
     try:
         matchList = afwTable.ReferenceMatchVector()
-    except:
+    except AttributeError:
         matchList = []
 
     bboxd = afwGeom.Box2D(bbox)
