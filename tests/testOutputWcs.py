@@ -111,7 +111,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
             # the 'except' block is how it works in pybind11
             try:
                 exposure = afwImage.ExposureD_readFits(imageName)
-            except:
+            except AttributeError:
                 exposure = afwImage.ExposureD.readFits(imageName)
 
             wcs = exposure.getWcs()
