@@ -106,7 +106,14 @@ class GalSimOutputWcsTest(unittest.TestCase):
             cat.write_catalog(catName)
             cat.write_images(nameRoot=imageRoot)
 
-            exposure = afwImage.ExposureD_readFits(imageName)
+            # 20 March 2017
+            # the 'try' block is how it worked in SWIG;
+            # the 'except' block is how it works in pybind11
+            try:
+                exposure = afwImage.ExposureD_readFits(imageName)
+            except AttributeError:
+                exposure = afwImage.ExposureD.readFits(imageName)
+
             wcs = exposure.getWcs()
 
             xxTestList = []

@@ -83,7 +83,13 @@ def approximateWcs(wcs, bbox, camera=None, detector=None, obs_metadata=None,
 
     sourceCat = afwTable.SourceCatalog(sourceSchema)
 
-    matchList = afwTable.ReferenceMatchVector()
+    # 20 March 2017
+    # the 'try' block is how it works in swig;
+    # the 'except' block is how it works in pybind11
+    try:
+        matchList = afwTable.ReferenceMatchVector()
+    except AttributeError:
+        matchList = []
 
     bboxd = afwGeom.Box2D(bbox)
     for x in np.linspace(bboxd.getMinX(), bboxd.getMaxX(), nx):
