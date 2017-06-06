@@ -19,7 +19,7 @@ import copy
 import lsst.utils
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.catalogs.definitions import InstanceCatalog
-from lsst.sims.catalogs.decorators import cached
+from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import (CameraCoords, AstrometryGalaxies, AstrometryStars, AstrometrySSM,
                                        EBVmixin)
 from lsst.sims.GalSimInterface import GalSimInterpreter, GalSimDetector, GalSimCelestialObject
@@ -146,7 +146,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     cannot_be_null = ['sedFilepath']
 
     column_outputs = ['galSimType', 'uniqueId', 'raICRS', 'decICRS',
-                      'chipName', 'x_pupil', 'y_pupil', 'sedFilepath',
+                      'chipName', 'counts', 'x_pupil', 'y_pupil', 'sedFilepath',
                       'majorAxis', 'minorAxis', 'sindex', 'halfLightRadius',
                       'positionAngle', 'fitsFiles']
 
@@ -322,7 +322,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 zip(actualSEDnames, redshift, internalAv, internalRv,
                     galacticAv, galacticRv, magNorm))
 
-    @cached
+    @compound('fitsfiles', 'counts')
     def get_fitsFiles(self):
         """
         This getter returns a column listing the names of the detectors whose corresponding
@@ -364,6 +364,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
 
         output = []
+        output_counts = []
         for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn) in \
             zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight,
                  minorAxis, majorAxis, positionAngle, sedList, sindex):
@@ -381,6 +382,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
                     flux_dict[bb] = adu*self.photParams.gain
 
+                output_counts.append(flux_dict[self.bandpassNames[0]])
+
                 gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp,
                                               hlr, minor, major, pa, sn, flux_dict)
 
@@ -389,7 +392,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
                 output.append(detectorsString)
 
-        return np.array(output)
+        return np.array([output, output_counts])
 
     def setPSF(self, PSF):
         """
