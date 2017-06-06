@@ -20,7 +20,7 @@ import lsst.utils
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.decorators import cached
-from lsst.sims.catUtils.mixins import (CameraCoords, AstrometryGalaxies, AstrometryStars,
+from lsst.sims.catUtils.mixins import (CameraCoords, AstrometryGalaxies, AstrometryStars, AstrometrySSM,
                                        EBVmixin)
 from lsst.sims.GalSimInterface import GalSimInterpreter, GalSimDetector, GalSimCelestialObject
 from lsst.sims.photUtils import (Sed, Bandpass, BandpassDict,
@@ -29,7 +29,7 @@ import lsst.afw.cameraGeom.testUtils as camTestUtils
 import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
 
-__all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars"]
+__all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars", "GalSimSSM"]
 
 
 def _is_null(argument):
@@ -580,6 +580,29 @@ class GalSimStars(GalSimBase, AstrometryStars, EBVmixin):
     galsim_type = 'pointSource'
     default_columns = [('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
+                       ('galSimType', 'pointSource', (str, 11)),
+                       ('internalAv', 0.0, float),
+                       ('internalRv', 0.0, float),
+                       ('redshift', 0.0, float),
+                       ('majorAxis', 0.0, float),
+                       ('minorAxis', 0.0, float),
+                       ('sindex', 0.0, float),
+                       ('positionAngle', 0.0, float),
+                       ('halfLightRadius', 0.0, float)]
+
+
+class GalSimSSM(GalSimBase, AstrometrySSM, EBVmixin):
+    """
+
+    This is a GalSimCatalog class for SSM objects.
+
+
+    See the docstring in GalSimBase for explanation of how this class should be used.
+    """
+    catalog_type = 'galsim_ssm'
+    galsim_type = 'pointSource'
+    default_columns = [('galacticAv', 0.0, float),
+                       ('galacticRv', 0.0, float),
                        ('galSimType', 'pointSource', (str, 11)),
                        ('internalAv', 0.0, float),
                        ('internalRv', 0.0, float),
