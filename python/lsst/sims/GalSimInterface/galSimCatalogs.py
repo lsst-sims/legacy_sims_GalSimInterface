@@ -378,11 +378,11 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 self.objectHasBeenDrawn.append(name)
 
                 flux_dict = {}
-                for bb in self.bandpassNames:
+                for i_bb, bb in enumerate(self.bandpassNames):
                     adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
                     flux_dict[bb] = adu*self.photParams.gain
-
-                output_counts.append(flux_dict[self.bandpassNames[0]])
+                    if i_bb == 0:
+                        output_counts.append(adu)
 
                 gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp,
                                               hlr, minor, major, pa, sn, flux_dict)
