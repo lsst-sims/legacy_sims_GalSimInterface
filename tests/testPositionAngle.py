@@ -2,6 +2,8 @@ from builtins import zip
 import numpy as np
 import os
 import unittest
+import tempfile
+import shutil
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
@@ -14,6 +16,8 @@ from lsst.sims.coordUtils import _raDecFromPixelCoords
 from lsst.sims.coordUtils.utils import ReturnCamera
 
 from testUtils import create_text_catalog
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -163,7 +167,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
         axis of the image.  Throw an exception if that angle differs
         from the expected position angle by more than 2 degrees.
         """
-        scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
+        scratchDir = tempfile.mkdtemp(dir=ROOT, prefix='testPositionAngle-')
         catName = os.path.join(scratchDir, 'pa_test_Catalog.dat')
         imageRoot = os.path.join(scratchDir, 'pa_test_Image')
         dbFileName = os.path.join(scratchDir, 'pa_test_InputCatalog.dat')
@@ -220,6 +224,9 @@ class GalSimPositionAngleTest(unittest.TestCase):
                 os.unlink(dbFileName)
             if os.path.exists(imageName):
                 os.unlink(imageName)
+
+        if os.path.exists(scratchDir):
+            shutil.rmtree(scratchDir)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):

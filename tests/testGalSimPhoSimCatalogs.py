@@ -3,6 +3,8 @@ from builtins import range
 import os
 import numpy as np
 import unittest
+import tempfile
+import shutil
 import lsst.utils.tests
 
 from lsst.utils import getPackageDir
@@ -13,6 +15,8 @@ from lsst.sims.GalSimInterface import GalSimPhoSimGalaxies, GalSimPhoSimStars, G
 from lsst.sims.GalSimInterface import SNRdocumentPSF
 from lsst.sims.catUtils.exampleCatalogDefinitions import (PhoSimCatalogSersic2D, PhoSimCatalogPoint,
                                                           PhoSimCatalogZPoint)
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -27,8 +31,7 @@ class GalSimPhoSimTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.dataDir = os.path.join(getPackageDir('sims_GalSimInterface'),
-                                   'tests', 'scratchSpace')
+        cls.dataDir = tempfile.mkdtemp(dir=ROOT, prefix='GalSimPhoSimTest-')
         cls.n_objects = 5
         rng = np.random.RandomState(45)
         pointingRA = 45.2
@@ -203,6 +206,9 @@ class GalSimPhoSimTest(unittest.TestCase):
 
         if os.path.exists(cls.star_name):
             os.unlink(cls.star_name)
+
+        if os.path.exists(cls.dataDir):
+            shutil.rmtree(cls.dataDir)
 
     def testGalSimPhoSimCat(self):
         """
