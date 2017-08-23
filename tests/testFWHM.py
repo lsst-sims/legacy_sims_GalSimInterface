@@ -191,7 +191,7 @@ class KolmogrovGaussianTestCase(unittest.TestCase):
         sims_clean_up()
 
     def testKolmogorovGaussianPSF(self):
-        scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
+        scratchDir = tempfile.mkdtemp(prefix='testKolmogorovGaussianPSF', dir=ROOT)
         catName = os.path.join(scratchDir, 'kolmogorov_gaussian_test_Catalog.dat')
         imageRoot = os.path.join(scratchDir, 'kolmogorov_gaussian_test_Image')
         dbFileName = os.path.join(scratchDir, 'kolmogorov_gaussian_test_InputCatalog.dat')
@@ -226,14 +226,8 @@ class KolmogrovGaussianTestCase(unittest.TestCase):
         cat.write_catalog(catName)
         cat.write_images(nameRoot=imageRoot)
 
-        if os.path.exists(catName):
-            os.unlink(catName)
-
-        if os.path.exists(imageName):
-            os.unlink(imageName)
-
-        if os.path.exists(dbFileName):
-            os.unlink(dbFileName)
+        if os.path.exists(scratchDir):
+            shutil.rmtree(scratchDir)
 
 
 class AnalyticPsfTestCase(unittest.TestCase):
