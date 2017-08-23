@@ -2,6 +2,8 @@ from builtins import zip
 import numpy as np
 import os
 import unittest
+import tempfile
+import shutil
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
@@ -16,6 +18,8 @@ from lsst.sims.coordUtils import _raDecFromPixelCoords
 from lsst.sims.coordUtils.utils import ReturnCamera
 
 from testUtils import create_text_catalog
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -63,7 +67,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
         Raise an exception if the median difference between the two is
         greater than 0.01 arcseconds.
         """
-        scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
+        scratchDir = tempfile.mkdtemp(dir=ROOT, prefix='testOutputWcsOfImage-')
         catName = os.path.join(scratchDir, 'outputWcs_test_Catalog.dat')
         imageRoot = os.path.join(scratchDir, 'outputWcs_test_Image')
         dbFileName = os.path.join(scratchDir, 'outputWcs_test_InputCatalog.dat')
@@ -157,6 +161,9 @@ class GalSimOutputWcsTest(unittest.TestCase):
                 os.unlink(dbFileName)
             if os.path.exists(imageName):
                 os.unlink(imageName)
+
+        if os.path.exists(scratchDir):
+            shutil.rmtree(scratchDir)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):

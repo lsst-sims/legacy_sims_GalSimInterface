@@ -6,6 +6,8 @@ import copy
 import numpy as np
 import unittest
 import galsim
+import tempfile
+import shutil
 from collections import OrderedDict
 import lsst.utils
 import lsst.utils.tests
@@ -21,6 +23,8 @@ from lsst.sims.GalSimInterface import (GalSimGalaxies, GalSimStars, GalSimAgn,
 from lsst.sims.catUtils.utils import (calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj,
                                       testGalaxyAgnDBObj, testStarsDBObj)
 import lsst.afw.image as afwImage
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -150,12 +154,8 @@ class GalSimInterfaceTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.scratch_dir = os.path.join(getPackageDir('sims_GalSimInterface'),
-                                       'tests', 'scratchSpace')
-
+        cls.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix='GalSimInterfaceTest-')
         cls.dbName = os.path.join(cls.scratch_dir, 'galSimTestDB.db')
-        if os.path.exists(cls.dbName):
-            os.unlink(cls.dbName)
 
         deltaRA = np.array([72.0/3600.0])
         deltaDec = np.array([0.0])
@@ -178,6 +178,8 @@ class GalSimInterfaceTest(unittest.TestCase):
         sims_clean_up()
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
+        if os.path.exists(cls.scratch_dir):
+            shutil.rmtree(cls.scratch_dir)
 
         del cls.dbName
         del cls.driver

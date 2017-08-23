@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import unittest
+import tempfile
+import shutil
 import lsst.utils.tests
 
 import astropy.io.fits as fits
@@ -14,6 +16,8 @@ from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.obs.lsstSim import LsstSimMapper
 
 from testUtils import create_text_catalog
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -68,8 +72,7 @@ class FitsHeaderTest(unittest.TestCase):
         cameraDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
         cartoonCamera = ReturnCamera(cameraDir)
 
-        outputDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests',
-                                 'scratchSpace')
+        outputDir = tempfile.mkdtemp(dir=ROOT, prefix='testFitsHeader-')
 
         lsst_cat_name = os.path.join(outputDir, 'fits_test_lsst_cat.txt')
         lsst_cat_root = os.path.join(outputDir, 'fits_test_lsst_image')
@@ -139,6 +142,9 @@ class FitsHeaderTest(unittest.TestCase):
 
         if os.path.exists(dbFileName):
             os.unlink(dbFileName)
+
+        if os.path.exists(outputDir):
+            shutil.rmtree(outputDir)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):

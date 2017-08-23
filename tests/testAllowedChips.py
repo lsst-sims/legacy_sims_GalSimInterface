@@ -1,6 +1,8 @@
 import unittest
 import numpy as np
 import os
+import tempfile
+import shutil
 import lsst.utils.tests
 
 from lsst.utils import getPackageDir
@@ -15,6 +17,8 @@ from lsst.sims.coordUtils import raDecFromPixelCoords
 from lsst.sims.photUtils import Sed, Bandpass, BandpassDict, PhotometricParameters
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from testUtils import create_text_catalog
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -55,7 +59,7 @@ class allowedChipsTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
+        cls.scratchDir = tempfile.mkdtemp(dir=ROOT, prefix='allowedChipsTest-')
         cls.obs = ObservationMetaData(pointingRA=122.0, pointingDec=-29.1,
                                       mjd=57381.2, rotSkyPos=43.2,
                                       bandpassName='r')
@@ -113,6 +117,8 @@ class allowedChipsTest(unittest.TestCase):
         del cls.camera
         if os.path.exists(cls.dbFileName):
             os.unlink(cls.dbFileName)
+        if os.path.exists(cls.scratchDir):
+            shutil.rmtree(cls.scratchDir)
 
     def testCamera(self):
         """

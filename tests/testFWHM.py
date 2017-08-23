@@ -4,6 +4,8 @@ import numpy as np
 import os
 import unittest
 import galsim
+import tempfile
+import shutil
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
@@ -18,6 +20,8 @@ from lsst.sims.coordUtils import raDecFromPixelCoords
 from lsst.sims.coordUtils.utils import ReturnCamera
 
 from testUtils import create_text_catalog
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -126,7 +130,7 @@ class GalSimFwhmTest(unittest.TestCase):
         """
         Test that GalSim generates images with the expected Full Width at Half Maximum.
         """
-        scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
+        scratchDir = tempfile.mkdtemp(dir=ROOT, prefix='testFwhmOfImage-')
         catName = os.path.join(scratchDir, 'fwhm_test_Catalog.dat')
         imageRoot = os.path.join(scratchDir, 'fwhm_test_Image')
         dbFileName = os.path.join(scratchDir, 'fwhm_test_InputCatalog.dat')
@@ -173,6 +177,8 @@ class GalSimFwhmTest(unittest.TestCase):
 
         if os.path.exists(dbFileName):
             os.unlink(dbFileName)
+        if os.path.exists(scratchDir):
+            shutil.rmtree(scratchDir)
 
 
 class KolmogrovGaussianTestCase(unittest.TestCase):
@@ -185,7 +191,7 @@ class KolmogrovGaussianTestCase(unittest.TestCase):
         sims_clean_up()
 
     def testKolmogorovGaussianPSF(self):
-        scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
+        scratchDir = tempfile.mkdtemp(prefix='testKolmogorovGaussianPSF', dir=ROOT)
         catName = os.path.join(scratchDir, 'kolmogorov_gaussian_test_Catalog.dat')
         imageRoot = os.path.join(scratchDir, 'kolmogorov_gaussian_test_Image')
         dbFileName = os.path.join(scratchDir, 'kolmogorov_gaussian_test_InputCatalog.dat')
@@ -220,14 +226,8 @@ class KolmogrovGaussianTestCase(unittest.TestCase):
         cat.write_catalog(catName)
         cat.write_images(nameRoot=imageRoot)
 
-        if os.path.exists(catName):
-            os.unlink(catName)
-
-        if os.path.exists(imageName):
-            os.unlink(imageName)
-
-        if os.path.exists(dbFileName):
-            os.unlink(dbFileName)
+        if os.path.exists(scratchDir):
+            shutil.rmtree(scratchDir)
 
 
 class AnalyticPsfTestCase(unittest.TestCase):

@@ -1,6 +1,8 @@
 from builtins import zip
 from builtins import range
 import unittest
+import tempfile
+import shutil
 import lsst.utils.tests
 
 import numpy as np
@@ -15,6 +17,8 @@ from lsst.sims.photUtils import Sed, Bandpass
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from testUtils import create_text_catalog
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -147,7 +151,7 @@ class GalSimPlacementTest(unittest.TestCase):
         circles of 2 fwhm radii about the object's expected positions with
         the actual expected flux of the objects.
         """
-        scratchDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'scratchSpace')
+        scratchDir = tempfile.mkdtemp(dir=ROOT, prefix='testObjectPlacement-')
         catName = os.path.join(scratchDir, 'placementCatalog.dat')
         imageRoot = os.path.join(scratchDir, 'placementImage')
         dbFileName = os.path.join(scratchDir, 'placementInputCatalog.dat')
@@ -234,6 +238,9 @@ class GalSimPlacementTest(unittest.TestCase):
                 os.unlink(catName)
             if os.path.exists(imageName):
                 os.unlink(imageName)
+
+        if os.path.exists(scratchDir):
+            shutil.rmtree(scratchDir)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
