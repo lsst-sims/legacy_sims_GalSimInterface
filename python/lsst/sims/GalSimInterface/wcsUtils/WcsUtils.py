@@ -44,7 +44,7 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     that the telescope may impose on the image)
 
     @param [in] afwDetector is an instantiation of afw.cameraGeom's Detector
-    class which characterizes the detector for which you wish to return th
+    class which characterizes the detector for which you wish to return the
     WCS
 
     @param [in] afwCamera is an instantiation of afw.cameraGeom's Camera
