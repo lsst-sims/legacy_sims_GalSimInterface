@@ -69,7 +69,7 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     nameList = []
 
     # dx and dy are set somewhat heuristically
-    # setting them eqal to 0.1(max-min) lead to errors
+    # setting them equal to 0.1(max-min) lead to errors
     # on the order of 0.7 arcsec in the WCS
 
     dx = 0.5*(xTanPixMax-xTanPixMin)
