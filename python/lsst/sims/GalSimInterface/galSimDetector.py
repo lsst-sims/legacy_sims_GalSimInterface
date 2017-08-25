@@ -5,6 +5,7 @@ import galsim
 import numpy as np
 import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
+from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.coordUtils import (_raDecFromPixelCoords,
                                   _pixelCoordsFromRaDec,
@@ -231,6 +232,23 @@ class GalSimDetector(object):
 
         self._photParams = photParams
         self._fileName = self._getFileName()
+        try:
+            assert self._xMaxArcsec-self._xMinArcsec < self._yMaxArcsec-self._yMinArcsec
+        except:
+            if afwDetector.getType() != WAVEFRONT and afwDetector.getType() != GUIDER:
+                print('delta xArcsec ',self._xMaxArcsec-self._xMinArcsec)
+                print('delta yArcsec ',self._yMaxArcsec-self._yMinArcsec)
+                print(afwDetector.getName(), afwDetector.getType())
+                raise
+
+        try:
+            assert self._xMaxPix-self._xMinPix < self._yMaxPix-self._yMinPix
+        except:
+            if afwDetector.getType() != WAVEFRONT and afwDetector.getType() != GUIDER:
+                print('delta xPix ',self._xMaxPix-self._xMinPix)
+                print('delta yPix ',self._yMaxPix-self._yMinPix)
+                print(afwDetector.getName(), afwDetector.getType())
+                raise
 
     def _getFileName(self):
         """
