@@ -231,9 +231,10 @@ class GalSimDetector(object):
         Format the name of the detector to add to the name of the FITS file
         """
         detectorName = self.name
-        detectorName = detectorName.replace(',', '_')
-        detectorName = detectorName.replace(':', '_')
-        detectorName = detectorName.replace(' ', '_')
+        detectorName = detectorName.replace(',', '')
+        detectorName = detectorName.replace(':', '')
+        detectorName = detectorName.replace(' ', '')
+        detectorName = detectorName.replace('S', '_S')
 
         name = detectorName
         return name
