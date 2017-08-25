@@ -320,10 +320,9 @@ class GalSimInterpreter(object):
 
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
 
-                xPix, yPix = pixelCoordsFromPupilCoords(gsObject.xPupilRadians,
-                                                        gsObject.yPupilRadians,
-                                                        chipName=detector.name,
-                                                        camera=detector.afwCamera)
+                xPix, yPix = detector.camera_wrapper.pixelCoordsFromPupilCoords(gsObject.xPupilRadians,
+                                                                                gsObject.yPupilRadians,
+                                                                                chipName=detector.name)
 
                 obj = centeredObj.copy()
 
@@ -332,8 +331,8 @@ class GalSimInterpreter(object):
 
                 self.detectorImages[name] = obj.drawImage(method='phot',
                                                           gain=detector.photParams.gain,
-                                                          offset=galsim.PositionD(detector.yCenterPix-yPix,
-                                                                                  xPix-detector.xCenterPix),
+                                                          offset=galsim.PositionD(xPix-detector.xCenterPix,
+                                                                                  yPix-detector.yCenterPix),
                                                           rng=self._rng,
                                                           image=self.detectorImages[name],
                                                           add_to_image=True)
@@ -367,7 +366,7 @@ class GalSimInterpreter(object):
 
         # Turn the Sersic profile into an ellipse
         centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians,
-                                        beta=(gsObject.positionAngleRadians)*galsim.radians)
+                                        beta=(0.5*np.pi+gsObject.positionAngleRadians)*galsim.radians)
         if self.PSF is not None:
             centeredObj = self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
                                             yPupil=gsObject.yPupilArcsec,

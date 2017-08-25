@@ -7,10 +7,8 @@ import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
 from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
 from lsst.sims.utils import arcsecFromRadians
-from lsst.sims.coordUtils import (_raDecFromPixelCoords,
-                                  _pixelCoordsFromRaDec,
-                                  pixelCoordsFromPupilCoords)
 from lsst.sims.GalSimInterface.wcsUtils import tanSipWcsFromDetector
+from lsst.sims.GalSimInterface import GalSimCameraWrapper
 
 __all__ = ["GalSimDetector"]
 
@@ -27,11 +25,12 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
     http://fits.gsfc.nasa.gov/registry/sip/SIP_distortion_v1_0.pdf
     """
 
-    def __init__(self, afwDetector, afwCamera, obs_metadata, epoch, photParams=None, wcs=None):
+    def __init__(self, detectorName, cameraWrapper, obs_metadata, epoch, photParams=None, wcs=None):
         """
-        @param [in] afwDetector is an instantiation of afw.cameraGeom.Detector
+        @param [in] detectorName is the name of the detector as stored
+        by afw
 
-        @param [in] afwCamera is an instantiation of afw.cameraGeom.Camera
+        @param [in] cameraWrapper is an instantionat of a GalSimCameraWrapper
 
         @param [in] obs_metadata is an instantiation of ObservationMetaData
         characterizing the telescope pointing
@@ -46,13 +45,18 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         The wcs kwarg in this constructor method should not be used by users.
         """
 
+        if not isinstance(cameraWrapper, GalSimCameraWrapper):
+            raise RuntimeError("You must pass GalSim_afw_TanSipWCS an instantiation "
+                               "of GalSimCameraWrapper or one of its daughter "
+                               "classes")
+
         if wcs is None:
-            self._tanSipWcs = tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
+            self._tanSipWcs = tanSipWcsFromDetector(detectorName, cameraWrapper, obs_metadata, epoch)
         else:
             self._tanSipWcs = wcs
 
-        self.afwDetector = afwDetector
-        self.afwCamera = afwCamera
+        self.detectorName = detectorName
+        self.cameraWrapper = cameraWrapper
         self.obs_metadata = obs_metadata
         self.photParams = photParams
         self.epoch = epoch
@@ -92,15 +96,14 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         Return ra, dec in radians.
         """
 
-        chipNameList = [self.afwDetector.getName()]
+        chipNameList = [self.detectorName]
 
         if type(x) is np.ndarray:
             chipNameList = chipNameList * len(x)
 
-        ra, dec = _raDecFromPixelCoords(x + self.afw_crpix1, y + self.afw_crpix2, chipNameList,
-                                        camera=self.afwCamera,
-                                        obs_metadata=self.obs_metadata,
-                                        epoch=self.epoch)
+        ra, dec = self.cameraWrapper._raDecFromPixelCoords(x + self.afw_crpix1, y + self.afw_crpix2, chipNameList,
+                                                           obs_metadata=self.obs_metadata,
+                                                           epoch=self.epoch)
 
         if type(x) is np.ndarray:
             return (ra, dec)
@@ -114,15 +117,14 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         Convert ra, dec in radians into x, y in pixel space with crpix subtracted.
         """
 
-        chipNameList = [self.afwDetector.getName()]
+        chipNameList = [self.detectorName]
 
         if type(ra) is np.ndarray:
             chipNameList = chipNameList * len(ra)
 
-        xx, yy = _pixelCoordsFromRaDec(ra=ra, dec=dec, chipName=chipNameList,
-                                       obs_metadata=self.obs_metadata,
-                                       epoch=self.epoch,
-                                       camera = self.afwCamera)
+        xx, yy = self.cameraWrapper._pixelCoordsFromRaDec(ra=ra, dec=dec, chipName=chipNameList,
+                                                          obs_metadata=self.obs_metadata,
+                                                          epoch=self.epoch)
 
         if type(ra) is np.ndarray:
             return (xx-self.crpix1, yy-self.crpix2)
@@ -141,7 +143,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         @param [out] _newWcs is a WCS identical to self, but with the origin
         in pixel space moved to the specified origin
         """
-        _newWcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera, self.obs_metadata, self.epoch,
+        _newWcs = GalSim_afw_TanSipWCS(self.detectorName, self.cameraWrapper, self.obs_metadata, self.epoch,
                                        photParams=self.photParams, wcs=self._tanSipWcs)
         _newWcs.crpix1 = origin.x
         _newWcs.crpix2 = origin.y
@@ -161,11 +163,12 @@ class GalSimDetector(object):
     This class stores information about individual detectors for use by the GalSimInterpreter
     """
 
-    def __init__(self, afwDetector, afwCamera, obs_metadata, epoch, photParams=None):
+    def __init__(self, detectorName, cameraWrapper, obs_metadata, epoch, photParams=None):
         """
-        @param [in] afwDetector is an instaniation of afw.cameraGeom.Detector
+        @param [in] detectorName is the name of the detector as stored
+        by afw
 
-        @param [in] afwCamera is an instantiation of afw.cameraGeom.camera
+        @param [in] cameraWrapper is an instantionat of a GalSimCameraWrapper
 
         @param [in] photParams is an instantiation of the PhotometricParameters class that carries
         details about the photometric response of the telescope.
@@ -174,50 +177,47 @@ class GalSimDetector(object):
         the name of the detector as it will appear in the output FITS files
         """
 
+        if not isinstance(cameraWrapper, GalSimCameraWrapper):
+            raise RuntimeError("You must pass GalSimDetector an instantiation "
+                               "of GalSimCameraWrapper or one of its daughter "
+                               "classes")
+
         if photParams is None:
             raise RuntimeError("You need to specify an instantiation of PhotometricParameters " +
                                "when constructing a GalSimDetector")
 
         self._wcs = None  # this will be created when it is actually called for
-        self._name = afwDetector.getName()
-        self._afwDetector = afwDetector
-        self._afwCamera = afwCamera
+        self._name = detectorName
+        self._cameraWrapper = cameraWrapper
         self._obs_metadata = obs_metadata
         self._epoch = epoch
+        self._detector_type = self._cameraWrapper.camera[self._name].getType()
 
         # We are transposing the coordinates because of the difference
         # between how DM defines pixel coordinates and how the
         # Camera team defines pixel coordinates
-        bbox = afwDetector.getBBox()
-        self._xMinPix = bbox.getMinY()
-        self._xMaxPix = bbox.getMaxY()
-        self._yMinPix = bbox.getMinX()
-        self._yMaxPix = bbox.getMaxX()
+        bbox = self._cameraWrapper.getBBox(self._name)
+        self._xMinPix = bbox.getMinX()
+        self._xMaxPix = bbox.getMaxX()
+        self._yMinPix = bbox.getMinY()
+        self._yMaxPix = bbox.getMaxY()
 
         self._bbox = afwGeom.Box2D(bbox)
 
-        pupilSystem = afwDetector.makeCameraSys(FIELD_ANGLE)
-        pixelSystem = afwDetector.makeCameraSys(PIXELS)
-
-        centerPoint = afwDetector.getCenter(FOCAL_PLANE)
-        centerPupil = afwCamera.transform(centerPoint, pupilSystem).getPoint()
+        centerPupil = self._cameraWrapper.getCenterPupil(self._name)
         self._xCenterArcsec = arcsecFromRadians(centerPupil.getX())
         self._yCenterArcsec = arcsecFromRadians(centerPupil.getY())
-        centerPixel = afwCamera.transform(centerPoint, pixelSystem).getPoint()
 
-        # Again, we want to deal in the Camera team pixel coordinate definitions;
-        # not the DM pixel coordinate definitions
-        self._xCenterPix = centerPixel.getY()
-        self._yCenterPix = centerPixel.getX()
+        centerPixel = self._cameraWrapper.getCenterPixel(self._name)
+        self._xCenterPix = centerPixel.getX()
+        self._yCenterPix = centerPixel.getY()
 
         self._xMinArcsec = None
         self._yMinArcsec = None
         self._xMaxArcsec = None
         self._yMaxArcsec = None
-        cornerPointList = afwDetector.getCorners(FOCAL_PLANE)
-        for cornerPoint in cornerPointList:
-            cameraPoint = afwDetector.makeCameraPoint(cornerPoint, FOCAL_PLANE)
-            cameraPointPupil = afwCamera.transform(cameraPoint, pupilSystem).getPoint()
+
+        for cameraPointPupil in self._cameraWrapper.getCornerPupilList(self._name):
 
             xx = arcsecFromRadians(cameraPointPupil.getX())
             yy = arcsecFromRadians(cameraPointPupil.getY())
@@ -235,19 +235,19 @@ class GalSimDetector(object):
         try:
             assert self._xMaxArcsec-self._xMinArcsec < self._yMaxArcsec-self._yMinArcsec
         except:
-            if afwDetector.getType() != WAVEFRONT and afwDetector.getType() != GUIDER:
+            if self._detector_type != WAVEFRONT and self._detector_type != GUIDER:
                 print('delta xArcsec ',self._xMaxArcsec-self._xMinArcsec)
                 print('delta yArcsec ',self._yMaxArcsec-self._yMinArcsec)
-                print(afwDetector.getName(), afwDetector.getType())
+                print(self._name, self._detector_type)
                 raise
 
         try:
             assert self._xMaxPix-self._xMinPix < self._yMaxPix-self._yMinPix
         except:
-            if afwDetector.getType() != WAVEFRONT and afwDetector.getType() != GUIDER:
+            if self._detector_type != WAVEFRONT and self._detector_type != GUIDER:
                 print('delta xPix ',self._xMaxPix-self._xMinPix)
                 print('delta yPix ',self._yMaxPix-self._yMinPix)
-                print(afwDetector.getName(), afwDetector.getType())
+                print(self._name, self._detector_type)
                 raise
 
     def _getFileName(self):
@@ -259,9 +259,7 @@ class GalSimDetector(object):
         detectorName = detectorName.replace(':', '')
         detectorName = detectorName.replace(' ', '')
         detectorName = detectorName.replace('S', '_S')
-
-        name = detectorName
-        return name
+        return detectorName
 
     def pixelCoordinatesFromRaDec(self, ra, dec):
         """
@@ -285,10 +283,10 @@ class GalSimDetector(object):
             raLocal = np.array([ra])
             decLocal = np.array([dec])
 
-        xPix, yPix = _pixelCoordsFromRaDec(raLocal, decLocal, chipName=nameList,
-                                           obs_metadata=self._obs_metadata,
-                                           epoch=self._epoch,
-                                           camera=self._afwCamera)
+        xPix, yPix = self._cameraWrapper._pixelCoordsFromRaDec(raLocal, decLocal, chipName=nameList,
+                                                               obs_metadata=self._obs_metadata,
+                                                               epoch=self._epoch,
+                                                               camera=self._afwCamera)
 
         return xPix, yPix
 
@@ -316,8 +314,7 @@ class GalSimDetector(object):
             xp = np.array([xPupil])
             yp = np.array([yPupil])
 
-        xPix, yPix = pixelCoordsFromPupilCoords(xp, yp, chipName=nameList,
-                                                camera=self._afwCamera)
+        xPix, yPix = self._cameraWrapper.pixelCoordsFromPupilCoords(xp, yp, chipName=nameList)
 
         return xPix, yPix
 
@@ -507,6 +504,15 @@ class GalSimDetector(object):
                            "just instantiate a new GalSimDetector")
 
     @property
+    def camera_wrapper(self):
+        return self._cameraWrapper
+
+    @camera_wrapper.setter
+    def camera_wrapper(self, value):
+        raise RuntimeError("You should not be setting the camera_wrapper on the fly; "
+                           "just instantiate a new GalSimDetector")
+
+    @property
     def photParams(self):
         """PhotometricParameters instantiation characterizing the detector"""
         return self._photParams
@@ -527,30 +533,10 @@ class GalSimDetector(object):
                            "just instantiate a new GalSimDetector")
 
     @property
-    def afwCamera(self):
-        """afw.cameraGeom.Camera instantiation corresponding to this detector"""
-        return self._afwCamera
-
-    @afwCamera.setter
-    def afwCamera(self, value):
-        raise RuntimeError("You should not be setting afwCamera on the fly; "
-                           "just instantiate a new GalSimDetector")
-
-    @property
-    def afwDetector(self):
-        """afw.cameraGeom.Detector instantiation corresponding to this detector"""
-        return self._afwDetector
-
-    @afwDetector.setter
-    def afwDetector(self, value):
-        raise RuntimeError("You should not be setting afwDetector on the fly; "
-                           "just instantiate a new GalSimDetector")
-
-    @property
     def wcs(self):
         """WCS corresponding to this detector"""
         if self._wcs is None:
-            self._wcs = GalSim_afw_TanSipWCS(self.afwDetector, self.afwCamera,
+            self._wcs = GalSim_afw_TanSipWCS(self._name, self._cameraWrapper,
                                              self.obs_metadata, self.epoch,
                                              photParams=self.photParams)
 
