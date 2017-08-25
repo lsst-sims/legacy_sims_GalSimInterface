@@ -332,8 +332,8 @@ class GalSimInterpreter(object):
 
                 self.detectorImages[name] = obj.drawImage(method='phot',
                                                           gain=detector.photParams.gain,
-                                                          offset=galsim.PositionD(xPix-detector.xCenterPix,
-                                                                                  yPix-detector.yCenterPix),
+                                                          offset=galsim.PositionD(detector.yCenterPix-yPix,
+                                                                                  xPix-detector.xCenterPix),
                                                           rng=self._rng,
                                                           image=self.detectorImages[name],
                                                           add_to_image=True)
@@ -366,10 +366,8 @@ class GalSimInterpreter(object):
                                     half_light_radius=float(gsObject.halfLightRadiusArcsec))
 
         # Turn the Sersic profile into an ellipse
-        # Add pi/2 to the position angle, because GalSim sets position angle=0
-        # aligned with East, rather than North
         centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians,
-                                        beta=(0.5*np.pi+gsObject.positionAngleRadians)*galsim.radians)
+                                        beta=(gsObject.positionAngleRadians)*galsim.radians)
         if self.PSF is not None:
             centeredObj = self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
                                             yPupil=gsObject.yPupilArcsec,

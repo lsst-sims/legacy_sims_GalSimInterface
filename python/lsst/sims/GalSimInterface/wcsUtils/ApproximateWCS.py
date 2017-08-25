@@ -39,7 +39,7 @@ from lsst.sims.coordUtils import raDecFromPixelCoords
 
 __all__ = ["approximateWcs"]
 
-def approximateWcs(wcs, bbox, camera=None, detector=None, obs_metadata=None,
+def approximateWcs(wcs, camera=None, detector=None, obs_metadata=None,
                    order=3, nx=20, ny=20, iterations=3,
                    skyTolerance=0.001*afwGeom.arcseconds, pixelTolerance=0.02,
                    useTanWcs=False):
@@ -48,7 +48,6 @@ def approximateWcs(wcs, bbox, camera=None, detector=None, obs_metadata=None,
     The fit is performed by evaluating the WCS at a uniform grid of points within a bounding box.
 
     @param[in] wcs  wcs to approximate
-    @param[in] bbox  the region over which the WCS will be fit
     @param[in] camera is an instantiation of afw.cameraGeom.camera
     @param[in] detector is a detector from camera
     @param[in] obs_metadata is an ObservationMetaData characterizing the telescope pointing
@@ -91,12 +90,24 @@ def approximateWcs(wcs, bbox, camera=None, detector=None, obs_metadata=None,
     except AttributeError:
         matchList = []
 
-    bboxd = afwGeom.Box2D(bbox)
-    for x in np.linspace(bboxd.getMinX(), bboxd.getMaxX(), nx):
-        for y in np.linspace(bboxd.getMinY(), bboxd.getMaxY(), ny):
-            pixelPos = afwGeom.Point2D(x, y)
+    # Instantiate a bounding box for the detector,
+    # then transform from DM pixel coordinate conventions
+    # to Camera team pixel coordinate conventions
+    dm_bbox = detector.getBBox()
+    dm_min = dm_bbox.getMin()
+    dm_max = dm_bbox.getMax()
+    cam_bbox = afwGeom.Box2I(minimum=afwGeom.coordinates.Point2I(dm_min[1], dm_min[0]),
+                             maximum=afwGeom.coordinates.Point2I(dm_max[1], dm_max[0]))
+    dm_bboxd = afwGeom.Box2D(dm_bbox)
 
-            ra, dec = raDecFromPixelCoords(np.array([x]), np.array([y]),
+    dm_x_center = 0.5*(dm_min[0]+dm_max[0])
+    dm_y_center = 0.5*(dm_min[1]+dm_max[1])
+
+    for dm_x in np.linspace(dm_bboxd.getMinX(), dm_bboxd.getMaxX(), nx):
+        for dm_y in np.linspace(dm_bboxd.getMinY(), dm_bboxd.getMaxY(), ny):
+            cam_pixelPos = afwGeom.Point2D(2*dm_y_center-dm_y, dm_x)
+
+            ra, dec = raDecFromPixelCoords(np.array([dm_x]), np.array([dm_y]),
                                            [detector.getName()],
                                            camera=camera,
                                            obs_metadata=obs_metadata,
@@ -109,13 +120,13 @@ def approximateWcs(wcs, bbox, camera=None, detector=None, obs_metadata=None,
             refObj.set(refCoordKey, skyCoord)
 
             source = sourceCat.addNew()
-            source.set(sourceCentroidKey, pixelPos)
+            source.set(sourceCentroidKey, cam_pixelPos)
 
             matchList.append(afwTable.ReferenceMatch(refObj, source, 0.0))
 
     # The TAN-SIP fitter is fitting x and y separately, so we have to iterate to make it converge
     for indx in range(iterations) :
-        sipObject = makeCreateWcsWithSip(matchList, tanWcs, order, bbox)
+        sipObject = makeCreateWcsWithSip(matchList, tanWcs, order, cam_bbox)
         tanWcs = sipObject.getNewWcs()
     fitWcs = sipObject.getNewWcs()
 

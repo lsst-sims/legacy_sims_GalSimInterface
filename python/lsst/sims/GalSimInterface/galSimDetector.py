@@ -184,11 +184,14 @@ class GalSimDetector(object):
         self._obs_metadata = obs_metadata
         self._epoch = epoch
 
+        # We are transposing the coordinates because of the difference
+        # between how DM defines pixel coordinates and how the
+        # Camera team defines pixel coordinates
         bbox = afwDetector.getBBox()
-        self._xMinPix = bbox.getMinX()
-        self._xMaxPix = bbox.getMaxX()
-        self._yMinPix = bbox.getMinY()
-        self._yMaxPix = bbox.getMaxY()
+        self._xMinPix = bbox.getMinY()
+        self._xMaxPix = bbox.getMaxY()
+        self._yMinPix = bbox.getMinX()
+        self._yMaxPix = bbox.getMaxX()
 
         self._bbox = afwGeom.Box2D(bbox)
 
@@ -200,8 +203,11 @@ class GalSimDetector(object):
         self._xCenterArcsec = arcsecFromRadians(centerPupil.getX())
         self._yCenterArcsec = arcsecFromRadians(centerPupil.getY())
         centerPixel = afwCamera.transform(centerPoint, pixelSystem).getPoint()
-        self._xCenterPix = centerPixel.getX()
-        self._yCenterPix = centerPixel.getY()
+
+        # Again, we want to deal in the Camera team pixel coordinate definitions;
+        # not the DM pixel coordinate definitions
+        self._xCenterPix = centerPixel.getY()
+        self._yCenterPix = centerPixel.getX()
 
         self._xMinArcsec = None
         self._yMinArcsec = None

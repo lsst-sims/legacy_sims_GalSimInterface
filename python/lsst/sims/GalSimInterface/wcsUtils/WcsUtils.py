@@ -64,8 +64,11 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     xTanPixMin, xTanPixMax, \
     yTanPixMin, yTanPixMax = _getTanPixelBounds(afwDetector, afwCamera)
 
-    xPixList = []
-    yPixList = []
+    dm_x_center = 0.5*(xTanPixMax+xTanPixMin)
+    dm_y_center = 0.5*(yTanPixMax+yTanPixMin)
+
+    dm_xPixList = []
+    dm_yPixList = []
     nameList = []
 
     # dx and dy are set somewhat heuristically
@@ -77,23 +80,28 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
 
     for xx in np.arange(xTanPixMin, xTanPixMax+0.5*dx, dx):
         for yy in np.arange(yTanPixMin, yTanPixMax+0.5*dy, dy):
-            xPixList.append(xx)
-            yPixList.append(yy)
+            dm_xPixList.append(xx)
+            dm_yPixList.append(yy)
             nameList.append(afwDetector.getName())
 
-    raList, decList = _raDecFromPixelCoords(np.array(xPixList),
-                                            np.array(yPixList),
+    dm_xPixList = np.array(dm_xPixList)
+    dm_yPixList = np.array(dm_yPixList)
+
+    raList, decList = _raDecFromPixelCoords(dm_xPixList,
+                                            dm_yPixList,
                                             nameList,
                                             camera=afwCamera,
                                             obs_metadata=obs_metadata,
                                             epoch=epoch,
                                             includeDistortion=False)
 
-    crPix1, crPix2 = _pixelCoordsFromRaDec(obs_metadata._pointingRA,
-                                           obs_metadata._pointingDec,
-                                           chipName=afwDetector.getName(), camera=afwCamera,
-                                           obs_metadata=obs_metadata, epoch=epoch,
-                                           includeDistortion=False)
+    dm_crPix1, dm_crPix2 = _pixelCoordsFromRaDec(obs_metadata._pointingRA,
+                                                 obs_metadata._pointingDec,
+                                                 chipName=afwDetector.getName(),
+                                                 camera=afwCamera,
+                                                 obs_metadata=obs_metadata,
+                                                 epoch=epoch,
+                                                 includeDistortion=False)
 
     lonList, latList = _nativeLonLatFromPointing(raList, decList,
                                                  obs_metadata._pointingRA,
@@ -107,6 +115,16 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     radiusList = 180.0/(np.tan(latList)*np.pi)
     uList = radiusList*np.sin(lonList)
     vList = -radiusList*np.cos(lonList)
+
+    # Convert from DM pixel coordinate conventions
+    # to Camera team/PhoSim pixel coordinate conventions.
+    # Recall that:
+    # Camera +y = DM +x
+    # Camera -x = DM +y
+    yPixList = dm_xPixList
+    xPixList = dm_y_center + (dm_y_center-dm_yPixList)
+    crPix2 = dm_crPix1
+    crPix1 = dm_y_center + (dm_y_center-dm_crPix2)
 
     delta_xList = xPixList - crPix1
     delta_yList = yPixList - crPix2
@@ -203,7 +221,7 @@ def tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch,
     mockExposure.setDetector(afwDetector)
 
     distortedWcs = afwImageUtils.getDistortedWcs(mockExposure.getInfo())
-    tanSipWcs = approximateWcs(distortedWcs, bbox,
+    tanSipWcs = approximateWcs(distortedWcs,
                                order=order,
                                skyTolerance=skyToleranceArcSec*afwGeom.arcseconds,
                                pixelTolerance=pixelTolerance,
