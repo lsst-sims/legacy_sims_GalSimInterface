@@ -28,6 +28,7 @@ from lsst.sims.photUtils import (Sed, Bandpass, BandpassDict,
 import lsst.afw.cameraGeom.testUtils as camTestUtils
 import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
+from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
 
 __all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars"]
 
@@ -439,6 +440,11 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             detectors = []
 
             for dd in self.camera:
+                if dd.getType() == WAVEFRONT or dd.getType() == GUIDER:
+                    # This package does not yet handle the 90-degree rotation
+                    # in WCS that occurs for wavefront or guide sensors
+                    continue
+
                 if self.allowed_chips is None or dd.getName() in self.allowed_chips:
                     cs = dd.makeCameraSys(FIELD_ANGLE)
                     centerPupil = self.camera.transform(dd.getCenter(FOCAL_PLANE), cs).getPoint()
