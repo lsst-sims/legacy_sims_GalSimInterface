@@ -11,6 +11,7 @@ from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimGalaxies
+from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
@@ -40,7 +41,6 @@ class paFileDBObj(fileDBObject):
 
 
 class paCat(GalSimGalaxies):
-    camera = ReturnCamera(os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData'))
     bandpassNames = ['u']
     default_columns = [('sedFilename', 'sed_flat.txt', (str, 12)),
                        ('magNorm', 21.0, float),
@@ -201,7 +201,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
             db = paFileDBObj(dbFileName, runtable='test')
 
             cat = paCat(db, obs_metadata=obs)
-            cat.camera = camera
+            cat.camera_wrapper = GalSimCameraWrapper(camera)
 
             cat.write_catalog(catName)
             cat.write_images(nameRoot=imageRoot)
