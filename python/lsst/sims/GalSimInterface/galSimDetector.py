@@ -182,6 +182,11 @@ class GalSimDetector(object):
                                "of GalSimCameraWrapper or one of its daughter "
                                "classes")
 
+        if detectorName not in cameraWrapper.camera:
+            raise RuntimeError("detectorName needs to be in the camera wrapped by "
+                               "cameraWrapper when instantiating a GalSimDetector\n"
+                               "%s is not in your cameraWrapper.camera" % detectorName)
+
         if photParams is None:
             raise RuntimeError("You need to specify an instantiation of PhotometricParameters " +
                                "when constructing a GalSimDetector")
