@@ -240,8 +240,7 @@ class GalSimDetector(object):
         detectorName = self.name
         detectorName = detectorName.replace(',', '')
         detectorName = detectorName.replace(':', '')
-        detectorName = detectorName.replace(' ', '')
-        detectorName = detectorName.replace('S', '_S')
+        detectorName = detectorName.replace(' ', '_')
         return detectorName
 
     def pixelCoordinatesFromRaDec(self, ra, dec):
