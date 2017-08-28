@@ -25,7 +25,8 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
 
     def test_generic_camera_wrapper(self):
         """
-        Test that GalSimCameraWrapper wraps its methods as expected
+        Test that GalSimCameraWrapper wraps its methods as expected.
+        This is mostly to catch changes in afw API.
         """
         camera = camTestUtils.CameraWrapper().camera
         camera_wrapper = GalSimCameraWrapper(camera)
