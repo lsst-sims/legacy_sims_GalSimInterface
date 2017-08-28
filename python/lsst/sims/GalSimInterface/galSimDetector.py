@@ -526,11 +526,10 @@ class GalSimDetector(object):
                                              self.obs_metadata, self.epoch,
                                              photParams=self.photParams)
 
-            if re.match('R_[0-9]_[0-9]_S_[0-9]_[0-9]', self.fileName) is not None:
+            if re.match('R[0-9][0-9]_S[0-9][0-9]', self.fileName) is not None:
                 # This is an LSST camera; format the FITS header to feed through DM code
 
-                wcsName = self.fileName.replace('_', '')
-                wcsName = wcsName.replace('S', '_S')
+                wcsName = self.fileName
 
                 self._wcs.fitsHeader.set("CHIPID", wcsName)
 
