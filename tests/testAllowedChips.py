@@ -10,12 +10,14 @@ from lsst.utils import getPackageDir
 import lsst.afw.cameraGeom.testUtils as camTestUtils
 
 import lsst.afw.image as afwImage
+from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.coordUtils import raDecFromPixelCoords
 from lsst.sims.photUtils import Sed, Bandpass, BandpassDict, PhotometricParameters
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
+from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from testUtils import create_text_catalog
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -138,18 +140,20 @@ class allowedChipsTest(unittest.TestCase):
         psf = SNRdocumentPSF()
         controlCatalog.setPSF(psf)
         testCatalog.setPSF(psf)
-        controlCatalog.camera = self.camera
-        testCatalog.camera = self.camera
+        controlCatalog.camera_wrapper = GalSimCameraWrapper(self.camera)
+        testCatalog.camera_wrapper = GalSimCameraWrapper(self.camera)
 
         test_root = os.path.join(self.scratchDir, 'allowed_chip_test_image')
         control_root = os.path.join(self.scratchDir, 'allowed_chip_control_image')
 
         name_list = []
         for dd in self.camera:
+            if dd.getType() == WAVEFRONT or dd.getType() == GUIDER:
+                continue
             name = dd.getName()
             name_list.append(name)
-            stripped_name = name.replace(':', '_')
-            stripped_name = stripped_name.replace(',', '_')
+            stripped_name = name.replace(':', '')
+            stripped_name = stripped_name.replace(',', '')
             stripped_name = stripped_name.replace(' ', '_')
 
             test_image_name = os.path.join(self.scratchDir, test_root+'_'+stripped_name+'_u.fits')
@@ -185,8 +189,8 @@ class allowedChipsTest(unittest.TestCase):
             # specified chips.
             # Verify that each image contains the expected amount of flux.
 
-            stripped_name = name.replace(':', '_')
-            stripped_name = stripped_name.replace(',', '_')
+            stripped_name = name.replace(':', '')
+            stripped_name = stripped_name.replace(',', '')
             stripped_name = stripped_name.replace(' ', '_')
 
             test_image_name = os.path.join(self.scratchDir, test_root+'_'+stripped_name+'_u.fits')
