@@ -10,7 +10,7 @@ from lsst.sims.utils import ObservationMetaData
 from lsst.sims.photUtils import PhotometricParameters
 from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.sims.coordUtils import _raDecFromPixelCoords, pupilCoordsFromPixelCoords
-from lsst.sims.GalSimInterface import GalSimDetector
+from lsst.sims.GalSimInterface import GalSimDetector, GalSimCameraWrapper
 
 
 def setup_module(module):
@@ -51,7 +51,8 @@ class GalSimDetectorTest(unittest.TestCase):
         """
 
         photParams = PhotometricParameters()
-        gsdet = GalSimDetector(self.camera[0], self.camera,
+        gsdet = GalSimDetector(self.camera[0].getName(),
+                               GalSimCameraWrapper(self.camera),
                                self.obs, self.epoch,
                                photParams=photParams)
 
@@ -99,7 +100,8 @@ class GalSimDetectorTest(unittest.TestCase):
         """
 
         photParams = PhotometricParameters()
-        gsdet = GalSimDetector(self.camera[0], self.camera,
+        gsdet = GalSimDetector(self.camera[0].getName(),
+                               GalSimCameraWrapper(self.camera),
                                self.obs, self.epoch,
                                photParams=photParams)
 
