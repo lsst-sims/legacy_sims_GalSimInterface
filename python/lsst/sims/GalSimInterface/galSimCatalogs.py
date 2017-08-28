@@ -191,7 +191,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
     # This must be an instantiation of the GalSimCameraWrapper class defined in
     # galSimCameraWrapper.py
-    camera = None
+    camera_wrapper = None
 
     uniqueSeds = {}  # a cache for un-normalized SED files, so that we do not waste time on I/O
 
@@ -415,7 +415,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         See galSimCompoundGenerator.py in the examples/ directory of sims_catUtils for
         an example of how this is used.
         """
-        self.camera = otherCatalog.camera
+        self.camera_wrapper = otherCatalog.camera_wrapper
         self.photParams = otherCatalog.photParams
         self.bandpassDict = otherCatalog.bandpassDict
         self.galSimInterpreter = otherCatalog.galSimInterpreter
@@ -433,9 +433,10 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         the files containing the bandpass data.
         """
 
-        if not isinstance(self.camera, GalSimCameraWrapper):
-            raise RuntimeError("GalSimCatalog.camera must be an instantiation of "
-                               "GalSimCameraWrapper or one of its daughter classes")
+        if not isinstance(self.camera_wrapper, GalSimCameraWrapper):
+            raise RuntimeError("GalSimCatalog.camera_wrapper must be an instantiation of "
+                               "GalSimCameraWrapper or one of its daughter classes\n"
+                               "It is actually of type %s" % str(type(self.camera_wrapper)))
 
         if self.galSimInterpreter is None:
 
@@ -444,19 +445,19 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             # that the GalSimInterpreter will understand
             detectors = []
 
-            for dd in self.camera.camera:
+            for dd in self.camera_wrapper.camera:
                 if dd.getType() == WAVEFRONT or dd.getType() == GUIDER:
                     # This package does not yet handle the 90-degree rotation
                     # in WCS that occurs for wavefront or guide sensors
                     continue
 
                 if self.allowed_chips is None or dd.getName() in self.allowed_chips:
-                    centerPupil = self.camera.getCenterPupil(dd.getName())
-                    centerPixel = self.camera.getCenterPixel(dd.getName())
+                    centerPupil = self.camera_wrapper.getCenterPupil(dd.getName())
+                    centerPixel = self.camera_wrapper.getCenterPixel(dd.getName())
 
-                    translationPupil = self.camera.pupilCoordsFromPixelCoords(centerPixel.getX()+1,
-                                                                              centerPixel.getY()+1,
-                                                                              dd.getName())
+                    translationPupil = self.camera_wrapper.pupilCoordsFromPixelCoords(centerPixel.getX()+1,
+                                                                                      centerPixel.getY()+1,
+                                                                                      dd.getName())
 
                     plateScale = np.sqrt(np.power(translationPupil[0]-centerPupil.getX(), 2) +
                                          np.power(translationPupil[1]-centerPupil.getY(), 2))/np.sqrt(2.0)
@@ -475,7 +476,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                                                    othernoise=self.photParams.othernoise,
                                                    platescale=plateScale)
 
-                    detector = GalSimDetector(dd.getName(), self.camera,
+                    detector = GalSimDetector(dd.getName(), self.camera_wrapper,
                                               obs_metadata=self.obs_metadata, epoch=self.db_obj.epoch,
                                               photParams=params)
 
