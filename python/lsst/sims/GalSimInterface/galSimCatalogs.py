@@ -191,7 +191,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
     # This must be an instantiation of the GalSimCameraWrapper class defined in
     # galSimCameraWrapper.py
-    camera_wrapper = None
+    _camera_wrapper = None
 
     uniqueSeds = {}  # a cache for un-normalized SED files, so that we do not waste time on I/O
 
@@ -201,6 +201,15 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
     totalDrawings = 0
     totalObjects = 0
+
+    @property
+    def camera_wrapper(self):
+        return self._camera_wrapper
+
+    @camera_wrapper.setter
+    def camera_wrapper(self, val):
+        self._camera_wrapper = val
+        self.camera = val.camera
 
     def _initializeGalSimCatalog(self):
         """
