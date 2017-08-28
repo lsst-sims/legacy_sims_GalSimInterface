@@ -13,6 +13,7 @@ from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
 from lsst.sims.utils import haversine
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
+from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
@@ -39,7 +40,6 @@ class outputWcsFileDBObj(fileDBObject):
 
 
 class outputWcsCat(GalSimStars):
-    camera = ReturnCamera(os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData'))
     bandpassNames = ['u']
 
     default_columns = GalSimStars.default_columns
@@ -102,7 +102,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
             db = outputWcsFileDBObj(dbFileName, runtable='test')
 
             cat = outputWcsCat(db, obs_metadata=obs)
-            cat.camera = camera
+            cat.camera_wrapper = GalSimCameraWrapper(camera)
 
             psf = SNRdocumentPSF(fwhm=fwhm)
             cat.setPSF(psf)
