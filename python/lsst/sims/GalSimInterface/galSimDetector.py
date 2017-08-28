@@ -232,23 +232,6 @@ class GalSimDetector(object):
 
         self._photParams = photParams
         self._fileName = self._getFileName()
-        try:
-            assert self._xMaxArcsec-self._xMinArcsec < self._yMaxArcsec-self._yMinArcsec
-        except:
-            if self._detector_type != WAVEFRONT and self._detector_type != GUIDER:
-                print('delta xArcsec ',self._xMaxArcsec-self._xMinArcsec)
-                print('delta yArcsec ',self._yMaxArcsec-self._yMinArcsec)
-                print(self._name, self._detector_type)
-                raise
-
-        try:
-            assert self._xMaxPix-self._xMinPix < self._yMaxPix-self._yMinPix
-        except:
-            if self._detector_type != WAVEFRONT and self._detector_type != GUIDER:
-                print('delta xPix ',self._xMaxPix-self._xMinPix)
-                print('delta yPix ',self._yMaxPix-self._yMinPix)
-                print(self._name, self._detector_type)
-                raise
 
     def _getFileName(self):
         """
