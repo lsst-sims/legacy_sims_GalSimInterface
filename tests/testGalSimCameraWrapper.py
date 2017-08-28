@@ -25,6 +25,8 @@ def setup_module(module):
 
 class Camera_Wrapper_Test_Class(unittest.TestCase):
 
+    longMessage = True
+
     def test_generic_camera_wrapper(self):
         """
         Test that GalSimCameraWrapper wraps its methods as expected.
