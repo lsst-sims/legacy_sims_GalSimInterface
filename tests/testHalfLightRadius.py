@@ -11,6 +11,7 @@ from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRa
 from lsst.sims.utils import haversine
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimGalaxies
+from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
@@ -40,7 +41,6 @@ class hlrFileDBObj(fileDBObject):
 
 
 class hlrCat(GalSimGalaxies):
-    camera = ReturnCamera(os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData'))
     bandpassNames = ['u']
     default_columns = [('sedFilename', 'sed_flat.txt', (str, 12)),
                        ('magNorm', 21.0, float),
@@ -58,8 +58,14 @@ class hlrCat(GalSimGalaxies):
 class GalSimHlrTest(unittest.TestCase):
 
     @classmethod
+    def setUpClass(cls):
+        cls.camera = ReturnCamera(os.path.join(getPackageDir('sims_GalSimInterface'),
+                                  'tests', 'cameraData'))
+
+    @classmethod
     def tearDownClass(cls):
         sims_clean_up()
+        del cls.camera
 
     def get_flux_in_half_light_radius(self, fileName, hlr, detector, camera, obs, epoch=2000.0):
         """
@@ -129,9 +135,7 @@ class GalSimHlrTest(unittest.TestCase):
         imageRoot = os.path.join(scratchDir, 'hlr_test_Image')
         dbFileName = os.path.join(scratchDir, 'hlr_test_InputCatalog.dat')
 
-        baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
-        camera = ReturnCamera(baseDir)
-        detector = camera[0]
+        detector = self.camera[0]
         detName = detector.getName()
         imageName = '%s_%s_u.fits' % (imageRoot, detName)
 
@@ -151,12 +155,12 @@ class GalSimHlrTest(unittest.TestCase):
             db = hlrFileDBObj(dbFileName, runtable='test')
 
             cat = hlrCat(db, obs_metadata=obs)
-            cat.camera = camera
+            cat.camera_wrapper = GalSimCameraWrapper(self.camera)
 
             cat.write_catalog(catName)
             cat.write_images(nameRoot=imageRoot)
 
-            totalFlux, hlrFlux = self.get_flux_in_half_light_radius(imageName, hlr, detector, camera, obs)
+            totalFlux, hlrFlux = self.get_flux_in_half_light_radius(imageName, hlr, detector, self.camera, obs)
             self.assertGreater(totalFlux, 1000.0)  # make sure the image is not blank
 
             # divide by gain because Poisson stats apply to photons
