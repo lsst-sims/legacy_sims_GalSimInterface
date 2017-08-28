@@ -753,9 +753,9 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
 
         return cam_xPix, cam_yPix
 
-    def pixelCoordsFromRaDecLSST(self, ra, dec, pm_ra=None, pm_dec=None, parallax=None, v_rad=None,
-                                 obs_metadata=None, chipName=None,
-                                 epoch=2000.0, includeDistortion=True):
+    def pixelCoordsFromRaDec(self, ra, dec, pm_ra=None, pm_dec=None, parallax=None, v_rad=None,
+                             obs_metadata=None, chipName=None,
+                             epoch=2000.0, includeDistortion=True):
         """
         Get the pixel positions (or nan if not on a chip) for objects based
         on their RA, and Dec (in degrees)
@@ -821,8 +821,8 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         else:
             parallax_out = None
 
-        return self._pixelCoordsFromRaDecLSST(np.radians(ra), np.radians(dec),
-                                              pm_ra=pm_ra_out, pm_dec=pm_dec_out,
-                                              parallax=parallax_out, v_rad=v_rad,
-                                              chipName=chipName, obs_metadata=obs_metadata,
-                                              epoch=2000.0, includeDistortion=includeDistortion)
+        return self._pixelCoordsFromRaDec(np.radians(ra), np.radians(dec),
+                                          pm_ra=pm_ra_out, pm_dec=pm_dec_out,
+                                          parallax=parallax_out, v_rad=v_rad,
+                                          chipName=chipName, obs_metadata=obs_metadata,
+                                          epoch=2000.0, includeDistortion=includeDistortion)
