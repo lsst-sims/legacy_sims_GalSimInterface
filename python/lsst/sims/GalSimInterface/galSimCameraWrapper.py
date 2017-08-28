@@ -516,7 +516,8 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         Returns
         -------
         a 2-D numpy array in which the first row is the x pixel coordinate
-        and the second row is the y pixel coordinate
+        and the second row is the y pixel coordinate.  These pixel coordinates
+        are defined in the Camera team system, rather than the DM system.
         """
         dm_x_pix, dm_y_pix = coordUtils.pixelCoordsFromPupilCoords(xPupil, yPupil,
                                                                    chipName=chipName,
@@ -543,9 +544,11 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         ----------
         xPix is the x pixel coordinate of the point.
         Can be either a float or a numpy array.
+        Defined in the Camera team system (not the DM system).
 
         yPix is the y pixel coordinate of the point.
         Can be either a float or a numpy array.
+        Defined in the Camera team system (not the DM system).
 
         chipName is the name of the chip(s) on which the pixel coordinates
         are defined.  This can be a list (in which case there should be one chip name
@@ -584,10 +587,12 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         Parameters
         ----------
         xPix is the x pixel coordinate.  It can be either
-        a float or a numpy array.
+        a float or a numpy array.  Defined in the Camera
+        team system (not the DM system).
 
         yPix is the y pixel coordinate.  It can be either
-        a float or a numpy array.
+        a float or a numpy array.  Defined in the Camera
+        team system (not the DM system).
 
         chipName is the name of the chip(s) on which the pixel coordinates
         are defined.  This can be a list (in which case there should be one chip name
@@ -641,10 +646,12 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         Parameters
         ----------
         xPix is the x pixel coordinate.  It can be either
-        a float or a numpy array.
+        a float or a numpy array.  Defined in the Camera
+        team system (not the DM system).
 
         yPix is the y pixel coordinate.  It can be either
-        a float or a numpy array.
+        a float or a numpy array.  Defined in the Camera
+        team system (not the DM system).
 
         chipName is the name of the chip(s) on which the pixel coordinates
         are defined.  This can be a list (in which case there should be one chip name
@@ -730,7 +737,8 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         Returns
         -------
         a 2-D numpy array in which the first row is the x pixel coordinate
-        and the second row is the y pixel coordinate
+        and the second row is the y pixel coordinate.  These pixel coordinates
+        are defined in the Camera team system, rather than the DM system.
         """
 
         dm_xPix, dm_yPix =  coordUtils._pixelCoordsFromRaDecLSST(ra, dec,
@@ -803,7 +811,8 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         Returns
         -------
         a 2-D numpy array in which the first row is the x pixel coordinate
-        and the second row is the y pixel coordinate
+        and the second row is the y pixel coordinate.  These pixel coordinates
+        are defined in the Camera team system, rather than the DM system.
         """
 
         if pm_ra is not None:
