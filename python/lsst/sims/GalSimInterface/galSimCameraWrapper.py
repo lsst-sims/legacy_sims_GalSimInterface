@@ -204,7 +204,9 @@ class GalSimCameraWrapper(object):
     def raDecFromPixelCoords(self, xPix, yPix, chipName, obs_metadata,
                              epoch=2000.0, includeDistortion=True):
 
-        return coordUtils.raDecFromPixelCoords(xPix, yPix, chipName, obs_metadata,
+        return coordUtils.raDecFromPixelCoords(xPix, yPix, chipName,
+                                               camera=self._camera,
+                                               obs_metadata=obs_metadata,
                                                epoch=2000.0, includeDistortion=True)
 
     def _pixelCoordsFromRaDec(self, ra, dec, pm_ra=None, pm_dec=None,
@@ -529,7 +531,8 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         to positions on the celestial sphere.
         """
 
-        _ra, _dec = self._raDecFromPixelCoords(xPix, yPix, chipName, obs_metadata,
+        _ra, _dec = self._raDecFromPixelCoords(xPix, yPix, chipName,
+                                               obs_metadata=obs_metadata,
                                                epoch=2000.0, includeDistortion=True)
 
         return np.degrees(_ra), np.degrees(_dec)
