@@ -16,6 +16,7 @@ from lsst.sims.coordUtils import _pixelCoordsFromRaDec, _raDecFromPixelCoords
 from lsst.sims.photUtils import Sed, Bandpass
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
+from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from testUtils import create_text_catalog
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -202,12 +203,12 @@ class GalSimPlacementTest(unittest.TestCase):
                                 mag_norm=[self.magNorm]*len(xDisplacementList))
             db = placementFileDBObj(dbFileName, runtable='test')
             cat = placementCatalog(db, obs_metadata=obs)
+            cat.camera_wrapper = GalSimCameraWrapper(camera)
             if actualCounts is None:
                 actualCounts = controlSed.calcADU(uBandpass, cat.photParams)
 
             psf = SNRdocumentPSF(fwhm=fwhm)
             cat.setPSF(psf)
-            cat.camera = camera
 
             cat.write_catalog(catName)
             cat.write_images(nameRoot=imageRoot)
