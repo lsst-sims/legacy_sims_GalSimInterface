@@ -96,11 +96,19 @@ class GalSimCameraWrapper(object):
          return self._camera.transform(centerPoint, pixelSystem).getPoint()
 
     def getCenterPupil(self, detector_name):
+        """
+        Return the pupil coordinates of the center of the named detector
+        as an afwGeom.Point2D
+        """
         dd = self._camera[detector_name]
         cs = dd.makeCameraSys(PUPIL)
         return self._camera.transform(dd.getCenter(FOCAL_PLANE), cs).getPoint()
 
     def getCornerPupilList(self, detector_name):
+        """
+        Return a list of the pupil coordinates of the corners of the named
+        detector as a list of afwGeom.Point2D objects
+        """
         dd = self._camera[detector_name]
         pupilSystem = dd.makeCameraSys(PUPIL)
         cornerPointList = dd.getCorners(FOCAL_PLANE)
@@ -112,6 +120,19 @@ class GalSimCameraWrapper(object):
         return pupil_point_list
 
     def getTanPixelBounds(self, detector_name):
+        """
+        Return the min and max pixel values of a detector, assuming
+        all radial distortions are set to zero (i.e. using the afwCameraGeom
+        TAN_PIXELS coordinate system)
+
+        Parameters
+        ----------
+        detector_name is a string denoting the name of the detector
+
+        Returns
+        -------
+        xmin, xmax, ymin, ymax pixel values
+        """
         afwDetector = self._camera[detector_name]
         tanPixelSystem = afwDetector.makeCameraSys(TAN_PIXELS)
         xPixMin = None
@@ -142,13 +163,15 @@ class GalSimCameraWrapper(object):
         Get the pixel positions (or nan if not on a chip) for objects based
         on their pupil coordinates.
 
-        @param [in] xPupil is the x pupil coordinates in radians.
-        Can be either a float or a numpy array.
+        Paramters
+        ---------
+        xPupil is the x pupil coordinates in radians. Can be either a float
+        or a numpy array.
 
-        @param [in] yPupil is the y pupil coordinates in radians.
-        Can be either a float or a numpy array.
+        yPupil is the y pupil coordinates in radians. Can be either a float
+        or a numpy array.
 
-        @param [in] chipName designates the names of the chips on which the pixel
+        chipName designates the names of the chips on which the pixel
         coordinates will be reckoned.  Can be either single value, an array, or None.
         If an array, there must be as many chipNames as there are (RA, Dec) pairs.
         If a single value, all of the pixel coordinates will be reckoned on the same
@@ -156,13 +179,15 @@ class GalSimCameraWrapper(object):
         falls on, and return pixel coordinates for each (RA, Dec) pair on the appropriate
         chip.  Default is None.
 
-        @param [in] includeDistortion is a boolean.  If True (default), then this method will
+        includeDistortion is a boolean.  If True (default), then this method will
         return the true pixel coordinates with optical distortion included.  If False, this
         method will return TAN_PIXEL coordinates, which are the pixel coordinates with
         estimated optical distortion removed.  See the documentation in afw.cameraGeom for more
         details.
 
-        @param [out] a 2-D numpy array in which the first row is the x pixel coordinate
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the x pixel coordinate
         and the second row is the y pixel coordinate
         """
         return coordUtils.pixelCoordsFromPupilCoords(xPupil, yPupil, chipName=chipName,
@@ -174,24 +199,28 @@ class GalSimCameraWrapper(object):
         """
         Convert pixel coordinates into pupil coordinates
 
-        @param [in] xPix is the x pixel coordinate of the point.
+        Parameters
+        ----------
+        xPix is the x pixel coordinate of the point.
         Can be either a float or a numpy array.
 
-        @param [in] yPix is the y pixel coordinate of the point.
+        yPix is the y pixel coordinate of the point.
         Can be either a float or a numpy array.
 
-        @param [in] chipName is the name of the chip(s) on which the pixel coordinates
+        chipName is the name of the chip(s) on which the pixel coordinates
         are defined.  This can be a list (in which case there should be one chip name
         for each (xPix, yPix) coordinate pair), or a single value (in which case, all
         of the (xPix, yPix) points will be reckoned on that chip).
 
-        @param [in] includeDistortion is a boolean.  If True (default), then this method will
+        includeDistortion is a boolean.  If True (default), then this method will
         expect the true pixel coordinates with optical distortion included.  If False, this
         method will expect TAN_PIXEL coordinates, which are the pixel coordinates with
         estimated optical distortion removed.  See the documentation in afw.cameraGeom for more
         details.
 
-        @param [out] a 2-D numpy array in which the first row is the x pupil coordinate
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the x pupil coordinate
         and the second row is the y pupil coordinate (both in radians)
         """
         return coordUtils.pupilCoordsFromPixelCoords(xPix, yPix, chipName,
@@ -203,31 +232,33 @@ class GalSimCameraWrapper(object):
         """
         Convert pixel coordinates into RA, Dec
 
-        @param [in] xPix is the x pixel coordinate.  It can be either
+        Parameters
+        ----------
+        xPix is the x pixel coordinate.  It can be either
         a float or a numpy array.
 
-        @param [in] yPix is the y pixel coordinate.  It can be either
+        yPix is the y pixel coordinate.  It can be either
         a float or a numpy array.
 
-        @param [in] chipName is the name of the chip(s) on which the pixel coordinates
+        chipName is the name of the chip(s) on which the pixel coordinates
         are defined.  This can be a list (in which case there should be one chip name
         for each (xPix, yPix) coordinate pair), or a single value (in which case, all
         of the (xPix, yPix) points will be reckoned on that chip).
 
-        @param [in] camera is an afw.CameraGeom.camera object defining the camera
+        obs_metadata is an ObservationMetaData defining the pointing
 
-        @param [in] obs_metadata is an ObservationMetaData defining the pointing
-
-        @param [in] epoch is the mean epoch in years of the celestial coordinate system.
+        epoch is the mean epoch in years of the celestial coordinate system.
         Default is 2000.
 
-        @param [in] includeDistortion is a boolean.  If True (default), then this method will
+        includeDistortion is a boolean.  If True (default), then this method will
         expect the true pixel coordinates with optical distortion included.  If False, this
         method will expect TAN_PIXEL coordinates, which are the pixel coordinates with
         estimated optical distortion removed.  See the documentation in afw.cameraGeom for more
         details.
 
-        @param [out] a 2-D numpy array in which the first row is the RA coordinate
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the RA coordinate
         and the second row is the Dec coordinate (both in radians; in the
         International Celestial Reference System)
 
@@ -245,6 +276,44 @@ class GalSimCameraWrapper(object):
     def raDecFromPixelCoords(self, xPix, yPix, chipName, obs_metadata,
                              epoch=2000.0, includeDistortion=True):
 
+        """
+        Convert pixel coordinates into RA, Dec
+
+        Parameters
+        ----------
+        xPix is the x pixel coordinate.  It can be either
+        a float or a numpy array.
+
+        yPix is the y pixel coordinate.  It can be either
+        a float or a numpy array.
+
+        chipName is the name of the chip(s) on which the pixel coordinates
+        are defined.  This can be a list (in which case there should be one chip name
+        for each (xPix, yPix) coordinate pair), or a single value (in which case, all
+        of the (xPix, yPix) points will be reckoned on that chip).
+
+        obs_metadata is an ObservationMetaData defining the pointing
+
+        epoch is the mean epoch in years of the celestial coordinate system.
+        Default is 2000.
+
+        includeDistortion is a boolean.  If True (default), then this method will
+        expect the true pixel coordinates with optical distortion included.  If False, this
+        method will expect TAN_PIXEL coordinates, which are the pixel coordinates with
+        estimated optical distortion removed.  See the documentation in afw.cameraGeom for more
+        details.
+
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the RA coordinate
+        and the second row is the Dec coordinate (both in degrees; in the
+        International Celestial Reference System)
+
+        WARNING: This method does not account for apparent motion due to parallax.
+        This method is only useful for mapping positions on a theoretical focal plane
+        to positions on the celestial sphere.
+        """
+
         return coordUtils.raDecFromPixelCoords(xPix, yPix, chipName,
                                                camera=self._camera,
                                                obs_metadata=obs_metadata,
@@ -259,31 +328,33 @@ class GalSimCameraWrapper(object):
         Get the pixel positions (or nan if not on a chip) for objects based
         on their RA, and Dec (in radians)
 
-        @param [in] ra is in radians in the International Celestial Reference System.
+        Parameters
+        ----------
+        ra is in radians in the International Celestial Reference System.
         Can be either a float or a numpy array.
 
-        @param [in] dec is in radians in the International Celestial Reference System.
+        dec is in radians in the International Celestial Reference System.
         Can be either a float or a numpy array.
 
-        @param [in] pm_ra is proper motion in RA multiplied by cos(Dec) (radians/yr)
+        pm_ra is proper motion in RA multiplied by cos(Dec) (radians/yr)
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] pm_dec is proper motion in dec (radians/yr)
+        pm_dec is proper motion in dec (radians/yr)
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] parallax is parallax in radians
+        parallax is parallax in radians
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] v_rad is radial velocity (km/s)
+        v_rad is radial velocity (km/s)
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] obs_metadata is an ObservationMetaData characterizing the telescope
+        obs_metadata is an ObservationMetaData characterizing the telescope
         pointing.
 
-        @param [in] epoch is the epoch in Julian years of the equinox against which
+        epoch is the epoch in Julian years of the equinox against which
         RA is measured.  Default is 2000.
 
-        @param [in] chipName designates the names of the chips on which the pixel
+        chipName designates the names of the chips on which the pixel
         coordinates will be reckoned.  Can be either single value, an array, or None.
         If an array, there must be as many chipNames as there are (RA, Dec) pairs.
         If a single value, all of the pixel coordinates will be reckoned on the same
@@ -291,13 +362,15 @@ class GalSimCameraWrapper(object):
         falls on, and return pixel coordinates for each (RA, Dec) pair on the appropriate
         chip.  Default is None.
 
-        @param [in] includeDistortion is a boolean.  If True (default), then this method will
+        includeDistortion is a boolean.  If True (default), then this method will
         return the true pixel coordinates with optical distortion included.  If False, this
         method will return TAN_PIXEL coordinates, which are the pixel coordinates with
         estimated optical distortion removed.  See the documentation in afw.cameraGeom for more
         details.
 
-        @param [out] a 2-D numpy array in which the first row is the x pixel coordinate
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the x pixel coordinate
         and the second row is the y pixel coordinate
         """
 
@@ -315,31 +388,33 @@ class GalSimCameraWrapper(object):
         Get the pixel positions (or nan if not on a chip) for objects based
         on their RA, and Dec (in degrees)
 
-        @param [in] ra is in degrees in the International Celestial Reference System.
+        Parameters
+        ----------
+        ra is in degrees in the International Celestial Reference System.
         Can be either a float or a numpy array.
 
-        @param [in] dec is in degrees in the International Celestial Reference System.
+        dec is in degrees in the International Celestial Reference System.
         Can be either a float or a numpy array.
 
-        @param [in] pm_ra is proper motion in RA multiplied by cos(Dec) (arcsec/yr)
+        pm_ra is proper motion in RA multiplied by cos(Dec) (arcsec/yr)
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] pm_dec is proper motion in dec (arcsec/yr)
+        pm_dec is proper motion in dec (arcsec/yr)
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] parallax is parallax in arcsec
+        parallax is parallax in arcsec
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] v_rad is radial velocity (km/s)
+        v_rad is radial velocity (km/s)
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] obs_metadata is an ObservationMetaData characterizing the telescope
+        obs_metadata is an ObservationMetaData characterizing the telescope
         pointing.
 
-        @param [in] epoch is the epoch in Julian years of the equinox against which
+        epoch is the epoch in Julian years of the equinox against which
         RA is measured.  Default is 2000.
 
-        @param [in] chipName designates the names of the chips on which the pixel
+        chipName designates the names of the chips on which the pixel
         coordinates will be reckoned.  Can be either single value, an array, or None.
         If an array, there must be as many chipNames as there are (RA, Dec) pairs.
         If a single value, all of the pixel coordinates will be reckoned on the same
@@ -347,13 +422,15 @@ class GalSimCameraWrapper(object):
         falls on, and return pixel coordinates for each (RA, Dec) pair on the appropriate
         chip.  Default is None.
 
-        @param [in] includeDistortion is a boolean.  If True (default), then this method will
+        includeDistortion is a boolean.  If True (default), then this method will
         return the true pixel coordinates with optical distortion included.  If False, this
         method will return TAN_PIXEL coordinates, which are the pixel coordinates with
         estimated optical distortion removed.  See the documentation in afw.cameraGeom for more
         details.
 
-        @param [out] a 2-D numpy array in which the first row is the x pixel coordinate
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the x pixel coordinate
         and the second row is the y pixel coordinate
         """
 
@@ -392,6 +469,19 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
          return afwGeom.coordinates.Point2D(centerPixel.getY(), centerPixel.getX())
 
     def getTanPixelBounds(self, detector_name):
+        """
+        Return the min and max pixel values of a detector, assuming
+        all radial distortions are set to zero (i.e. using the afwCameraGeom
+        TAN_PIXELS coordinate system)
+
+        Parameters
+        ----------
+        detector_name is a string denoting the name of the detector
+
+        Returns
+        -------
+        xmin, xmax, ymin, ymax pixel values
+        """
         dm_xmin, dm_xmax, dm_ymin, dm_ymax = GalSimCameraWrapper.getTanPixelBounds(self, detector_name)
         return dm_ymin, dm_ymax, dm_xmin, dm_xmax
 
@@ -401,13 +491,15 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         Get the pixel positions (or nan if not on a chip) for objects based
         on their pupil coordinates.
 
-        @param [in] xPupil is the x pupil coordinates in radians.
-        Can be either a float or a numpy array.
+        Paramters
+        ---------
+        xPupil is the x pupil coordinates in radians. Can be either a float
+        or a numpy array.
 
-        @param [in] yPupil is the y pupil coordinates in radians.
-        Can be either a float or a numpy array.
+        yPupil is the y pupil coordinates in radians. Can be either a float
+        or a numpy array.
 
-        @param [in] chipName designates the names of the chips on which the pixel
+        chipName designates the names of the chips on which the pixel
         coordinates will be reckoned.  Can be either single value, an array, or None.
         If an array, there must be as many chipNames as there are (RA, Dec) pairs.
         If a single value, all of the pixel coordinates will be reckoned on the same
@@ -415,13 +507,15 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         falls on, and return pixel coordinates for each (RA, Dec) pair on the appropriate
         chip.  Default is None.
 
-        @param [in] includeDistortion is a boolean.  If True (default), then this method will
+        includeDistortion is a boolean.  If True (default), then this method will
         return the true pixel coordinates with optical distortion included.  If False, this
         method will return TAN_PIXEL coordinates, which are the pixel coordinates with
         estimated optical distortion removed.  See the documentation in afw.cameraGeom for more
         details.
 
-        @param [out] a 2-D numpy array in which the first row is the x pixel coordinate
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the x pixel coordinate
         and the second row is the y pixel coordinate
         """
         dm_x_pix, dm_y_pix = coordUtils.pixelCoordsFromPupilCoords(xPupil, yPupil,
@@ -442,28 +536,31 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         return cam_x_pix, cam_y_pix
 
     def pupilCoordsFromPixelCoords(self, xPix, yPix, chipName, includeDistortion=True):
-
         """
         Convert pixel coordinates into pupil coordinates
 
-        @param [in] xPix is the x pixel coordinate of the point.
+        Parameters
+        ----------
+        xPix is the x pixel coordinate of the point.
         Can be either a float or a numpy array.
 
-        @param [in] yPix is the y pixel coordinate of the point.
+        yPix is the y pixel coordinate of the point.
         Can be either a float or a numpy array.
 
-        @param [in] chipName is the name of the chip(s) on which the pixel coordinates
+        chipName is the name of the chip(s) on which the pixel coordinates
         are defined.  This can be a list (in which case there should be one chip name
         for each (xPix, yPix) coordinate pair), or a single value (in which case, all
         of the (xPix, yPix) points will be reckoned on that chip).
 
-        @param [in] includeDistortion is a boolean.  If True (default), then this method will
+        includeDistortion is a boolean.  If True (default), then this method will
         expect the true pixel coordinates with optical distortion included.  If False, this
         method will expect TAN_PIXEL coordinates, which are the pixel coordinates with
         estimated optical distortion removed.  See the documentation in afw.cameraGeom for more
         details.
 
-        @param [out] a 2-D numpy array in which the first row is the x pupil coordinate
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the x pupil coordinate
         and the second row is the y pupil coordinate (both in radians)
         """
         dm_xPix = yPix
@@ -484,31 +581,33 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         """
         Convert pixel coordinates into RA, Dec
 
-        @param [in] xPix is the x pixel coordinate.  It can be either
+        Parameters
+        ----------
+        xPix is the x pixel coordinate.  It can be either
         a float or a numpy array.
 
-        @param [in] yPix is the y pixel coordinate.  It can be either
+        yPix is the y pixel coordinate.  It can be either
         a float or a numpy array.
 
-        @param [in] chipName is the name of the chip(s) on which the pixel coordinates
+        chipName is the name of the chip(s) on which the pixel coordinates
         are defined.  This can be a list (in which case there should be one chip name
         for each (xPix, yPix) coordinate pair), or a single value (in which case, all
         of the (xPix, yPix) points will be reckoned on that chip).
 
-        @param [in] camera is an afw.CameraGeom.camera object defining the camera
+        obs_metadata is an ObservationMetaData defining the pointing
 
-        @param [in] obs_metadata is an ObservationMetaData defining the pointing
-
-        @param [in] epoch is the mean epoch in years of the celestial coordinate system.
+        epoch is the mean epoch in years of the celestial coordinate system.
         Default is 2000.
 
-        @param [in] includeDistortion is a boolean.  If True (default), then this method will
+        includeDistortion is a boolean.  If True (default), then this method will
         expect the true pixel coordinates with optical distortion included.  If False, this
         method will expect TAN_PIXEL coordinates, which are the pixel coordinates with
         estimated optical distortion removed.  See the documentation in afw.cameraGeom for more
         details.
 
-        @param [out] a 2-D numpy array in which the first row is the RA coordinate
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the RA coordinate
         and the second row is the Dec coordinate (both in radians; in the
         International Celestial Reference System)
 
@@ -539,31 +638,33 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         """
         Convert pixel coordinates into RA, Dec
 
-        @param [in] xPix is the x pixel coordinate.  It can be either
+        Parameters
+        ----------
+        xPix is the x pixel coordinate.  It can be either
         a float or a numpy array.
 
-        @param [in] yPix is the y pixel coordinate.  It can be either
+        yPix is the y pixel coordinate.  It can be either
         a float or a numpy array.
 
-        @param [in] chipName is the name of the chip(s) on which the pixel coordinates
+        chipName is the name of the chip(s) on which the pixel coordinates
         are defined.  This can be a list (in which case there should be one chip name
         for each (xPix, yPix) coordinate pair), or a single value (in which case, all
         of the (xPix, yPix) points will be reckoned on that chip).
 
-        @param [in] camera is an afw.CameraGeom.camera object defining the camera
+        obs_metadata is an ObservationMetaData defining the pointing
 
-        @param [in] obs_metadata is an ObservationMetaData defining the pointing
-
-        @param [in] epoch is the mean epoch in years of the celestial coordinate system.
+        epoch is the mean epoch in years of the celestial coordinate system.
         Default is 2000.
 
-        @param [in] includeDistortion is a boolean.  If True (default), then this method will
+        includeDistortion is a boolean.  If True (default), then this method will
         expect the true pixel coordinates with optical distortion included.  If False, this
         method will expect TAN_PIXEL coordinates, which are the pixel coordinates with
         estimated optical distortion removed.  See the documentation in afw.cameraGeom for more
         details.
 
-        @param [out] a 2-D numpy array in which the first row is the RA coordinate
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the RA coordinate
         and the second row is the Dec coordinate (both in degrees; in the
         International Celestial Reference System)
 
@@ -586,31 +687,33 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         Get the pixel positions (or nan if not on a chip) for objects based
         on their RA, and Dec (in radians)
 
-        @param [in] ra is in radians in the International Celestial Reference System.
+        Parameters
+        ----------
+        ra is in radians in the International Celestial Reference System.
         Can be either a float or a numpy array.
 
-        @param [in] dec is in radians in the International Celestial Reference System.
+        dec is in radians in the International Celestial Reference System.
         Can be either a float or a numpy array.
 
-        @param [in] pm_ra is proper motion in RA multiplied by cos(Dec) (radians/yr)
+        pm_ra is proper motion in RA multiplied by cos(Dec) (radians/yr)
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] pm_dec is proper motion in dec (radians/yr)
+        pm_dec is proper motion in dec (radians/yr)
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] parallax is parallax in radians
+        parallax is parallax in radians
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] v_rad is radial velocity (km/s)
+        v_rad is radial velocity (km/s)
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] obs_metadata is an ObservationMetaData characterizing the telescope
+        obs_metadata is an ObservationMetaData characterizing the telescope
         pointing.
 
-        @param [in] epoch is the epoch in Julian years of the equinox against which
+        epoch is the epoch in Julian years of the equinox against which
         RA is measured.  Default is 2000.
 
-        @param [in] chipName designates the names of the chips on which the pixel
+        chipName designates the names of the chips on which the pixel
         coordinates will be reckoned.  Can be either single value, an array, or None.
         If an array, there must be as many chipNames as there are (RA, Dec) pairs.
         If a single value, all of the pixel coordinates will be reckoned on the same
@@ -618,13 +721,15 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         falls on, and return pixel coordinates for each (RA, Dec) pair on the appropriate
         chip.  Default is None.
 
-        @param [in] includeDistortion is a boolean.  If True (default), then this method will
+        includeDistortion is a boolean.  If True (default), then this method will
         return the true pixel coordinates with optical distortion included.  If False, this
         method will return TAN_PIXEL coordinates, which are the pixel coordinates with
         estimated optical distortion removed.  See the documentation in afw.cameraGeom for more
         details.
 
-        @param [out] a 2-D numpy array in which the first row is the x pixel coordinate
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the x pixel coordinate
         and the second row is the y pixel coordinate
         """
 
@@ -652,34 +757,36 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
                                  obs_metadata=None, chipName=None,
                                  epoch=2000.0, includeDistortion=True):
         """
-        Get the pixel positions on the LSST camera (or nan if not on a chip) for objects based
+        Get the pixel positions (or nan if not on a chip) for objects based
         on their RA, and Dec (in degrees)
 
-        @param [in] ra is in degrees in the International Celestial Reference System.
+        Parameters
+        ----------
+        ra is in degrees in the International Celestial Reference System.
         Can be either a float or a numpy array.
 
-        @param [in] dec is in degrees in the International Celestial Reference System.
+        dec is in degrees in the International Celestial Reference System.
         Can be either a float or a numpy array.
 
-        @param [in] pm_ra is proper motion in RA multiplied by cos(Dec) (arcsec/yr)
+        pm_ra is proper motion in RA multiplied by cos(Dec) (arcsec/yr)
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] pm_dec is proper motion in dec (arcsec/yr)
+        pm_dec is proper motion in dec (arcsec/yr)
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] parallax is parallax in arcsec
+        parallax is parallax in arcsec
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] v_rad is radial velocity (km/s)
+        v_rad is radial velocity (km/s)
         Can be a numpy array or a number or None (default=None).
 
-        @param [in] obs_metadata is an ObservationMetaData characterizing the telescope
+        obs_metadata is an ObservationMetaData characterizing the telescope
         pointing.
 
-        @param [in] epoch is the epoch in Julian years of the equinox against which
+        epoch is the epoch in Julian years of the equinox against which
         RA is measured.  Default is 2000.
 
-        @param [in] chipName designates the names of the chips on which the pixel
+        chipName designates the names of the chips on which the pixel
         coordinates will be reckoned.  Can be either single value, an array, or None.
         If an array, there must be as many chipNames as there are (RA, Dec) pairs.
         If a single value, all of the pixel coordinates will be reckoned on the same
@@ -687,13 +794,15 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         falls on, and return pixel coordinates for each (RA, Dec) pair on the appropriate
         chip.  Default is None.
 
-        @param [in] includeDistortion is a boolean.  If True (default), then this method will
+        includeDistortion is a boolean.  If True (default), then this method will
         return the true pixel coordinates with optical distortion included.  If False, this
         method will return TAN_PIXEL coordinates, which are the pixel coordinates with
         estimated optical distortion removed.  See the documentation in afw.cameraGeom for more
         details.
 
-        @param [out] a 2-D numpy array in which the first row is the x pixel coordinate
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the x pixel coordinate
         and the second row is the y pixel coordinate
         """
 
