@@ -9,6 +9,9 @@ from lsst.sims.utils import ObservationMetaData, haversine, arcsecFromRadians
 from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 from lsst.sims.GalSimInterface.wcsUtils import tanWcsFromDetector, tanSipWcsFromDetector
+from lsst.sims.GalSimInterface import GalSimCameraWrapper
+from lsst.sims.GalSimInterface import LSSTCameraWrapper
+from lsst.sims.coordUtils import lsst_camera
 
 try:
     from lsst.obs.lsstSim import LsstSimMapper
@@ -27,12 +30,12 @@ class WcsTest(unittest.TestCase):
     def setUpClass(cls):
 
         if _USE_LSST_CAMERA:
-            cls.camera = LsstSimMapper().camera
-            cls.detector = cls.camera['R:1,1 S:2,2']
+            cls.camera_wrapper = LSSTCameraWrapper()
+            cls.detector = cls.camera_wrapper.camera['R:1,1 S:2,2']
         else:
             baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
-            cls.camera = ReturnCamera(baseDir)
-            cls.detector = cls.camera[0]
+            cls.camera_wrapper = GalSimCameraWrapper(ReturnCamera(baseDir))
+            cls.detector = cls.camera_wrapper.camera[0]
 
         cls.obs = ObservationMetaData(pointingRA=25.0, pointingDec=-10.0,
                                       boundType='circle', boundLength=1.0,
@@ -43,7 +46,9 @@ class WcsTest(unittest.TestCase):
     def tearDownClass(cls):
         sims_clean_up()
         del cls.detector
-        del cls.camera
+        del cls.camera_wrapper
+        if _USE_LSST_CAMERA:
+            del lsst_camera._lsst_camera
 
     def testTanSipWcs(self):
         """
@@ -52,8 +57,10 @@ class WcsTest(unittest.TestCase):
         the truth.
         """
 
-        tanWcs = tanWcsFromDetector(self.detector, self.camera, self.obs, self.epoch)
-        tanSipWcs = tanSipWcsFromDetector(self.detector, self.camera, self.obs, self.epoch)
+        tanWcs = tanWcsFromDetector(self.detector.getName(), self.camera_wrapper,
+                                    self.obs, self.epoch)
+        tanSipWcs = tanSipWcsFromDetector(self.detector.getName(), self.camera_wrapper,
+                                          self.obs, self.epoch)
 
         tanWcsRa = []
         tanWcsDec = []
@@ -85,10 +92,11 @@ class WcsTest(unittest.TestCase):
         xPixList = np.array(xPixList)
         yPixList = np.array(yPixList)
 
-        raTest, decTest = _raDecFromPixelCoords(xPixList, yPixList,
-                                                [self.detector.getName()]*len(xPixList),
-                                                camera=self.camera, obs_metadata=self.obs,
-                                                epoch=self.epoch)
+        (raTest,
+         decTest) = self.camera_wrapper._raDecFromPixelCoords(xPixList, yPixList,
+                                                              [self.detector.getName()]*len(xPixList),
+                                                              obs_metadata=self.obs,
+                                                              epoch=self.epoch)
 
         tanDistanceList = arcsecFromRadians(haversine(raTest, decTest, tanWcsRa, tanWcsDec))
         tanSipDistanceList = arcsecFromRadians(haversine(raTest, decTest, tanSipWcsRa, tanSipWcsDec))
