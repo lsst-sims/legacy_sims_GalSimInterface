@@ -272,8 +272,7 @@ class GalSimDetector(object):
 
         xPix, yPix = self._cameraWrapper._pixelCoordsFromRaDec(raLocal, decLocal, chipName=nameList,
                                                                obs_metadata=self._obs_metadata,
-                                                               epoch=self._epoch,
-                                                               camera=self._afwCamera)
+                                                               epoch=self._epoch)
 
         return xPix, yPix
 
