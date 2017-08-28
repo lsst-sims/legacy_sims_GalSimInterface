@@ -1,8 +1,9 @@
 """
 This module provides wrappers for afwCameraGeom camera objects.
-This is necessary because of the 90-degree rotation between
-how DM defines pixel coordinates and how the Camera team (and
-thus PhoSim) defines pixel coordinates.  Recall
+This is necessary because of a 90-degree rotation between how
+the LSST Data Management software team defines coordinate
+axes on the focal plane and how the LSST Camera team defines
+coorindate axes on the focal plane.  Specifically
 
 Camera +y = DM +x
 Camera +x = DM -y
@@ -12,6 +13,46 @@ as PhoSim e-images, we need to apply this rotation to the
 mappings between RA, Dec and pixel coordinates.  We may not
 wish to do that for arbitrary cameras, so we will give
 users the ability to apply a no-op wrapper to their cameras.
+
+The class LSSTCameraWrapper applies this transformation.
+In cases where users do not wish to apply any transformation
+to their pixel coordinate system, the class GalSimCameraWrapper
+provides the same API as LSSTCamerWrapper, but treats the
+software-based pixel coordinates as truth.
+
+In order to implement your own camera wrapper, create a python
+class that inherits from GalSimCameraWrapper.  This class will
+need:
+
+- a property self.camera that is an afwCamerGeom camera object
+
+- a method getBBox() that returns the bounding box in pixel space
+  of a detector, given that detector's name
+
+- a method getCenterPixel() that returns the central pixel of a
+  detector, given that detector's name
+
+- a method getCenterPupil() that returns the pupil coordinates
+  (or field angle) in radians of the center of a detector given
+  that detector's name
+
+- a method getCornerPupilList that returns the pupil coordinates
+  (or field angles) in radians of the corners of a detector given
+  that detector's name
+
+- a method getTanPixelBounds() that returns the minimum and maximum
+  x and y pixel values of a detector, ignoring radial distortions,
+  given that detector's name
+
+- wrappers to the corresponding methods in lsst.sims.coordUtils that
+  use the self.camera property and apply the necessary transformations
+  to pixel space coordinates:
+      pixelCoordsFromPupilCoords()
+      pupilCoordsFromPixelCoords()
+      pixelCoordsFromRaDec()
+      _pixelCoordsFromRaDec()
+      raDecFromPixelCoords()
+      _raDecFromPixelCoords()
 """
 
 import numpy as np
