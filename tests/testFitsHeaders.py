@@ -12,8 +12,10 @@ from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
+from lsst.sims.GalSimInterface import GalSimCameraWrapper
+from lsst.sims.GalSimInterface import LSSTCameraWrapper
 from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.obs.lsstSim import LsstSimMapper
+from lsst.sims.coordUtils import lsst_camera
 
 from testUtils import create_text_catalog
 
@@ -59,6 +61,7 @@ class FitsHeaderTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         sims_clean_up()
+        del lsst_camera._lsst_camera
 
     def testFitsHeader(self):
         """
@@ -68,7 +71,6 @@ class FitsHeaderTest(unittest.TestCase):
         image created with the cartoon camera does not
         """
 
-        lsstCamera = LsstSimMapper().camera
         cameraDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
         cartoonCamera = ReturnCamera(cameraDir)
 
@@ -92,7 +94,7 @@ class FitsHeaderTest(unittest.TestCase):
 
         # first test the lsst camera
         lsstCat = fitsHeaderCatalog(db, obs_metadata=obs)
-        lsstCat.camera = lsstCamera
+        lsstCat.camera_wrapper = LSSTCameraWrapper()
         lsstCat.PSF = SNRdocumentPSF()
         lsstCat.write_catalog(lsst_cat_name)
         lsstCat.write_images(nameRoot=lsst_cat_root)
@@ -119,7 +121,7 @@ class FitsHeaderTest(unittest.TestCase):
 
         # now test with the cartoon camera
         cartoonCat = fitsHeaderCatalog(db, obs_metadata=obs)
-        cartoonCat.camera = cartoonCamera
+        cartoonCat.camera_wrapper = GalSimCameraWrapper(cartoonCamera)
         cartoonCat.PSF = SNRdocumentPSF()
         cartoonCat.write_catalog(cartoon_cat_name)
         cartoonCat.write_images(nameRoot=cartoon_cat_root)
