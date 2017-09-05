@@ -4,7 +4,7 @@ import re
 import galsim
 import numpy as np
 import lsst.afw.geom as afwGeom
-from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
+from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.coordUtils import (_raDecFromPixelCoords,
                                   _pixelCoordsFromRaDec,
@@ -192,7 +192,7 @@ class GalSimDetector(object):
 
         self._bbox = afwGeom.Box2D(bbox)
 
-        pupilSystem = afwDetector.makeCameraSys(PUPIL)
+        pupilSystem = afwDetector.makeCameraSys(FIELD_ANGLE)
         pixelSystem = afwDetector.makeCameraSys(PIXELS)
 
         centerPoint = afwDetector.getCenter(FOCAL_PLANE)

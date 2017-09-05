@@ -27,7 +27,7 @@ from lsst.sims.photUtils import (Sed, Bandpass, BandpassDict,
                                  PhotometricParameters)
 import lsst.afw.cameraGeom.testUtils as camTestUtils
 import lsst.afw.geom as afwGeom
-from lsst.afw.cameraGeom import PUPIL, PIXELS, FOCAL_PLANE
+from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
 
 __all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars"]
 
@@ -440,7 +440,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
             for dd in self.camera:
                 if self.allowed_chips is None or dd.getName() in self.allowed_chips:
-                    cs = dd.makeCameraSys(PUPIL)
+                    cs = dd.makeCameraSys(FIELD_ANGLE)
                     centerPupil = self.camera.transform(dd.getCenter(FOCAL_PLANE), cs).getPoint()
                     centerPixel = dd.getCenter(PIXELS).getPoint()
 
