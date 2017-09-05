@@ -111,6 +111,7 @@ class FitsHeaderTest(unittest.TestCase):
                 self.assertEqual(header['OBSID'], 112)
                 self.assertEqual(header['CHIPID'], 'R22_S11')
                 self.assertEqual(header['OUTFILE'], 'lsst_e_112_f0_R22_S11_E000')
+                fitsTest.close()
                 os.unlink(true_name)
 
         self.assertGreater(ct, 0)
@@ -134,6 +135,7 @@ class FitsHeaderTest(unittest.TestCase):
                 self.assertNotIn('CHIPID', header)
                 self.assertNotIn('OBSID', header)
                 self.assertNotIn('OUTFILE', header)
+                fitsTest.close()
                 os.unlink(true_name)
 
         self.assertGreater(ct, 0)
