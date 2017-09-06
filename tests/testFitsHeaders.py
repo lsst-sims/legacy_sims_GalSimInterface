@@ -103,14 +103,14 @@ class FitsHeaderTest(unittest.TestCase):
             true_name = os.path.join(outputDir, file_name)
             if lsst_cat_root in true_name:
                 ct += 1
-                fitsTest = fits.open(true_name)
-                header = fitsTest[0].header
-                self.assertIn('CHIPID', header)
-                self.assertIn('OBSID', header)
-                self.assertIn('OUTFILE', header)
-                self.assertEqual(header['OBSID'], 112)
-                self.assertEqual(header['CHIPID'], 'R22_S11')
-                self.assertEqual(header['OUTFILE'], 'lsst_e_112_f0_R22_S11_E000')
+                with fits.open(true_name) as fitsTest:
+                    header = fitsTest[0].header
+                    self.assertIn('CHIPID', header)
+                    self.assertIn('OBSID', header)
+                    self.assertIn('OUTFILE', header)
+                    self.assertEqual(header['OBSID'], 112)
+                    self.assertEqual(header['CHIPID'], 'R22_S11')
+                    self.assertEqual(header['OUTFILE'], 'lsst_e_112_f0_R22_S11_E000')
                 os.unlink(true_name)
 
         self.assertGreater(ct, 0)
@@ -129,11 +129,11 @@ class FitsHeaderTest(unittest.TestCase):
             true_name = os.path.join(outputDir, file_name)
             if cartoon_cat_root in true_name:
                 ct += 1
-                fitsTest = fits.open(true_name)
-                header = fitsTest[0].header
-                self.assertNotIn('CHIPID', header)
-                self.assertNotIn('OBSID', header)
-                self.assertNotIn('OUTFILE', header)
+                with fits.open(true_name) as fitsTest:
+                    header = fitsTest[0].header
+                    self.assertNotIn('CHIPID', header)
+                    self.assertNotIn('OBSID', header)
+                    self.assertNotIn('OUTFILE', header)
                 os.unlink(true_name)
 
         self.assertGreater(ct, 0)
