@@ -523,7 +523,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         cat.write_catalog(catName)
         bandpassDir = os.path.join(getPackageDir('sims_catUtils'), 'tests', 'testThroughputs')
         sedDir = os.path.join(getPackageDir('sims_catUtils'), 'tests', 'testSeds')
-        self.catalogTester(catName=catName, catalog=cat, nameRoot='fakeBandpass',
+        self.catalogTester(catName=catName, catalog=cat, nameRoot='fakeSed',
                            bandpassDir=bandpassDir, bandpassRoot='fakeTotal_',
                            sedDir=sedDir)
 
