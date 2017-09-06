@@ -17,7 +17,7 @@ from lsst.sims.coordUtils import lsst_camera
 
 import lsst.afw.cameraGeom.testUtils as camTestUtils
 from lsst.afw.cameraGeom import FOCAL_PLANE
-from lsst.afw.cameraGeom import TAN_PIXELS, PUPIL, PIXELS
+from lsst.afw.cameraGeom import TAN_PIXELS, FIELD_ANGLE, PIXELS
 
 def setup_module(module):
     lsst.utils.tests.init()
@@ -59,7 +59,7 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             self.assertEqual(center_pix.getX(), center_pix_wrapper.getX())
             self.assertEqual(center_pix.getY(), center_pix_wrapper.getY())
 
-            pupil_system = camera[name].makeCameraSys(PUPIL)
+            pupil_system = camera[name].makeCameraSys(FIELD_ANGLE)
             center_pupil = camera.transform(center_point, pupil_system).getPoint()
             center_pupil_wrapper = camera_wrapper.getCenterPupil(name)
             self.assertEqual(center_pupil.getX(), center_pupil_wrapper.getX())
@@ -227,7 +227,7 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
 
             # Note that DM and the Camera team agree on the orientation
             # of the pupil coordinate/field angle axes
-            pupil_system = camera[name].makeCameraSys(PUPIL)
+            pupil_system = camera[name].makeCameraSys(FIELD_ANGLE)
             center_pupil = camera.transform(center_point, pupil_system).getPoint()
             center_pupil_wrapper = camera_wrapper.getCenterPupil(name)
             self.assertEqual(center_pupil.getX(), center_pupil_wrapper.getX())
