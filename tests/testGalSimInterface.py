@@ -792,7 +792,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         cat2 = testStarCatalog(stars, obs_metadata=obs_metadata2)
         cat2.copyGalSimInterpreter(cat1)
         cat2.write_catalog(catName, write_header=False, write_mode='a')
-        self.catalogTester(catName=catName, catalog=cat2, nameRoot='compound')
+        self.catalogTester(catName=catName, catalog=cat2, nameRoot='compound_one_empty')
 
         if os.path.exists(dbName1):
             os.unlink(dbName1)
