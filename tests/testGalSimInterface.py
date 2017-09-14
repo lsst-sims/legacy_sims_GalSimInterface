@@ -740,6 +740,67 @@ class GalSimInterfaceTest(unittest.TestCase):
         if os.path.exists(catName):
             os.unlink(catName)
 
+    def testCompoundFitsFiles_one_empty(self):
+        """
+        Test that GalSimInterpreter puts the right number of counts on images
+        containing different types of objects in the case where one of the
+        input catalogs is empty (really, this is testing that we can
+        successfully copy the GalSimInterpreter and all of the supporting
+        properties from an empty GalSimCatalog to another GalSimCatalog)
+        """
+        driver = 'sqlite'
+        dbName1 = os.path.join(self.scratch_dir, 'galSimTestCompound1DB_one_empty.db')
+        if os.path.exists(dbName1):
+            os.unlink(dbName1)
+
+        deltaRA = np.array([72.0/3600.0, 55.0/3600.0, 75.0/3600.0])
+        deltaDec = np.array([0.0, 15.0/3600.0, -15.0/3600.0])
+        obs_metadata1 = makePhoSimTestDB(filename=dbName1, size=1,
+                                         deltaRA=deltaRA, deltaDec=deltaDec,
+                                         bandpass=self.bandpassNameList,
+                                         m5=self.m5, seeing=self.seeing)
+
+        dbName2 = os.path.join(self.scratch_dir, 'galSimTestCompound2DB_one_empty.db')
+        if os.path.exists(dbName2):
+            os.unlink(dbName2)
+
+        deltaRA = np.array([55.0/3600.0, 60.0/3600.0, 62.0/3600.0])
+        deltaDec = np.array([-3.0/3600.0, 10.0/3600.0, 10.0/3600.0])
+        obs_metadata2 = makePhoSimTestDB(filename=dbName2, size=1,
+                                         deltaRA=deltaRA, deltaDec=deltaDec,
+                                         bandpass=self.bandpassNameList,
+                                         m5=self.m5, seeing=self.seeing)
+
+        gals = testGalaxyBulgeDBObj(driver=driver, database=dbName1)
+
+        # shift the obs_metadata so that the catalog will not contain
+        # any objects
+        ra0 = obs_metadata1.pointingRA
+        dec0 = obs_metadata1.pointingDec
+        obs_metadata1.pointingRA = ra0 + 20.0
+
+        cat1 = testGalaxyCatalog(gals, obs_metadata=obs_metadata1)
+        cat1.camera_wrapper = GalSimCameraWrapper(self.camera)
+        catName = os.path.join(self.scratch_dir, 'compoundCatalog_one_empty.sav')
+        cat1.write_catalog(catName)
+        with open(catName, "r") as input_file:
+            input_lines = input_file.readlines()
+            self.assertEqual(len(input_lines), 1)  # just the header
+        self.assertFalse(hasattr(cat1, 'bandpassDict'))
+
+        stars = testStarsDBObj(driver=driver, database=dbName2)
+        cat2 = testStarCatalog(stars, obs_metadata=obs_metadata2)
+        cat2.copyGalSimInterpreter(cat1)
+        cat2.write_catalog(catName, write_header=False, write_mode='a')
+        self.catalogTester(catName=catName, catalog=cat2, nameRoot='compound')
+
+        if os.path.exists(dbName1):
+            os.unlink(dbName1)
+        if os.path.exists(dbName2):
+            os.unlink(dbName2)
+        if os.path.exists(catName):
+            os.unlink(catName)
+
     def testPlacement(self):
         """
         Test that GalSimInterpreter puts objects on the right detectors.
