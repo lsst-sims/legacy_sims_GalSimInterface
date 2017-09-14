@@ -12,6 +12,7 @@ from lsst.sims.GalSimInterface import GalSimGalaxies, ExampleCCDNoise, \
                                                SNRdocumentPSF
 
 from lsst.sims.photUtils import LSSTdefaults
+from lsst.sims.GalSimInterface import LSSTCameraWrapper
 
 #if you want to use the actual LSST camera
 #from lsst.obs.lsstSim import LsstSimMapper
@@ -19,10 +20,6 @@ from lsst.sims.photUtils import LSSTdefaults
 class testGalSimGalaxiesNoiseless(GalSimGalaxies):
     #only draw images for u and g bands (for speed)
     bandpassNames = ['u','g']
-
-    #If you want to use the LSST camera, uncomment the line below.
-    #You can similarly assign any camera object you want here
-    #camera = LsstSimMapper().camera
 
     PSF = SNRdocumentPSF()
 
@@ -54,6 +51,7 @@ gals = CatalogDBObject.from_objid('galaxyBulge')
 
 #now append a bunch of objects with 2D sersic profiles to our output file
 gal_noiseless = testGalSimGalaxiesNoiseless(gals, obs_metadata=obs_metadata)
+gal_noiseless.camera_wrapper = LSSTCameraWrapper()
 
 gal_noiseless.write_catalog('galSim_NoiselessGalaxies_example.txt', chunk_size=10000)
 gal_noiseless.write_images(nameRoot='noiselessGalaxies')
