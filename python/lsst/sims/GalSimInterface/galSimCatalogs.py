@@ -426,10 +426,11 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         """
         self.camera_wrapper = otherCatalog.camera_wrapper
         self.photParams = otherCatalog.photParams
-        self.bandpassDict = otherCatalog.bandpassDict
-        self.galSimInterpreter = otherCatalog.galSimInterpreter
         self.PSF = otherCatalog.PSF
         self.noise_and_background = otherCatalog.noise_and_background
+        if otherCatalog.hasBeenInitialized:
+            self.bandpassDict = otherCatalog.bandpassDict
+            self.galSimInterpreter = otherCatalog.galSimInterpreter
 
     def _initializeGalSimInterpreter(self):
         """
