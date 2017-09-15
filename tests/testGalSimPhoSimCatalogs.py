@@ -8,11 +8,12 @@ import shutil
 import lsst.utils.tests
 
 from lsst.utils import getPackageDir
+import lsst.afw.cameraGeom.testUtils as camTestUtils
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimPhoSimGalaxies, GalSimPhoSimStars, GalSimPhoSimAgn
-from lsst.sims.GalSimInterface import SNRdocumentPSF
+from lsst.sims.GalSimInterface import SNRdocumentPSF, GalSimCameraWrapper
 from lsst.sims.catUtils.exampleCatalogDefinitions import (PhoSimCatalogSersic2D, PhoSimCatalogPoint,
                                                           PhoSimCatalogZPoint)
 
@@ -31,6 +32,7 @@ class GalSimPhoSimTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.camera = camTestUtils.CameraWrapper().camera
         cls.dataDir = tempfile.mkdtemp(dir=ROOT, prefix='GalSimPhoSimTest-')
         cls.n_objects = 5
         rng = np.random.RandomState(45)
@@ -194,6 +196,7 @@ class GalSimPhoSimTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         sims_clean_up()
+        del cls.camera
 
         if os.path.exists(cls.bulge_name):
             os.unlink(cls.bulge_name)
@@ -225,6 +228,7 @@ class GalSimPhoSimTest(unittest.TestCase):
         db.objectTypeId = 55
 
         gs_cat = GalSimPhoSimGalaxies(db, obs_metadata=self.obs)
+        gs_cat.camera_wrapper = GalSimCameraWrapper(self.camera)
         gs_cat.bandpassNames = self.obs.bandpass
         gs_cat.PSF = SNRdocumentPSF()
         gs_cat.phoSimHeaderMap = {}

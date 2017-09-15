@@ -9,6 +9,7 @@ from lsst.sims.catalogs.db import CatalogDBObject
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.catUtils.baseCatalogModels import GalaxyBulgeObj
 from lsst.sims.GalSimInterface import GalSimGalaxies, SNRdocumentPSF
+from lsst.sims.GalSimInterface import LSSTCameraWrapper
 
 #if you want to use the actual LSST camera
 #from lsst.obs.lsstSim import LsstSimMapper
@@ -18,11 +19,6 @@ class testGalSimGalaxies(GalSimGalaxies):
     bandpassNames = ['u','g']
 
     PSF = SNRdocumentPSF()
-
-    #If you want to use the LSST camera, uncomment the line below.
-    #You can similarly assign any camera object you want here
-    #camera = LsstSimMapper().camera
-
 
 #select an OpSim pointing
 opsimdb = os.path.join(getPackageDir('sims_data'), 'OpSimData',
@@ -36,6 +32,7 @@ gals = CatalogDBObject.from_objid('galaxyBulge')
 
 #now append a bunch of objects with 2D sersic profiles to our output file
 galaxy_galSim = testGalSimGalaxies(gals, obs_metadata=obs_metadata)
+galaxy_galSim.camera_wrapper = LSSTCameraWrapper()
 
 galaxy_galSim.write_catalog('galSim_bulge_example.txt', chunk_size=10000)
 galaxy_galSim.write_images(nameRoot='bulge')

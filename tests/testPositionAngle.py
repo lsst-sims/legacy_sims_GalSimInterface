@@ -11,6 +11,7 @@ from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimGalaxies
+from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
@@ -40,7 +41,6 @@ class paFileDBObj(fileDBObject):
 
 
 class paCat(GalSimGalaxies):
-    camera = ReturnCamera(os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData'))
     bandpassNames = ['u']
     default_columns = [('sedFilename', 'sed_flat.txt', (str, 12)),
                        ('magNorm', 21.0, float),
@@ -115,7 +115,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
 
         # find the angle between the (1,1) vector in pixel space and the
         # north axis of the image
-        theta = np.arctan2(-1.0*(raCenterP1[0]-raCenter[0]), decCenterP1[0]-decCenter[0])
+        theta = np.arctan2((raCenterP1[0]-raCenter[0]), decCenterP1[0]-decCenter[0])
 
         # rotate the (1,1) vector in pixel space so that it is pointing
         # along the north axis
@@ -123,7 +123,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
         north = north/np.sqrt(north[0]*north[0]+north[1]*north[1])
 
         # find the east axis of the image
-        east = np.array([-1.0*north[1], north[0]])
+        east = np.array([north[1], -1.0*north[0]])
 
         # now find the covariance matrix of the x, y  pixel space distribution
         # of flux on the image
@@ -201,7 +201,7 @@ class GalSimPositionAngleTest(unittest.TestCase):
             db = paFileDBObj(dbFileName, runtable='test')
 
             cat = paCat(db, obs_metadata=obs)
-            cat.camera = camera
+            cat.camera_wrapper = GalSimCameraWrapper(camera)
 
             cat.write_catalog(catName)
             cat.write_images(nameRoot=imageRoot)

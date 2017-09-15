@@ -15,6 +15,7 @@ from lsst.sims.utils import angularSeparation
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from lsst.sims.GalSimInterface import Kolmogorov_and_Gaussian_PSF
+from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.coordUtils import raDecFromPixelCoords
 
 from lsst.sims.coordUtils.utils import ReturnCamera
@@ -42,7 +43,6 @@ class fwhmFileDBObj(fileDBObject):
 
 
 class fwhmCat(GalSimStars):
-    camera = ReturnCamera(os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData'))
     bandpassNames = ['u']
 
     default_columns = GalSimStars.default_columns
@@ -159,7 +159,7 @@ class GalSimFwhmTest(unittest.TestCase):
         for fwhm in (0.1, 0.14):
 
             cat = fwhmCat(db, obs_metadata=obs)
-            cat.camera = camera
+            cat.camera_wrapper = GalSimCameraWrapper(camera)
 
             psf = SNRdocumentPSF(fwhm=fwhm, pixel_scale=0.02)
             cat.setPSF(psf)
@@ -218,7 +218,7 @@ class KolmogrovGaussianTestCase(unittest.TestCase):
         db = fwhmFileDBObj(dbFileName, runtable='test')
 
         cat = fwhmCat(db, obs_metadata=obs)
-        cat.camera = camera
+        cat.camera_wrapper = GalSimCameraWrapper(camera)
 
         psf = Kolmogorov_and_Gaussian_PSF(rawSeeing=0.7, airmass=1.05, band='g')
         cat.setPSF(psf)

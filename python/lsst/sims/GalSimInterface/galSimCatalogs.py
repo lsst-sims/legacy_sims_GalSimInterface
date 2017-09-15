@@ -23,11 +23,13 @@ from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catUtils.mixins import (CameraCoords, AstrometryGalaxies, AstrometryStars,
                                        EBVmixin)
 from lsst.sims.GalSimInterface import GalSimInterpreter, GalSimDetector, GalSimCelestialObject
+from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.photUtils import (Sed, Bandpass, BandpassDict,
                                  PhotometricParameters)
 import lsst.afw.cameraGeom.testUtils as camTestUtils
 import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
+from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
 
 __all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars"]
 
@@ -187,9 +189,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     # Stores the gain and readnoise
     photParams = PhotometricParameters()
 
-    # This is just a place holder for the camera object associated with the InstanceCatalog.
-    # If you want to assign a different camera, you can do so immediately after instantiating this class
-    camera = camTestUtils.CameraWrapper().camera
+    # This must be an instantiation of the GalSimCameraWrapper class defined in
+    # galSimCameraWrapper.py
+    _camera_wrapper = None
 
     uniqueSeds = {}  # a cache for un-normalized SED files, so that we do not waste time on I/O
 
@@ -199,6 +201,15 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
     totalDrawings = 0
     totalObjects = 0
+
+    @property
+    def camera_wrapper(self):
+        return self._camera_wrapper
+
+    @camera_wrapper.setter
+    def camera_wrapper(self, val):
+        self._camera_wrapper = val
+        self.camera = val.camera
 
     def _initializeGalSimCatalog(self):
         """
@@ -413,12 +424,13 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         See galSimCompoundGenerator.py in the examples/ directory of sims_catUtils for
         an example of how this is used.
         """
-        self.camera = otherCatalog.camera
+        self.camera_wrapper = otherCatalog.camera_wrapper
         self.photParams = otherCatalog.photParams
-        self.bandpassDict = otherCatalog.bandpassDict
-        self.galSimInterpreter = otherCatalog.galSimInterpreter
         self.PSF = otherCatalog.PSF
         self.noise_and_background = otherCatalog.noise_and_background
+        if otherCatalog.hasBeenInitialized:
+            self.bandpassDict = otherCatalog.bandpassDict
+            self.galSimInterpreter = otherCatalog.galSimInterpreter
 
     def _initializeGalSimInterpreter(self):
         """
@@ -431,6 +443,11 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         the files containing the bandpass data.
         """
 
+        if not isinstance(self.camera_wrapper, GalSimCameraWrapper):
+            raise RuntimeError("GalSimCatalog.camera_wrapper must be an instantiation of "
+                               "GalSimCameraWrapper or one of its daughter classes\n"
+                               "It is actually of type %s" % str(type(self.camera_wrapper)))
+
         if self.galSimInterpreter is None:
 
             # This list will contain instantiations of the GalSimDetector class
@@ -438,18 +455,22 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             # that the GalSimInterpreter will understand
             detectors = []
 
-            for dd in self.camera:
+            for dd in self.camera_wrapper.camera:
+                if dd.getType() == WAVEFRONT or dd.getType() == GUIDER:
+                    # This package does not yet handle the 90-degree rotation
+                    # in WCS that occurs for wavefront or guide sensors
+                    continue
+
                 if self.allowed_chips is None or dd.getName() in self.allowed_chips:
-                    cs = dd.makeCameraSys(FIELD_ANGLE)
-                    centerPupil = self.camera.transform(dd.getCenter(FOCAL_PLANE), cs).getPoint()
-                    centerPixel = dd.getCenter(PIXELS).getPoint()
+                    centerPupil = self.camera_wrapper.getCenterPupil(dd.getName())
+                    centerPixel = self.camera_wrapper.getCenterPixel(dd.getName())
 
-                    translationPixel = afwGeom.Point2D(centerPixel.getX()+1, centerPixel.getY()+1)
-                    translationPupil = self.camera.transform(dd.makeCameraPoint(translationPixel, PIXELS),
-                                                             cs).getPoint()
+                    translationPupil = self.camera_wrapper.pupilCoordsFromPixelCoords(centerPixel.getX()+1,
+                                                                                      centerPixel.getY()+1,
+                                                                                      dd.getName())
 
-                    plateScale = np.sqrt(np.power(translationPupil.getX()-centerPupil.getX(), 2) +
-                                         np.power(translationPupil.getY()-centerPupil.getY(), 2))/np.sqrt(2.0)
+                    plateScale = np.sqrt(np.power(translationPupil[0]-centerPupil.getX(), 2) +
+                                         np.power(translationPupil[1]-centerPupil.getY(), 2))/np.sqrt(2.0)
 
                     plateScale = 3600.0*np.degrees(plateScale)
 
@@ -465,7 +486,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                                                    othernoise=self.photParams.othernoise,
                                                    platescale=plateScale)
 
-                    detector = GalSimDetector(dd, self.camera,
+                    detector = GalSimDetector(dd.getName(), self.camera_wrapper,
                                               obs_metadata=self.obs_metadata, epoch=self.db_obj.epoch,
                                               photParams=params)
 
@@ -547,7 +568,7 @@ class GalSimGalaxies(GalSimBase, AstrometryGalaxies, EBVmixin):
     galsim_type = 'sersic'
     default_columns = [('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
-                       ('galSimType', 'sersic', (str, 6))]
+                       ('galSimType', 'sersic', str, 6)]
 
 
 class GalSimAgn(GalSimBase, AstrometryGalaxies, EBVmixin):
@@ -560,7 +581,7 @@ class GalSimAgn(GalSimBase, AstrometryGalaxies, EBVmixin):
     galsim_type = 'pointSource'
     default_columns = [('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
-                       ('galSimType', 'pointSource', (str, 11)),
+                       ('galSimType', 'pointSource', str, 11),
                        ('majorAxis', 0.0, float),
                        ('minorAxis', 0.0, float),
                        ('sindex', 0.0, float),
@@ -580,7 +601,7 @@ class GalSimStars(GalSimBase, AstrometryStars, EBVmixin):
     galsim_type = 'pointSource'
     default_columns = [('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
-                       ('galSimType', 'pointSource', (str, 11)),
+                       ('galSimType', 'pointSource', str, 11),
                        ('internalAv', 0.0, float),
                        ('internalRv', 0.0, float),
                        ('redshift', 0.0, float),

@@ -10,6 +10,7 @@ from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.catUtils.baseCatalogModels import StarObj, OpSim3_61DBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF, ExampleCCDNoise
 from lsst.sims.photUtils import LSSTdefaults
+from lsst.sims.GalSimInterface import LSSTCameraWrapper
 
 #if you want to use the actual LSST camera
 #from lsst.obs.lsstSim import LsstSimMapper
@@ -20,11 +21,6 @@ class testGalSimStarsNoiseless(GalSimStars):
 
     #defined in galSimInterface/galSimUtilities.py
     PSF = SNRdocumentPSF()
-
-    #If you want to use the LSST camera, uncomment the line below.
-    #You can similarly assign any camera object you want here
-    #camera = LsstSimMapper().camera
-
 
 
 class testGalSimStarsWithNoise(testGalSimStarsNoiseless):
@@ -56,6 +52,7 @@ stars = CatalogDBObject.from_objid('allstars')
 
 #now append a bunch of objects with 2D sersic profiles to our output file
 stars_noiseless = testGalSimStarsNoiseless(stars, obs_metadata=obs_metadata)
+stars_noiseless.camera_wrapper = LSSTCameraWrapper()
 
 stars_noiseless.write_catalog('galSim_NoiselessStars_example.txt', chunk_size=10000)
 stars_noiseless.write_images(nameRoot='noiselessStars')

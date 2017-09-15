@@ -320,10 +320,9 @@ class GalSimInterpreter(object):
 
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
 
-                xPix, yPix = pixelCoordsFromPupilCoords(gsObject.xPupilRadians,
-                                                        gsObject.yPupilRadians,
-                                                        chipName=detector.name,
-                                                        camera=detector.afwCamera)
+                xPix, yPix = detector.camera_wrapper.pixelCoordsFromPupilCoords(gsObject.xPupilRadians,
+                                                                                gsObject.yPupilRadians,
+                                                                                chipName=detector.name)
 
                 obj = centeredObj.copy()
 
@@ -366,8 +365,6 @@ class GalSimInterpreter(object):
                                     half_light_radius=float(gsObject.halfLightRadiusArcsec))
 
         # Turn the Sersic profile into an ellipse
-        # Add pi/2 to the position angle, because GalSim sets position angle=0
-        # aligned with East, rather than North
         centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians,
                                         beta=(0.5*np.pi+gsObject.positionAngleRadians)*galsim.radians)
         if self.PSF is not None:

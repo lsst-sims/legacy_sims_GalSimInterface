@@ -39,7 +39,7 @@ from lsst.sims.coordUtils import raDecFromPixelCoords
 
 __all__ = ["approximateWcs"]
 
-def approximateWcs(wcs, bbox, camera=None, detector=None, obs_metadata=None,
+def approximateWcs(wcs, camera_wrapper=None, detector_name=None, obs_metadata=None,
                    order=3, nx=20, ny=20, iterations=3,
                    skyTolerance=0.001*afwGeom.arcseconds, pixelTolerance=0.02,
                    useTanWcs=False):
@@ -48,9 +48,8 @@ def approximateWcs(wcs, bbox, camera=None, detector=None, obs_metadata=None,
     The fit is performed by evaluating the WCS at a uniform grid of points within a bounding box.
 
     @param[in] wcs  wcs to approximate
-    @param[in] bbox  the region over which the WCS will be fit
-    @param[in] camera is an instantiation of afw.cameraGeom.camera
-    @param[in] detector is a detector from camera
+    @param[in] camera_wrapper is an instantiation of GalSimCameraWrapper
+    @param[in] detector_name is the name of the detector
     @param[in] obs_metadata is an ObservationMetaData characterizing the telescope pointing
     @param[in] order  order of SIP fit
     @param[in] nx  number of grid points along x
@@ -91,17 +90,18 @@ def approximateWcs(wcs, bbox, camera=None, detector=None, obs_metadata=None,
     except AttributeError:
         matchList = []
 
+    bbox = camera_wrapper.getBBox(detector_name)
     bboxd = afwGeom.Box2D(bbox)
+
     for x in np.linspace(bboxd.getMinX(), bboxd.getMaxX(), nx):
         for y in np.linspace(bboxd.getMinY(), bboxd.getMaxY(), ny):
             pixelPos = afwGeom.Point2D(x, y)
 
-            ra, dec = raDecFromPixelCoords(np.array([x]), np.array([y]),
-                                           [detector.getName()],
-                                           camera=camera,
-                                           obs_metadata=obs_metadata,
-                                           epoch=2000.0,
-                                           includeDistortion=True)
+            ra, dec = camera_wrapper.raDecFromPixelCoords(np.array([x]), np.array([y]),
+                                                          detector_name,
+                                                          obs_metadata=obs_metadata,
+                                                          epoch=2000.0,
+                                                          includeDistortion=True)
 
             skyCoord = afwCoord.Coord(afwGeom.Point2D(ra[0], dec[0]))
 

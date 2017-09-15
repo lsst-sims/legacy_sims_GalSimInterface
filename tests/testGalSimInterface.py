@@ -12,6 +12,7 @@ from collections import OrderedDict
 import lsst.utils
 import lsst.utils.tests
 from lsst.utils import getPackageDir
+import lsst.afw.cameraGeom.testUtils as camTestUtils
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
@@ -19,7 +20,8 @@ from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
 from lsst.sims.catUtils.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.GalSimInterface import (GalSimGalaxies, GalSimStars, GalSimAgn,
-                                       SNRdocumentPSF, ExampleCCDNoise)
+                                       SNRdocumentPSF, ExampleCCDNoise,
+                                       GalSimCameraWrapper)
 from lsst.sims.catUtils.utils import (calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj,
                                       testGalaxyAgnDBObj, testStarsDBObj)
 import lsst.afw.image as afwImage
@@ -154,6 +156,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.camera = camTestUtils.CameraWrapper().camera
         cls.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix='GalSimInterfaceTest-')
         cls.dbName = os.path.join(cls.scratch_dir, 'galSimTestDB.db')
 
@@ -187,6 +190,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         del cls.bandpassNameList
         del cls.m5
         del cls.seeing
+        del cls.camera
 
     def getFilesAndBandpasses(self, catalog, nameRoot=None,
                               bandpassDir=os.path.join(getPackageDir('throughputs'), 'baseline'),
@@ -332,9 +336,9 @@ class GalSimInterfaceTest(unittest.TestCase):
                         # of GalSimInterpreter._doesObjectImpingeOnDetector means that some detectors
                         # will be listed here even though the object does not illumine them)
                         for filterName in bandpassDict.keys():
-                            chipName = name.replace(':', '_')
+                            chipName = name.replace(':', '')
                             chipName = chipName.replace(' ', '_')
-                            chipName = chipName.replace(',', '_')
+                            chipName = chipName.replace(',', '')
                             chipName = chipName.strip()
 
                             fullName = nameRoot+'_'+chipName+'_'+filterName+'.fits'
@@ -447,6 +451,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         catName = os.path.join(self.scratch_dir, 'testBulgeCat.sav')
         gals = testGalaxyBulgeDBObj(driver=self.driver, database=self.dbName)
         cat = testGalaxyCatalog(gals, obs_metadata = self.obs_metadata)
+        cat.camera_wrapper = GalSimCameraWrapper(self.camera)
         cat.write_catalog(catName)
         self.catalogTester(catName=catName, catalog=cat, nameRoot='bulge')
         if os.path.exists(catName):
@@ -459,6 +464,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         catName = os.path.join(self.scratch_dir, 'testDiskCat.sav')
         gals = testGalaxyDiskDBObj(driver=self.driver, database=self.dbName)
         cat = testGalaxyCatalog(gals, obs_metadata = self.obs_metadata)
+        cat.camera_wrapper = GalSimCameraWrapper(self.camera)
         cat.write_catalog(catName)
         self.catalogTester(catName=catName, catalog=cat, nameRoot='disk')
         if os.path.exists(catName):
@@ -471,6 +477,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         catName = os.path.join(self.scratch_dir, 'testStarCat.sav')
         stars = testStarsDBObj(driver=self.driver, database=self.dbName)
         cat = testStarCatalog(stars, obs_metadata = self.obs_metadata)
+        cat.camera_wrapper = GalSimCameraWrapper(self.camera)
         cat.write_catalog(catName)
         self.catalogTester(catName=catName, catalog=cat, nameRoot='stars')
         if os.path.exists(catName):
@@ -494,6 +501,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         stars = testStarsDBObj(driver=self.driver, database=self.dbName)
         cat = testFakeBandpassCatalog(stars, obs_metadata=obs_metadata)
+        cat.camera_wrapper = GalSimCameraWrapper(self.camera)
         cat.write_catalog(catName)
         bandpassDir = os.path.join(getPackageDir('sims_catUtils'), 'tests', 'testThroughputs')
         self.catalogTester(catName=catName, catalog=cat, nameRoot='fakeBandpass',
@@ -520,6 +528,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         stars = testStarsDBObj(driver=self.driver, database=self.dbName)
         cat = testFakeSedCatalog(stars, obs_metadata=obs_metadata)
+        cat.camera_wrapper = GalSimCameraWrapper(self.camera)
         cat.write_catalog(catName)
         bandpassDir = os.path.join(getPackageDir('sims_catUtils'), 'tests', 'testThroughputs')
         sedDir = os.path.join(getPackageDir('sims_catUtils'), 'tests', 'testSeds')
@@ -537,6 +546,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         catName = os.path.join(self.scratch_dir, 'testAgnCat.sav')
         agn = testGalaxyAgnDBObj(driver=self.driver, database=self.dbName)
         cat = testAgnCatalog(agn, obs_metadata = self.obs_metadata)
+        cat.camera_wrapper = GalSimCameraWrapper(self.camera)
         cat.write_catalog(catName)
         self.catalogTester(catName=catName, catalog=cat, nameRoot='agn')
         if os.path.exists(catName):
@@ -550,6 +560,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         catName = os.path.join(self.scratch_dir, 'testPSFcat.sav')
         gals = testGalaxyBulgeDBObj(driver=self.driver, database=self.dbName)
         cat = psfCatalog(gals, obs_metadata = self.obs_metadata)
+        cat.camera_wrapper = GalSimCameraWrapper(self.camera)
         cat.write_catalog(catName)
         self.catalogTester(catName=catName, catalog=cat, nameRoot='psf')
         if os.path.exists(catName):
@@ -563,6 +574,7 @@ class GalSimInterfaceTest(unittest.TestCase):
         catName = os.path.join(self.scratch_dir, 'testBackgroundCat.sav')
         gals = testGalaxyBulgeDBObj(driver=self.driver, database=self.dbName)
         cat = backgroundCatalog(gals, obs_metadata = self.obs_metadata)
+        cat.camera_wrapper = GalSimCameraWrapper(self.camera)
         cat.write_catalog(catName)
         self.catalogTester(catName=catName, catalog=cat, nameRoot='background')
         if os.path.exists(catName):
@@ -581,6 +593,9 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         noisyCat = noisyCatalog(gals, obs_metadata=self.obs_metadata)
         cleanCat = backgroundCatalog(gals, obs_metadata=self.obs_metadata)
+
+        noisyCat.camera_wrapper = GalSimCameraWrapper(self.camera)
+        cleanCat.camera_wrapper = GalSimCameraWrapper(self.camera)
 
         noisyCat.write_catalog(noisyCatName)
         cleanCat.write_catalog(cleanCatName)
@@ -659,6 +674,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         gals = testGalaxyBulgeDBObj(driver=driver, database=dbName)
         cat = testGalaxyCatalog(gals, obs_metadata=obs_metadata)
+        cat.camera_wrapper = GalSimCameraWrapper(self.camera)
         catName = os.path.join(self.scratch_dir, 'multipleCatalog.sav')
         cat.write_catalog(catName)
         self.catalogTester(catName=catName, catalog=cat, nameRoot='multiple')
@@ -667,6 +683,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         stars = testStarsDBObj(driver=driver, database=dbName)
         cat = testStarCatalog(stars, obs_metadata=obs_metadata)
+        cat.camera_wrapper = GalSimCameraWrapper(self.camera)
         catName = os.path.join(self.scratch_dir, 'multipleStarCatalog.sav')
         cat.write_catalog(catName)
         self.catalogTester(catName=catName, catalog=cat, nameRoot='multipleStars')
@@ -706,6 +723,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         gals = testGalaxyBulgeDBObj(driver=driver, database=dbName1)
         cat1 = testGalaxyCatalog(gals, obs_metadata=obs_metadata1)
+        cat1.camera_wrapper = GalSimCameraWrapper(self.camera)
         catName = os.path.join(self.scratch_dir, 'compoundCatalog.sav')
         cat1.write_catalog(catName)
 
@@ -714,6 +732,67 @@ class GalSimInterfaceTest(unittest.TestCase):
         cat2.copyGalSimInterpreter(cat1)
         cat2.write_catalog(catName, write_header=False, write_mode='a')
         self.catalogTester(catName=catName, catalog=cat2, nameRoot='compound')
+
+        if os.path.exists(dbName1):
+            os.unlink(dbName1)
+        if os.path.exists(dbName2):
+            os.unlink(dbName2)
+        if os.path.exists(catName):
+            os.unlink(catName)
+
+    def testCompoundFitsFiles_one_empty(self):
+        """
+        Test that GalSimInterpreter puts the right number of counts on images
+        containing different types of objects in the case where one of the
+        input catalogs is empty (really, this is testing that we can
+        successfully copy the GalSimInterpreter and all of the supporting
+        properties from an empty GalSimCatalog to another GalSimCatalog)
+        """
+        driver = 'sqlite'
+        dbName1 = os.path.join(self.scratch_dir, 'galSimTestCompound1DB_one_empty.db')
+        if os.path.exists(dbName1):
+            os.unlink(dbName1)
+
+        deltaRA = np.array([72.0/3600.0, 55.0/3600.0, 75.0/3600.0])
+        deltaDec = np.array([0.0, 15.0/3600.0, -15.0/3600.0])
+        obs_metadata1 = makePhoSimTestDB(filename=dbName1, size=1,
+                                         deltaRA=deltaRA, deltaDec=deltaDec,
+                                         bandpass=self.bandpassNameList,
+                                         m5=self.m5, seeing=self.seeing)
+
+        dbName2 = os.path.join(self.scratch_dir, 'galSimTestCompound2DB_one_empty.db')
+        if os.path.exists(dbName2):
+            os.unlink(dbName2)
+
+        deltaRA = np.array([55.0/3600.0, 60.0/3600.0, 62.0/3600.0])
+        deltaDec = np.array([-3.0/3600.0, 10.0/3600.0, 10.0/3600.0])
+        obs_metadata2 = makePhoSimTestDB(filename=dbName2, size=1,
+                                         deltaRA=deltaRA, deltaDec=deltaDec,
+                                         bandpass=self.bandpassNameList,
+                                         m5=self.m5, seeing=self.seeing)
+
+        gals = testGalaxyBulgeDBObj(driver=driver, database=dbName1)
+
+        # shift the obs_metadata so that the catalog will not contain
+        # any objects
+        ra0 = obs_metadata1.pointingRA
+        dec0 = obs_metadata1.pointingDec
+        obs_metadata1.pointingRA = ra0 + 20.0
+
+        cat1 = testGalaxyCatalog(gals, obs_metadata=obs_metadata1)
+        cat1.camera_wrapper = GalSimCameraWrapper(self.camera)
+        catName = os.path.join(self.scratch_dir, 'compoundCatalog_one_empty.sav')
+        cat1.write_catalog(catName)
+        with open(catName, "r") as input_file:
+            input_lines = input_file.readlines()
+            self.assertEqual(len(input_lines), 1)  # just the header
+        self.assertFalse(hasattr(cat1, 'bandpassDict'))
+
+        stars = testStarsDBObj(driver=driver, database=dbName2)
+        cat2 = testStarCatalog(stars, obs_metadata=obs_metadata2)
+        cat2.copyGalSimInterpreter(cat1)
+        cat2.write_catalog(catName, write_header=False, write_mode='a')
+        self.catalogTester(catName=catName, catalog=cat2, nameRoot='compound_one_empty')
 
         if os.path.exists(dbName1):
             os.unlink(dbName1)
@@ -758,6 +837,7 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         # create the catalog
         cat = testStarCatalog(stars, obs_metadata = obs_metadata)
+        cat.camera_wrapper = GalSimCameraWrapper(self.camera)
         results = cat.iter_catalog()
         firstLine = True
 
@@ -788,7 +868,7 @@ class GalSimInterfaceTest(unittest.TestCase):
                     xPix, yPix = pixelCoordsFromPupilCoords(radiansFromArcsec(xPupil),
                                                             radiansFromArcsec(yPupil),
                                                             chipName = detector.name,
-                                                            camera = detector.afwCamera)
+                                                            camera = detector._cameraWrapper.camera)
 
                     dx = xPix - detector.xCenterPix
                     dy = yPix - detector.yCenterPix

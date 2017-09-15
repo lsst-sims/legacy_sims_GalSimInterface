@@ -1,5 +1,4 @@
 import numpy as np
-from lsst.sims.coordUtils import _pixelCoordsFromRaDec, _raDecFromPixelCoords
 from lsst.afw.cameraGeom import TAN_PIXELS, FOCAL_PLANE
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
@@ -11,44 +10,16 @@ from lsst.sims.utils import _nativeLonLatFromPointing
 __all__ = ["tanWcsFromDetector", "tanSipWcsFromDetector"]
 
 
-def _getTanPixelBounds(afwDetector, afwCamera):
-
-    tanPixelSystem = afwDetector.makeCameraSys(TAN_PIXELS)
-    xPixMin = None
-    xPixMax = None
-    yPixMin = None
-    yPixMax = None
-    cornerPointList = afwDetector.getCorners(FOCAL_PLANE)
-    for cornerPoint in cornerPointList:
-        cameraPoint = afwCamera.transform(afwDetector.makeCameraPoint(cornerPoint, FOCAL_PLANE),
-                                          tanPixelSystem).getPoint()
-
-        xx = cameraPoint.getX()
-        yy = cameraPoint.getY()
-        if xPixMin is None or xx < xPixMin:
-            xPixMin = xx
-        if xPixMax is None or xx > xPixMax:
-            xPixMax = xx
-        if yPixMin is None or yy < yPixMin:
-            yPixMin = yy
-        if yPixMax is None or yy > yPixMax:
-            yPixMax = yy
-
-    return xPixMin, xPixMax, yPixMin, yPixMax
-
-
-def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
+def tanWcsFromDetector(detector_name, camera_wrapper, obs_metadata, epoch):
     """
     Take an afw.cameraGeom detector and return a WCS which approximates
     the focal plane as perfectly flat (i.e. it ignores optical distortions
     that the telescope may impose on the image)
 
-    @param [in] afwDetector is an instantiation of afw.cameraGeom's Detector
-    class which characterizes the detector for which you wish to return th
-    WCS
+    @param [in] detector_name is the name of the detector as stored
+    by afw
 
-    @param [in] afwCamera is an instantiation of afw.cameraGeom's Camera
-    class which characterizes the camera containing afwDetector
+    @param [in] camera_wrapper is an instantionat of a GalSimCameraWrapper
 
     @param [in] obs_metadata is an instantiation of ObservationMetaData
     characterizing the telescope's current pointing
@@ -62,14 +33,17 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     """
 
     xTanPixMin, xTanPixMax, \
-    yTanPixMin, yTanPixMax = _getTanPixelBounds(afwDetector, afwCamera)
+    yTanPixMin, yTanPixMax = camera_wrapper.getTanPixelBounds(detector_name)
+
+    x_center = 0.5*(xTanPixMax+xTanPixMin)
+    y_center = 0.5*(yTanPixMax+yTanPixMin)
 
     xPixList = []
     yPixList = []
     nameList = []
 
     # dx and dy are set somewhat heuristically
-    # setting them eqal to 0.1(max-min) lead to errors
+    # setting them equal to 0.1(max-min) lead to errors
     # on the order of 0.7 arcsec in the WCS
 
     dx = 0.5*(xTanPixMax-xTanPixMin)
@@ -79,21 +53,24 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
         for yy in np.arange(yTanPixMin, yTanPixMax+0.5*dy, dy):
             xPixList.append(xx)
             yPixList.append(yy)
-            nameList.append(afwDetector.getName())
+            nameList.append(detector_name)
 
-    raList, decList = _raDecFromPixelCoords(np.array(xPixList),
-                                            np.array(yPixList),
-                                            nameList,
-                                            camera=afwCamera,
-                                            obs_metadata=obs_metadata,
-                                            epoch=epoch,
-                                            includeDistortion=False)
+    xPixList = np.array(xPixList)
+    yPixList = np.array(yPixList)
 
-    crPix1, crPix2 = _pixelCoordsFromRaDec(obs_metadata._pointingRA,
-                                           obs_metadata._pointingDec,
-                                           chipName=afwDetector.getName(), camera=afwCamera,
-                                           obs_metadata=obs_metadata, epoch=epoch,
-                                           includeDistortion=False)
+    raList, decList = camera_wrapper._raDecFromPixelCoords(xPixList,
+                                                           yPixList,
+                                                           nameList,
+                                                           obs_metadata=obs_metadata,
+                                                           epoch=epoch,
+                                                           includeDistortion=False)
+
+    crPix1, crPix2 = camera_wrapper._pixelCoordsFromRaDec(obs_metadata._pointingRA,
+                                                          obs_metadata._pointingDec,
+                                                          chipName=detector_name,
+                                                          obs_metadata=obs_metadata,
+                                                          epoch=epoch,
+                                                          includeDistortion=False)
 
     lonList, latList = _nativeLonLatFromPointing(raList, decList,
                                                  obs_metadata._pointingRA,
@@ -156,7 +133,7 @@ def tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch):
     return tanWcs
 
 
-def tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch,
+def tanSipWcsFromDetector(detector_name, camera_wrapper, obs_metadata, epoch,
                           order=3,
                           skyToleranceArcSec=0.001,
                           pixelTolerance=0.01):
@@ -167,12 +144,10 @@ def tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch,
     Definition of the TAN-SIP WCS can be found in Shupe and Hook (2008)
     http://fits.gsfc.nasa.gov/registry/sip/SIP_distortion_v1_0.pdf
 
-    @param [in] afwDetector is an instantiation of afw.cameraGeom's Detector
-    class which characterizes the detector for which you wish to return th
-    WCS
+    @param [in] detector_name is the name of the detector as stored
+    by afw
 
-    @param [in] afwCamera is an instantiation of afw.cameraGeom's Camera
-    class which characterizes the camera containing afwDetector
+    @param [in] camera_wrapper is an instantionat of a GalSimCameraWrapper
 
     @param [in] obs_metadata is an instantiation of ObservationMetaData
     characterizing the telescope's current pointing
@@ -194,21 +169,21 @@ def tanSipWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch,
     by the SIP polynomials.
     """
 
-    bbox = afwDetector.getBBox()
+    bbox = camera_wrapper.getBBox(detector_name)
 
-    tanWcs = tanWcsFromDetector(afwDetector, afwCamera, obs_metadata, epoch)
+    tanWcs = tanWcsFromDetector(detector_name, camera_wrapper, obs_metadata, epoch)
 
     mockExposure = afwImage.ExposureF(bbox.getMaxX(), bbox.getMaxY())
     mockExposure.setWcs(tanWcs)
-    mockExposure.setDetector(afwDetector)
+    mockExposure.setDetector(camera_wrapper.camera[detector_name])
 
     distortedWcs = afwImageUtils.getDistortedWcs(mockExposure.getInfo())
-    tanSipWcs = approximateWcs(distortedWcs, bbox,
+    tanSipWcs = approximateWcs(distortedWcs,
                                order=order,
                                skyTolerance=skyToleranceArcSec*afwGeom.arcseconds,
                                pixelTolerance=pixelTolerance,
-                               detector=afwDetector,
-                               camera=afwCamera,
+                               detector_name=detector_name,
+                               camera_wrapper=camera_wrapper,
                                obs_metadata=obs_metadata)
 
     return tanSipWcs

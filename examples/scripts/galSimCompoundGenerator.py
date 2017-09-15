@@ -10,6 +10,7 @@ from lsst.utils import getPackageDir
 from lsst.sims.catalogs.db import CatalogDBObject
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.catUtils.baseCatalogModels import StarObj, GalaxyBulgeObj, GalaxyDiskObj, GalaxyAgnObj
+from lsst.sims.GalSimInterface import LSSTCameraWrapper
 from lsst.sims.GalSimInterface import SNRdocumentPSF, GalSimStars, GalSimGalaxies, \
                                                GalSimAgn
 
@@ -24,22 +25,11 @@ class testGalSimStars(GalSimStars):
     #PSF defined in galSimInterface/galSimUtilities.py
     PSF = SNRdocumentPSF()
 
-    #If you want to use the LSST camera, uncomment the line below.
-    #You can similarly assign any camera object you want here
-    #camera = LsstSimMapper().camera
-
-
 
 class testGalSimGalaxies(GalSimGalaxies):
     bandpassNames = ['u', 'g']
 
     PSF = SNRdocumentPSF()
-
-    #If you want to use the LSST camera, uncomment the line below.
-    #You can similarly assign any camera object you want here
-    #camera = LsstSimMapper().camera
-
-
 
 
 class testGalSimAgn(GalSimAgn):
@@ -47,11 +37,6 @@ class testGalSimAgn(GalSimAgn):
 
     #defined in galSimInterface/galSimUtilities.py
     PSF = SNRdocumentPSF()
-
-    #If you want to use the LSST camera, uncomment the line below.
-    #You can similarly assign any camera object you want here
-    #camera = LsstSimMapper().camera
-
 
 
 #select an OpSim pointing
@@ -65,6 +50,7 @@ stars = CatalogDBObject.from_objid('allstars')
 
 #now append a bunch of objects with 2D sersic profiles to our output file
 stars_galSim = testGalSimStars(stars, obs_metadata=obs_metadata)
+stars_galSim.camera_wrapper = LSSTCameraWrapper()
 
 catName = 'galSim_compound_example.txt'
 stars_galSim.write_catalog(catName, chunk_size=100)
