@@ -163,7 +163,7 @@ class GalSimCameraWrapper(object):
         Get the pixel positions (or nan if not on a chip) for objects based
         on their pupil coordinates.
 
-        Paramters
+        Parameters
         ---------
         xPupil is the x pupil coordinates in radians. Can be either a float
         or a numpy array.
