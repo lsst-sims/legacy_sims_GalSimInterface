@@ -526,9 +526,14 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
 
         cam_y_pix = dm_x_pix
         if isinstance(chipName, list) or isinstance(chipName, np.ndarray):
+            center_pix_dict = {}
             cam_x_pix = np.zeros(len(dm_y_pix))
             for ix, (det_name, yy) in enumerate(zip(chipName, dm_y_pix)):
-                center_pix = self.getCenterPixel(det_name)
+                if det_name not in center_pix_dict:
+                    center_pix = self.getCenterPixel(det_name)
+                    center_pix_dict[det_name] = center_pix
+                else:
+                    center_pix = center_pix_dict[det_name]
                 cam_x_pix[ix] = 2.0*center_pix[0]-yy
         else:
             center_pix = self.getCenterPixel(chipName)
