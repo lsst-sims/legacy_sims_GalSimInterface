@@ -81,6 +81,15 @@ class GalSimCameraWrapper(object):
     def camera(self):
         return self._camera
 
+    @property
+    def focal_to_field(self):
+        """
+        Transformation to go from FOCAL_PLANE to FIELD_ANGLE
+        """
+        if not hasattr(self, '_focal_to_field'):
+            self._focal_to_field = self.camera.getTransformMap().getTransform(FOCAL_PLANE, FIELD_ANGLE)
+        return self._focal_to_field
+
     def getBBox(self, detector_name):
         """
         Return the bounding box for the detector named by detector_name
