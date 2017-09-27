@@ -133,14 +133,16 @@ class GalSimCameraWrapper(object):
         Return a list of the pupil coordinates of the corners of the named
         detector as a list of afwGeom.Point2D objects
         """
+        if not hasattr(self, '_corner_pupil_cache'):
+            self._corner_pupil_cache = {}
+
+        if detector_name in self._corner_pupil_cache:
+            return self._corner_pupil_cache[detector_name]
+
         dd = self._camera[detector_name]
-        pupilSystem = dd.makeCameraSys(FIELD_ANGLE)
         cornerPointList = dd.getCorners(FOCAL_PLANE)
-        pupil_point_list = []
-        for cornerPoint in cornerPointList:
-            cameraPoint = dd.makeCameraPoint(cornerPoint, FOCAL_PLANE)
-            cameraPointPupil = self._camera.transform(cameraPoint, pupilSystem).getPoint()
-            pupil_point_list.append(cameraPointPupil)
+        pupil_point_list = self.focal_to_field.applyForward(cornerPointList)
+        self._corner_pupil_cache[detector_name] = pupil_point_list
         return pupil_point_list
 
     def getTanPixelBounds(self, detector_name):
