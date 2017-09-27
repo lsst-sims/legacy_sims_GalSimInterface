@@ -520,8 +520,14 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         -------
         xmin, xmax, ymin, ymax pixel values
         """
-        dm_xmin, dm_xmax, dm_ymin, dm_ymax = GalSimCameraWrapper.getTanPixelBounds(self, detector_name)
-        return dm_ymin, dm_ymax, dm_xmin, dm_xmax
+        if not hasattr(self, '_tan_pixel_bounds_cache'):
+            self._tan_pixel_bounds_cache = {}
+
+        if detector_name not in self._tan_pixel_bounds_cache:
+            dm_xmin, dm_xmax, dm_ymin, dm_ymax = GalSimCameraWrapper.getTanPixelBounds(self, detector_name)
+            self._tan_pixel_bounds_cache[detector_name] = (dm_ymin, dm_ymax, dm_xmin, dm_xmax)
+
+        return self._tan_pixel_bounds_cache[detector_name]
 
     def pixelCoordsFromPupilCoords(self, xPupil, yPupil, chipName=None,
                                    includeDistortion=True):
