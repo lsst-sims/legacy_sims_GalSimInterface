@@ -134,14 +134,13 @@ class GalSimCameraWrapper(object):
         if not hasattr(self, '_corner_pupil_cache'):
             self._corner_pupil_cache = {}
 
-        if detector_name in self._corner_pupil_cache:
-            return self._corner_pupil_cache[detector_name]
+        if detector_name not in self._corner_pupil_cache:
+            dd = self._camera[detector_name]
+            cornerPointList = dd.getCorners(FOCAL_PLANE)
+            pupil_point_list = self.focal_to_field.applyForward(cornerPointList)
+            self._corner_pupil_cache[detector_name] = pupil_point_list
 
-        dd = self._camera[detector_name]
-        cornerPointList = dd.getCorners(FOCAL_PLANE)
-        pupil_point_list = self.focal_to_field.applyForward(cornerPointList)
-        self._corner_pupil_cache[detector_name] = pupil_point_list
-        return pupil_point_list
+        return self._corner_pupil_cache[detector_name]
 
     def getTanPixelBounds(self, detector_name):
         """
