@@ -497,14 +497,14 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
          """
          if not hasattr(self, '_center_pixel_cache'):
              self._center_pixel_cache = {}
-         if detector_name in self._center_pixel_cache:
-             return self._center_pixel_cache[detector_name]
 
-         centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE).getPoint()
-         centerPixel_dm = self._camera[detector_name].getTransform(FOCAL_PLANE, PIXELS).applyForward(centerPoint)
-         centerPixel_cam = afwGeom.coordinates.Point2D(centerPixel_dm.getY(), centerPixel_dm.getX())
-         self._center_pixel_cache[detector_name] = centerPixel_cam
-         return centerPixel_cam
+         if detector_name not in self._center_pixel_cache:
+             centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE).getPoint()
+             centerPixel_dm = self._camera[detector_name].getTransform(FOCAL_PLANE, PIXELS).applyForward(centerPoint)
+             centerPixel_cam = afwGeom.coordinates.Point2D(centerPixel_dm.getY(), centerPixel_dm.getX())
+             self._center_pixel_cache[detector_name] = centerPixel_cam
+
+         return self._center_pixel_cache[detector_name]
 
     def getTanPixelBounds(self, detector_name):
         """
