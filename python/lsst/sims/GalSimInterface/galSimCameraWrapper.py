@@ -499,10 +499,16 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
          """
          Return the central pixel for the detector named by detector_name
          """
-         centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE)
-         pixelSystem = self._camera[detector_name].makeCameraSys(PIXELS)
-         centerPixel = self._camera.transform(centerPoint, pixelSystem).getPoint()
-         return afwGeom.coordinates.Point2D(centerPixel.getY(), centerPixel.getX())
+         if not hasattr(self, '_center_pixel_cache'):
+             self._center_pixel_cache = {}
+         if detector_name in self._center_pixel_cache:
+             return self._center_pixel_cache[detector_name]
+
+         centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE).getPoint()
+         centerPixel_dm = self._camera[detector_name].getTransform(FOCAL_PLANE, PIXELS).applyForward(centerPoint)
+         centerPixel_cam = afwGeom.coordinates.Point2D(centerPixel_dm.getY(), centerPixel_dm.getX())
+         self._center_pixel_cache[detector_name] = centerPixel_cam
+         return centerPixel_cam
 
     def getTanPixelBounds(self, detector_name):
         """
