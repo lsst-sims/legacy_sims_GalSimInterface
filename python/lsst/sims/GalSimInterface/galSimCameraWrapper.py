@@ -103,13 +103,12 @@ class GalSimCameraWrapper(object):
          if not hasattr(self, '_center_pixel_cache'):
              self._center_pixel_cache = {}
 
-         if detector_name in self._center_pixel_cache:
-             return self._center_pixel_cache[detector_name]
+         if detector_name not in self._center_pixel_cache:
+             centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE).getPoint()
+             centerPixel = self._camera[detector_name].getTransform(FOCAL_PLANE, PIXELS).applyForward(centerPoint)
+             self._center_pixel_cache[detector_name] = centerPixel
 
-         centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE).getPoint()
-         centerPixel = self._camera[detector_name].getTransform(FOCAL_PLANE, PIXELS).applyForward(centerPoint)
-         self._center_pixel_cache[detector_name] = centerPixel
-         return centerPixel
+         return self._center_pixel_cache[detector_name]
 
     def getCenterPupil(self, detector_name):
         """
