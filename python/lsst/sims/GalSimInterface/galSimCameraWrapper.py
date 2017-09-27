@@ -116,9 +116,17 @@ class GalSimCameraWrapper(object):
         Return the pupil coordinates of the center of the named detector
         as an afwGeom.Point2D
         """
+        if not hasattr(self, '_center_pupil_cache'):
+            self._center_pupil_cache = {}
+
+        if detector_name in self._center_pupil_cache:
+            return self._center_pupil_cache[detector_name]
+
         dd = self._camera[detector_name]
-        cs = dd.makeCameraSys(FIELD_ANGLE)
-        return self._camera.transform(dd.getCenter(FOCAL_PLANE), cs).getPoint()
+        centerPoint = dd.getCenter(FOCAL_PLANE).getPoint()
+        pupilPoint = self.focal_to_field.applyForward(centerPoint)
+        self._center_pupil_cache[detector_name] = pupilPoint
+        return pupilPoint
 
     def getCornerPupilList(self, detector_name):
         """
