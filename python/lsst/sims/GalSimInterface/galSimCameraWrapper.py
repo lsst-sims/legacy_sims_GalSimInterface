@@ -479,17 +479,17 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         """
         if not hasattr(self, '_bbox_cache'):
             self._bbox_cache = {}
-        if detector_name in self._bbox_cache:
-            return self._bbox_cache[detector_name]
 
-        dm_bbox = self._camera[detector_name].getBBox()
-        dm_min = dm_bbox.getMin()
-        dm_max = dm_bbox.getMax()
-        cam_bbox = afwGeom.Box2I(minimum=afwGeom.coordinates.Point2I(dm_min[1], dm_min[0]),
-                                 maximum=afwGeom.coordinates.Point2I(dm_max[1], dm_max[0]))
+        if detector_name not in self._bbox_cache:
+            dm_bbox = self._camera[detector_name].getBBox()
+            dm_min = dm_bbox.getMin()
+            dm_max = dm_bbox.getMax()
+            cam_bbox = afwGeom.Box2I(minimum=afwGeom.coordinates.Point2I(dm_min[1], dm_min[0]),
+                                     maximum=afwGeom.coordinates.Point2I(dm_max[1], dm_max[0]))
 
-        self._bbox_cache[detector_name] = cam_bbox
-        return cam_bbox
+            self._bbox_cache[detector_name] = cam_bbox
+
+        return self._bbox_cache[detector_name]
 
     def getCenterPixel(self, detector_name):
          """
