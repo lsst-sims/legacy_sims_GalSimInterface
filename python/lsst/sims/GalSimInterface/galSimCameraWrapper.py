@@ -158,29 +158,28 @@ class GalSimCameraWrapper(object):
         """
         if not hasattr(self, '_tan_pixel_bounds_cache'):
             self._tan_pixel_bounds_cache = {}
-        if detector_name in self._tan_pixel_bounds_cache:
-            return self._tan_pixel_bounds_cache[detector_name]
 
-        afwDetector = self._camera[detector_name]
-        focal_to_tan_pix = afwDetector.getTransform(FOCAL_PLANE, TAN_PIXELS)
-        xPixMin = None
-        xPixMax = None
-        yPixMin = None
-        yPixMax = None
-        cornerPointList = focal_to_tan_pix.applyForward(afwDetector.getCorners(FOCAL_PLANE))
-        for cornerPoint in cornerPointList:
-            xx = cornerPoint.getX()
-            yy = cornerPoint.getY()
-            if xPixMin is None or xx < xPixMin:
-                xPixMin = xx
-            if xPixMax is None or xx > xPixMax:
-                xPixMax = xx
-            if yPixMin is None or yy < yPixMin:
-                yPixMin = yy
-            if yPixMax is None or yy > yPixMax:
-                yPixMax = yy
+        if detector_name not in self._tan_pixel_bounds_cache:
+            afwDetector = self._camera[detector_name]
+            focal_to_tan_pix = afwDetector.getTransform(FOCAL_PLANE, TAN_PIXELS)
+            xPixMin = None
+            xPixMax = None
+            yPixMin = None
+            yPixMax = None
+            cornerPointList = focal_to_tan_pix.applyForward(afwDetector.getCorners(FOCAL_PLANE))
+            for cornerPoint in cornerPointList:
+                xx = cornerPoint.getX()
+                yy = cornerPoint.getY()
+                if xPixMin is None or xx < xPixMin:
+                    xPixMin = xx
+                if xPixMax is None or xx > xPixMax:
+                    xPixMax = xx
+                if yPixMin is None or yy < yPixMin:
+                    yPixMin = yy
+                if yPixMax is None or yy > yPixMax:
+                    yPixMax = yy
 
-        self._tan_pixel_bounds_cache[detector_name] = (xPixMin, xPixMax, yPixMin, yPixMax)
+            self._tan_pixel_bounds_cache[detector_name] = (xPixMin, xPixMax, yPixMin, yPixMax)
 
         return self._tan_pixel_bounds_cache[detector_name]
 
