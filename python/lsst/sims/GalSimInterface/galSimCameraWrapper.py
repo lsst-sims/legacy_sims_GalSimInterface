@@ -159,19 +159,21 @@ class GalSimCameraWrapper(object):
         -------
         xmin, xmax, ymin, ymax pixel values
         """
+        if not hasattr(self, '_tan_pixel_bounds_cache'):
+            self._tan_pixel_bounds_cache = {}
+        if detector_name in self._tan_pixel_bounds_cache:
+            return self._tan_pixel_bounds_cache[detector_name]
+
         afwDetector = self._camera[detector_name]
-        tanPixelSystem = afwDetector.makeCameraSys(TAN_PIXELS)
+        focal_to_tan_pix = afwDetector.getTransform(FOCAL_PLANE, TAN_PIXELS)
         xPixMin = None
         xPixMax = None
         yPixMin = None
         yPixMax = None
-        cornerPointList = afwDetector.getCorners(FOCAL_PLANE)
+        cornerPointList = focal_to_tan_pix.applyForward(afwDetector.getCorners(FOCAL_PLANE))
         for cornerPoint in cornerPointList:
-            cameraPoint = self._camera.transform(afwDetector.makeCameraPoint(cornerPoint, FOCAL_PLANE),
-                                                 tanPixelSystem).getPoint()
-
-            xx = cameraPoint.getX()
-            yy = cameraPoint.getY()
+            xx = cornerPoint.getX()
+            yy = cornerPoint.getY()
             if xPixMin is None or xx < xPixMin:
                 xPixMin = xx
             if xPixMax is None or xx > xPixMax:
@@ -181,7 +183,9 @@ class GalSimCameraWrapper(object):
             if yPixMax is None or yy > yPixMax:
                 yPixMax = yy
 
-        return xPixMin, xPixMax, yPixMin, yPixMax
+        self._tan_pixel_bounds_cache[detector_name] = (xPixMin, xPixMax, yPixMin, yPixMax)
+
+        return self._tan_pixel_bounds_cache[detector_name]
 
     def pixelCoordsFromPupilCoords(self, xPupil, yPupil, chipName=None,
                                    includeDistortion=True):
