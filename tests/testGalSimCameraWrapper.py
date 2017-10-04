@@ -83,10 +83,9 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             xpix_max = None
             ypix_min = None
             ypix_max = None
-            tan_pix_system = camera[name].makeCameraSys(TAN_PIXELS)
+            focal_to_tan_pix = camera[name].getTransform(FOCAL_PLANE, TAN_PIXELS)
             for point in corner_point_list:
-                camera_point = camera[name].makeCameraPoint(point, FOCAL_PLANE)
-                pixel_point = camera.transform(camera_point, tan_pix_system).getPoint()
+                pixel_point = focal_to_tan_pix.applyForward(point)
                 xx = pixel_point.getX()
                 yy = pixel_point.getY()
                 if xpix_min is None or xx<xpix_min:
@@ -251,10 +250,9 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             xpix_max = None
             ypix_min = None
             ypix_max = None
-            tan_pix_system = camera[name].makeCameraSys(TAN_PIXELS)
+            focal_to_tan_pix = camera[name].getTransform(FOCAL_PLANE, TAN_PIXELS)
             for point in corner_point_list:
-                camera_point = camera[name].makeCameraPoint(point, FOCAL_PLANE)
-                pixel_point = camera.transform(camera_point, tan_pix_system).getPoint()
+                pixel_point = focal_to_tan_pix.applyForward(point)
                 xx = pixel_point.getX()
                 yy = pixel_point.getY()
                 if xpix_min is None or xx<xpix_min:

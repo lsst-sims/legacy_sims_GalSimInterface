@@ -81,6 +81,15 @@ class GalSimCameraWrapper(object):
     def camera(self):
         return self._camera
 
+    @property
+    def focal_to_field(self):
+        """
+        Transformation to go from FOCAL_PLANE to FIELD_ANGLE
+        """
+        if not hasattr(self, '_focal_to_field'):
+            self._focal_to_field = self.camera.getTransformMap().getTransform(FOCAL_PLANE, FIELD_ANGLE)
+        return self._focal_to_field
+
     def getBBox(self, detector_name):
         """
         Return the bounding box for the detector named by detector_name
@@ -91,33 +100,47 @@ class GalSimCameraWrapper(object):
          """
          Return the central pixel for the detector named by detector_name
          """
-         centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE)
-         pixelSystem = self._camera[detector_name].makeCameraSys(PIXELS)
-         return self._camera.transform(centerPoint, pixelSystem).getPoint()
+         if not hasattr(self, '_center_pixel_cache'):
+             self._center_pixel_cache = {}
+
+         if detector_name not in self._center_pixel_cache:
+             centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE).getPoint()
+             centerPixel = self._camera[detector_name].getTransform(FOCAL_PLANE, PIXELS).applyForward(centerPoint)
+             self._center_pixel_cache[detector_name] = centerPixel
+
+         return self._center_pixel_cache[detector_name]
 
     def getCenterPupil(self, detector_name):
         """
         Return the pupil coordinates of the center of the named detector
         as an afwGeom.Point2D
         """
-        dd = self._camera[detector_name]
-        cs = dd.makeCameraSys(FIELD_ANGLE)
-        return self._camera.transform(dd.getCenter(FOCAL_PLANE), cs).getPoint()
+        if not hasattr(self, '_center_pupil_cache'):
+            self._center_pupil_cache = {}
+
+        if detector_name not in self._center_pupil_cache:
+            dd = self._camera[detector_name]
+            centerPoint = dd.getCenter(FOCAL_PLANE).getPoint()
+            pupilPoint = self.focal_to_field.applyForward(centerPoint)
+            self._center_pupil_cache[detector_name] = pupilPoint
+
+        return self._center_pupil_cache[detector_name]
 
     def getCornerPupilList(self, detector_name):
         """
         Return a list of the pupil coordinates of the corners of the named
         detector as a list of afwGeom.Point2D objects
         """
-        dd = self._camera[detector_name]
-        pupilSystem = dd.makeCameraSys(FIELD_ANGLE)
-        cornerPointList = dd.getCorners(FOCAL_PLANE)
-        pupil_point_list = []
-        for cornerPoint in cornerPointList:
-            cameraPoint = dd.makeCameraPoint(cornerPoint, FOCAL_PLANE)
-            cameraPointPupil = self._camera.transform(cameraPoint, pupilSystem).getPoint()
-            pupil_point_list.append(cameraPointPupil)
-        return pupil_point_list
+        if not hasattr(self, '_corner_pupil_cache'):
+            self._corner_pupil_cache = {}
+
+        if detector_name not in self._corner_pupil_cache:
+            dd = self._camera[detector_name]
+            cornerPointList = dd.getCorners(FOCAL_PLANE)
+            pupil_point_list = self.focal_to_field.applyForward(cornerPointList)
+            self._corner_pupil_cache[detector_name] = pupil_point_list
+
+        return self._corner_pupil_cache[detector_name]
 
     def getTanPixelBounds(self, detector_name):
         """
@@ -133,29 +156,32 @@ class GalSimCameraWrapper(object):
         -------
         xmin, xmax, ymin, ymax pixel values
         """
-        afwDetector = self._camera[detector_name]
-        tanPixelSystem = afwDetector.makeCameraSys(TAN_PIXELS)
-        xPixMin = None
-        xPixMax = None
-        yPixMin = None
-        yPixMax = None
-        cornerPointList = afwDetector.getCorners(FOCAL_PLANE)
-        for cornerPoint in cornerPointList:
-            cameraPoint = self._camera.transform(afwDetector.makeCameraPoint(cornerPoint, FOCAL_PLANE),
-                                                 tanPixelSystem).getPoint()
+        if not hasattr(self, '_tan_pixel_bounds_cache'):
+            self._tan_pixel_bounds_cache = {}
 
-            xx = cameraPoint.getX()
-            yy = cameraPoint.getY()
-            if xPixMin is None or xx < xPixMin:
-                xPixMin = xx
-            if xPixMax is None or xx > xPixMax:
-                xPixMax = xx
-            if yPixMin is None or yy < yPixMin:
-                yPixMin = yy
-            if yPixMax is None or yy > yPixMax:
-                yPixMax = yy
+        if detector_name not in self._tan_pixel_bounds_cache:
+            afwDetector = self._camera[detector_name]
+            focal_to_tan_pix = afwDetector.getTransform(FOCAL_PLANE, TAN_PIXELS)
+            xPixMin = None
+            xPixMax = None
+            yPixMin = None
+            yPixMax = None
+            cornerPointList = focal_to_tan_pix.applyForward(afwDetector.getCorners(FOCAL_PLANE))
+            for cornerPoint in cornerPointList:
+                xx = cornerPoint.getX()
+                yy = cornerPoint.getY()
+                if xPixMin is None or xx < xPixMin:
+                    xPixMin = xx
+                if xPixMax is None or xx > xPixMax:
+                    xPixMax = xx
+                if yPixMin is None or yy < yPixMin:
+                    yPixMin = yy
+                if yPixMax is None or yy > yPixMax:
+                    yPixMax = yy
 
-        return xPixMin, xPixMax, yPixMin, yPixMax
+            self._tan_pixel_bounds_cache[detector_name] = (xPixMin, xPixMax, yPixMin, yPixMax)
+
+        return self._tan_pixel_bounds_cache[detector_name]
 
     def pixelCoordsFromPupilCoords(self, xPupil, yPupil, chipName=None,
                                    includeDistortion=True):
@@ -163,7 +189,7 @@ class GalSimCameraWrapper(object):
         Get the pixel positions (or nan if not on a chip) for objects based
         on their pupil coordinates.
 
-        Paramters
+        Parameters
         ---------
         xPupil is the x pupil coordinates in radians. Can be either a float
         or a numpy array.
@@ -451,22 +477,34 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         """
         Return the bounding box for the detector named by detector_name
         """
-        dm_bbox = self._camera[detector_name].getBBox()
-        dm_min = dm_bbox.getMin()
-        dm_max = dm_bbox.getMax()
-        cam_bbox = afwGeom.Box2I(minimum=afwGeom.coordinates.Point2I(dm_min[1], dm_min[0]),
-                                 maximum=afwGeom.coordinates.Point2I(dm_max[1], dm_max[0]))
+        if not hasattr(self, '_bbox_cache'):
+            self._bbox_cache = {}
 
-        return cam_bbox
+        if detector_name not in self._bbox_cache:
+            dm_bbox = self._camera[detector_name].getBBox()
+            dm_min = dm_bbox.getMin()
+            dm_max = dm_bbox.getMax()
+            cam_bbox = afwGeom.Box2I(minimum=afwGeom.coordinates.Point2I(dm_min[1], dm_min[0]),
+                                     maximum=afwGeom.coordinates.Point2I(dm_max[1], dm_max[0]))
+
+            self._bbox_cache[detector_name] = cam_bbox
+
+        return self._bbox_cache[detector_name]
 
     def getCenterPixel(self, detector_name):
          """
          Return the central pixel for the detector named by detector_name
          """
-         centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE)
-         pixelSystem = self._camera[detector_name].makeCameraSys(PIXELS)
-         centerPixel = self._camera.transform(centerPoint, pixelSystem).getPoint()
-         return afwGeom.coordinates.Point2D(centerPixel.getY(), centerPixel.getX())
+         if not hasattr(self, '_center_pixel_cache'):
+             self._center_pixel_cache = {}
+
+         if detector_name not in self._center_pixel_cache:
+             centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE).getPoint()
+             centerPixel_dm = self._camera[detector_name].getTransform(FOCAL_PLANE, PIXELS).applyForward(centerPoint)
+             centerPixel_cam = afwGeom.coordinates.Point2D(centerPixel_dm.getY(), centerPixel_dm.getX())
+             self._center_pixel_cache[detector_name] = centerPixel_cam
+
+         return self._center_pixel_cache[detector_name]
 
     def getTanPixelBounds(self, detector_name):
         """
@@ -482,8 +520,14 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
         -------
         xmin, xmax, ymin, ymax pixel values
         """
-        dm_xmin, dm_xmax, dm_ymin, dm_ymax = GalSimCameraWrapper.getTanPixelBounds(self, detector_name)
-        return dm_ymin, dm_ymax, dm_xmin, dm_xmax
+        if not hasattr(self, '_tan_pixel_bounds_cache'):
+            self._tan_pixel_bounds_cache = {}
+
+        if detector_name not in self._tan_pixel_bounds_cache:
+            dm_xmin, dm_xmax, dm_ymin, dm_ymax = GalSimCameraWrapper.getTanPixelBounds(self, detector_name)
+            self._tan_pixel_bounds_cache[detector_name] = (dm_ymin, dm_ymax, dm_xmin, dm_xmax)
+
+        return self._tan_pixel_bounds_cache[detector_name]
 
     def pixelCoordsFromPupilCoords(self, xPupil, yPupil, chipName=None,
                                    includeDistortion=True):
@@ -526,9 +570,14 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
 
         cam_y_pix = dm_x_pix
         if isinstance(chipName, list) or isinstance(chipName, np.ndarray):
+            center_pix_dict = {}
             cam_x_pix = np.zeros(len(dm_y_pix))
             for ix, (det_name, yy) in enumerate(zip(chipName, dm_y_pix)):
-                center_pix = self.getCenterPixel(det_name)
+                if det_name not in center_pix_dict:
+                    center_pix = self.getCenterPixel(det_name)
+                    center_pix_dict[det_name] = center_pix
+                else:
+                    center_pix = center_pix_dict[det_name]
                 cam_x_pix[ix] = 2.0*center_pix[0]-yy
         else:
             center_pix = self.getCenterPixel(chipName)
