@@ -15,7 +15,7 @@ class GalSimCelestialObject(object):
 
     def __init__(self, galSimType, sed, ra, dec, xPupil, yPupil,
                  halfLightRadius, minorAxis, majorAxis, positionAngle,
-                 sindex, gamma1, gamma2, kappa, fluxDict):
+                 sindex, fluxDict, gamma1=0, gamma2=0, kappa=0):
         """
         @param [in] galSimType is a string, either 'pointSource' or 'sersic' denoting the shape of the object
 
@@ -42,15 +42,15 @@ class GalSimCelestialObject(object):
 
         @param [in] sindex is the sersic index of the object
 
+        @param [in] fluxDict is a dict of electron count (not ADU) values keyed to bandpass names,
+        i.e. {'u':44000, 'g':41000} would mean the source produces 44000 electrons in the
+        u band and 41000 electrons in the g band.
+
         @param [in] gamma1 is the real part of the WL shear parameter
 
         @param [in] gamma2 is the imaginary part of the WL shear parameter
 
         @param [in] kappa is the WL convergence parameter
-
-        @param [in] fluxDict is a dict of electron count (not ADU) values keyed to bandpass names,
-        i.e. {'u':44000, 'g':41000} would mean the source produces 44000 electrons in the
-        u band and 41000 electrons in the g band.
         """
 
         self._galSimType = galSimType

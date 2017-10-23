@@ -397,7 +397,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     flux_dict[bb] = adu*self.photParams.gain
 
                 gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp,
-                                              hlr, minor, major, pa, sn, gam1, gam2, kap, flux_dict)
+                                              hlr, minor, major, pa, sn, flux_dict, gam1, gam2, kap)
 
                 # actually draw the object
                 detectorsString = self.galSimInterpreter.drawObject(gsObj)
