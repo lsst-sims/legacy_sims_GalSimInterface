@@ -367,6 +367,11 @@ class GalSimInterpreter(object):
         # Turn the Sersic profile into an ellipse
         centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians,
                                         beta=(0.5*np.pi+gsObject.positionAngleRadians)*galsim.radians)
+
+        # Apply weak lensing distortion.
+        centeredObj = centeredObj.lens(gsObject.g1, gsObject.g2, gsObject.mu)
+
+        # Apply the PSF.
         if self.PSF is not None:
             centeredObj = self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
                                             yPupil=gsObject.yPupilArcsec,
