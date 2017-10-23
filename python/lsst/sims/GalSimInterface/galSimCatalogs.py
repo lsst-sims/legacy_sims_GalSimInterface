@@ -150,7 +150,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     column_outputs = ['galSimType', 'uniqueId', 'raICRS', 'decICRS',
                       'chipName', 'x_pupil', 'y_pupil', 'sedFilepath',
                       'majorAxis', 'minorAxis', 'sindex', 'halfLightRadius',
-                      'positionAngle', 'fitsFiles']
+                      'positionAngle', 'fitsFiles', 'gamma1', 'gamma2', 'kappa']
 
     transformations = {'raICRS': np.degrees,
                        'decICRS': np.degrees,
@@ -589,6 +589,9 @@ class GalSimAgn(GalSimBase, AstrometryGalaxies, EBVmixin):
                        ('majorAxis', 0.0, float),
                        ('minorAxis', 0.0, float),
                        ('sindex', 0.0, float),
+                       ('gamma1', 0.0, float),
+                       ('gamma2', 0.0, float),
+                       ('kappa', 0.0, float),
                        ('positionAngle', 0.0, float),
                        ('halfLightRadius', 0.0, float),
                        ('internalAv', 0.0, float),
@@ -612,5 +615,8 @@ class GalSimStars(GalSimBase, AstrometryStars, EBVmixin):
                        ('majorAxis', 0.0, float),
                        ('minorAxis', 0.0, float),
                        ('sindex', 0.0, float),
+                       ('gamma1', 0.0, float),
+                       ('gamma2', 0.0, float),
+                       ('kappa', 0.0, float),
                        ('positionAngle', 0.0, float),
                        ('halfLightRadius', 0.0, float)]
