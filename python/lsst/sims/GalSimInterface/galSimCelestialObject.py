@@ -227,7 +227,7 @@ class GalSimCelestialObject(object):
     def g2(self):
         return self._g2
 
-    @g1.setter
+    @g2.setter
     def g2(self, value):
         raise RuntimeError("You should not be setting g2 on the fly; " \
         + "just instantiate a new GalSimCelestialObject")
