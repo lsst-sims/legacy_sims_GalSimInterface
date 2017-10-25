@@ -363,6 +363,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         majorAxis = self.column_by_name('majorAxis')
         positionAngle = self.column_by_name('positionAngle')
         sindex = self.column_by_name('sindex')
+        gamma1 = self.column_by_name('gamma1')
+        gamma2 = self.column_by_name('gamma2')
+        kappa = self.column_by_name('kappa')
 
         sedList = self._calculateGalSimSeds()
 
@@ -375,9 +378,10 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
 
         output = []
-        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn) in \
+        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, gam1, gam2, kap) in \
             zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight,
-                 minorAxis, majorAxis, positionAngle, sedList, sindex):
+                 minorAxis, majorAxis, positionAngle, sedList, sindex,
+                 gamma1, gamma2, kappa):
 
             if name in self.objectHasBeenDrawn:
                 raise RuntimeError('Trying to draw %s more than once ' % str(name))
@@ -393,7 +397,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     flux_dict[bb] = adu*self.photParams.gain
 
                 gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp,
-                                              hlr, minor, major, pa, sn, flux_dict)
+                                              hlr, minor, major, pa, sn, flux_dict, gam1, gam2, kap)
 
                 # actually draw the object
                 detectorsString = self.galSimInterpreter.drawObject(gsObj)
@@ -568,7 +572,10 @@ class GalSimGalaxies(GalSimBase, AstrometryGalaxies, EBVmixin):
     galsim_type = 'sersic'
     default_columns = [('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
-                       ('galSimType', 'sersic', str, 6)]
+                       ('galSimType', 'sersic', str, 6),
+                       ('gamma1', 0.0, float),
+                       ('gamma2', 0.0, float),
+                       ('kappa', 0.0, float)]
 
 
 class GalSimAgn(GalSimBase, AstrometryGalaxies, EBVmixin):
@@ -588,7 +595,10 @@ class GalSimAgn(GalSimBase, AstrometryGalaxies, EBVmixin):
                        ('positionAngle', 0.0, float),
                        ('halfLightRadius', 0.0, float),
                        ('internalAv', 0.0, float),
-                       ('internalRv', 0.0, float)]
+                       ('internalRv', 0.0, float),
+                       ('gamma1', 0.0, float),
+                       ('gamma2', 0.0, float),
+                       ('kappa', 0.0, float)]
 
 
 class GalSimStars(GalSimBase, AstrometryStars, EBVmixin):
@@ -609,4 +619,7 @@ class GalSimStars(GalSimBase, AstrometryStars, EBVmixin):
                        ('minorAxis', 0.0, float),
                        ('sindex', 0.0, float),
                        ('positionAngle', 0.0, float),
-                       ('halfLightRadius', 0.0, float)]
+                       ('halfLightRadius', 0.0, float),
+                       ('gamma1', 0.0, float),
+                       ('gamma2', 0.0, float),
+                       ('kappa', 0.0, float)]

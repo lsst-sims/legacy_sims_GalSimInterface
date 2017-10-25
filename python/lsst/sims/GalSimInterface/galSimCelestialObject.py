@@ -15,7 +15,7 @@ class GalSimCelestialObject(object):
 
     def __init__(self, galSimType, sed, ra, dec, xPupil, yPupil,
                  halfLightRadius, minorAxis, majorAxis, positionAngle,
-                 sindex, fluxDict):
+                 sindex, fluxDict, gamma1=0, gamma2=0, kappa=0):
         """
         @param [in] galSimType is a string, either 'pointSource' or 'sersic' denoting the shape of the object
 
@@ -45,6 +45,12 @@ class GalSimCelestialObject(object):
         @param [in] fluxDict is a dict of electron count (not ADU) values keyed to bandpass names,
         i.e. {'u':44000, 'g':41000} would mean the source produces 44000 electrons in the
         u band and 41000 electrons in the g band.
+
+        @param [in] gamma1 is the real part of the WL shear parameter
+
+        @param [in] gamma2 is the imaginary part of the WL shear parameter
+
+        @param [in] kappa is the WL convergence parameter
         """
 
         self._galSimType = galSimType
@@ -61,6 +67,14 @@ class GalSimCelestialObject(object):
         self._majorAxisRadians = majorAxis
         self._positionAngleRadians = positionAngle
         self._sindex = sindex
+        # The galsim.lens(...) function wants to be passed reduced
+        # shears and magnification, so convert the WL parameters as
+        # defined in phosim instance catalogs to these values.  See
+        # https://github.com/GalSim-developers/GalSim/blob/releases/1.4/doc/GalSim_Quick_Reference.pdf
+        # and Hoekstra, 2013, http://lanl.arxiv.org/abs/1312.5981
+        self._g1 = gamma1/(1. - kappa)   # real part of reduced shear
+        self._g2 = gamma2/(1. - kappa)   # imaginary part of reduced shear
+        self._mu = 1./((1. - kappa)**2 - (gamma1**2 + gamma2**2)) # magnification
         self._fluxDict = fluxDict
 
 
@@ -201,6 +215,36 @@ class GalSimCelestialObject(object):
     @sindex.setter
     def sindex(self, value):
         raise RuntimeError("You should not be setting sindex on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def g1(self):
+        return self._g1
+
+    @g1.setter
+    def g1(self, value):
+        raise RuntimeError("You should not be setting g1 on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def g2(self):
+        return self._g2
+
+    @g2.setter
+    def g2(self, value):
+        raise RuntimeError("You should not be setting g2 on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def mu(self):
+        return self._mu
+
+    @mu.setter
+    def mu(self, value):
+        raise RuntimeError("You should not be setting mu on the fly; " \
         + "just instantiate a new GalSimCelestialObject")
 
 

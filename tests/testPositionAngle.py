@@ -52,7 +52,11 @@ class paCat(GalSimGalaxies):
                        ('redshift', 0.0, float),
                        ('majorAxis', radiansFromArcsec(1.0), float),
                        ('minorAxis', radiansFromArcsec(0.5), float),
-                       ('sindex', 4.0, float)]
+                       ('sindex', 4.0, float),
+                       ('shear1', 0.0, float),
+                       ('shear2', 0.0, float),
+                       ('kappa', 0.0, float),
+                       ]
 
 
 class GalSimPositionAngleTest(unittest.TestCase):
