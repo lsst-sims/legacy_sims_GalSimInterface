@@ -67,9 +67,14 @@ class GalSimCelestialObject(object):
         self._majorAxisRadians = majorAxis
         self._positionAngleRadians = positionAngle
         self._sindex = sindex
-        self._g1 = gamma1/(1. - kappa)
-        self._g2 = gamma2/(1. - kappa)
-        self._mu = 1./((1. - kappa)**2 - (gamma1**2 + gamma2**2))
+        # The galsim.lens(...) function wants to be passed reduced
+        # shears and magnification, so convert the WL parameters as
+        # defined in phosim instance catalogs to these values.  See
+        # https://github.com/GalSim-developers/GalSim/blob/releases/1.4/doc/GalSim_Quick_Reference.pdf
+        # and Hoekstra, 2013, http://lanl.arxiv.org/abs/1312.5981
+        self._g1 = gamma1/(1. - kappa)   # real part of reduced shear
+        self._g2 = gamma2/(1. - kappa)   # imaginary part of reduced shear
+        self._mu = 1./((1. - kappa)**2 - (gamma1**2 + gamma2**2)) # magnification
         self._fluxDict = fluxDict
 
 

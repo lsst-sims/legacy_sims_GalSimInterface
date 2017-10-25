@@ -363,8 +363,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         majorAxis = self.column_by_name('majorAxis')
         positionAngle = self.column_by_name('positionAngle')
         sindex = self.column_by_name('sindex')
-        gamma1 = self.column_by_name('shear1')
-        gamma2 = self.column_by_name('shear2')
+        gamma1 = self.column_by_name('gamma1')
+        gamma2 = self.column_by_name('gamma2')
         kappa = self.column_by_name('kappa')
 
         sedList = self._calculateGalSimSeds()
@@ -573,8 +573,8 @@ class GalSimGalaxies(GalSimBase, AstrometryGalaxies, EBVmixin):
     default_columns = [('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
                        ('galSimType', 'sersic', str, 6),
-                       ('shear1', 0.0, float),
-                       ('shear2', 0.0, float),
+                       ('gamma1', 0.0, float),
+                       ('gamma2', 0.0, float),
                        ('kappa', 0.0, float)]
 
 
@@ -596,8 +596,8 @@ class GalSimAgn(GalSimBase, AstrometryGalaxies, EBVmixin):
                        ('halfLightRadius', 0.0, float),
                        ('internalAv', 0.0, float),
                        ('internalRv', 0.0, float),
-                       ('shear1', 0.0, float),
-                       ('shear2', 0.0, float),
+                       ('gamma1', 0.0, float),
+                       ('gamma2', 0.0, float),
                        ('kappa', 0.0, float)]
 
 
@@ -620,6 +620,6 @@ class GalSimStars(GalSimBase, AstrometryStars, EBVmixin):
                        ('sindex', 0.0, float),
                        ('positionAngle', 0.0, float),
                        ('halfLightRadius', 0.0, float),
-                       ('shear1', 0.0, float),
-                       ('shear2', 0.0, float),
+                       ('gamma1', 0.0, float),
+                       ('gamma2', 0.0, float),
                        ('kappa', 0.0, float)]
