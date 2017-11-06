@@ -220,7 +220,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
         Objects are stored based on their uniqueId values.
         """
-        self.objectHasBeenDrawn = []
+        self.objectHasBeenDrawn = set()
         self._initializeGalSimInterpreter()
         self.hasBeenInitialized = True
 
@@ -389,7 +389,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 raise RuntimeError('Trying to draw an object with SED == None')
             else:
 
-                self.objectHasBeenDrawn.append(name)
+                self.objectHasBeenDrawn.add(name)
 
                 flux_dict = {}
                 for bb in self.bandpassNames:
