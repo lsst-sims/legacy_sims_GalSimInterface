@@ -61,6 +61,9 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.photParams = photParams
         self.epoch = epoch
 
+        # this is needed to match the GalSim v1.5 API
+        self._color = None
+
         self.fitsHeader = self._tanSipWcs.getFitsMetadata()
         self.fitsHeader.set("EXTTYPE", "IMAGE")
 
