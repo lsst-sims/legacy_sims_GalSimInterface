@@ -40,7 +40,7 @@ class GalSimPhoSimStars(GalSimAstrometryStars, PhoSimCatalogPoint, GalSimStars):
     method can then be called as in other GalSimCatalogs to produce images with GalSim.
     """
 
-    default_columns = [('redshift', 0., float),('shear1', 0., float), ('shear2', 0., float),
+    default_columns = [('redshift', 0., float),('gamma1', 0., float), ('gamma2', 0., float),
                        ('kappa', 0., float), ('raOffset', 0., float), ('decOffset', 0., float),
                        ('galacticExtinctionModel', 'CCM', (str,3)),
                        ('internalExtinctionModel', 'none', (str,4)),
@@ -63,7 +63,7 @@ class GalSimPhoSimGalaxies(GalSimAstrometryGalaxies, PhoSimCatalogSersic2D, GalS
     method can then be called as in other GalSimCatalogs to produce images with GalSim.
     """
 
-    default_columns = [('shear1', 0., float), ('shear2', 0., float), ('kappa', 0., float),
+    default_columns = [('gamma1', 0., float), ('gamma2', 0., float), ('kappa', 0., float),
                        ('raOffset', 0., float), ('decOffset', 0., float),
                        ('galacticAv', 0.1, float), ('galacticRv', 3.1, float),
                        ('galacticExtinctionModel', 'CCM', (str,3)),
@@ -79,7 +79,7 @@ class GalSimPhoSimAgn(GalSimAstrometryGalaxies, PhoSimCatalogZPoint, GalSimAgn):
     method can then be called as in other GalSimCatalogs to produce images with GalSim.
     """
 
-    default_columns = [('shear1', 0., float), ('shear2', 0., float), ('kappa', 0., float),
+    default_columns = [('gamma1', 0., float), ('gamma2', 0., float), ('kappa', 0., float),
                        ('raOffset', 0., float), ('decOffset', 0., float), ('spatialmodel', 'ZPOINT', (str, 6)),
                        ('galacticExtinctionModel', 'CCM', (str,3)),
                        ('galacticAv', 0.1, float),
