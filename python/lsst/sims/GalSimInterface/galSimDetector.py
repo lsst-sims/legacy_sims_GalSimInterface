@@ -90,7 +90,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         self.origin = galsim.PositionD(x=self.crpix1, y=self.crpix2)
 
-    def _radec(self, x, y):
+    def _radec(self, x, y, color):
         """
         This is a method required by the GalSim WCS API
 
