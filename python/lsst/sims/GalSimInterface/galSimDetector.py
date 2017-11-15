@@ -97,6 +97,9 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         Convert pixel coordinates into ra, dec coordinates.
         x and y already have crpix1 and crpix2 subtracted from them.
         Return ra, dec in radians.
+
+        Note: the color arg is ignored.  It is only there to
+        match the GalSim v1.5 API
         """
 
         chipNameList = [self.detectorName]
