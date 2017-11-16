@@ -61,9 +61,6 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.photParams = photParams
         self.epoch = epoch
 
-        # this is needed to match the GalSim v1.5 API
-        self._color = None
-
         self.fitsHeader = self._tanSipWcs.getFitsMetadata()
         self.fitsHeader.set("EXTTYPE", "IMAGE")
 
@@ -90,16 +87,13 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         self.origin = galsim.PositionD(x=self.crpix1, y=self.crpix2)
 
-    def _radec(self, x, y, color):
+    def _radec(self, x, y):
         """
         This is a method required by the GalSim WCS API
 
         Convert pixel coordinates into ra, dec coordinates.
         x and y already have crpix1 and crpix2 subtracted from them.
         Return ra, dec in radians.
-
-        Note: the color arg is ignored.  It is only there to
-        match the GalSim v1.5 API
         """
 
         chipNameList = [self.detectorName]
