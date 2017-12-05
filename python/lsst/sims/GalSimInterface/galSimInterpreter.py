@@ -292,6 +292,16 @@ class GalSimInterpreter(object):
             # there is nothing to draw
             return outputString
 
+        fratio = 1.234  # From https://www.lsst.org/scientists/keynumbers
+        obscuration = 0.606  # (8.4**2 - 6.68**2)**0.5 / 8.4
+        angles = galsim.FRatioAngles(fratio, obscuration, self._rng)
+
+        gs_sed = galsim.SED(galsim.LookupTable(x=gsObject.sed.wavelen, f=gsObject.sed.flambda),
+                            wave_type='nm',
+                            flux_type='flambda',
+                            redshift=0., # I think this was already applied when loading the gsObject?
+                            )
+
         # go through the list of detector/bandpass combinations and initialize
         # all of the FITS files we will need (if they have not already been initialized)
         for detector in detectorList:
@@ -316,6 +326,11 @@ class GalSimInterpreter(object):
             if centeredObj is None:
                 return outputString
 
+            bandpass=self.bandpassDict[bandpassName]
+            gs_bandpass = galsim.Bandpass(galsim.LookupTable(x=bandpass.wavelen, f=bandpass.sb),
+                                          wave_type='nm')
+            waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass, rng=self._rng)
+
             for detector in detectorList:
 
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
@@ -329,12 +344,20 @@ class GalSimInterpreter(object):
                 # convolve the object's shape profile with the spectrum
                 obj = obj.withFlux(gsObject.flux(bandpassName))
 
+                treering_center = ...  # This should be a set PositionD(x,y) for each CCD.  Could be off the edge of the image.
+                treering_func = ... # This should be a LookupTable, probaby read from a file.  Maybe different for each CCD.
+                sensor = galsim.SiliconSensor(rng=self._rng,
+                                              treering_center=treering_center,
+                                              treering_func=treering_func)
+
                 self.detectorImages[name] = obj.drawImage(method='phot',
-                                                          gain=detector.photParams.gain,
+                                                          #gain=detector.photParams.gain,
                                                           offset=galsim.PositionD(xPix-detector.xCenterPix,
                                                                                   yPix-detector.yCenterPix),
                                                           rng=self._rng,
                                                           image=self.detectorImages[name],
+                                                          sensor=sensor,
+                                                          surface_ops=[waves, angles],
                                                           add_to_image=True)
 
         return outputString
