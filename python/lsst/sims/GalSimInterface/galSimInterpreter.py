@@ -26,7 +26,7 @@ class GalSimInterpreter(object):
 
     def __init__(self, obs_metadata=None, detectors=None,
                  bandpassDict=None, noiseWrapper=None,
-                 epoch=None, seed=None):
+                 epoch=None, seed=None, tree_rings=None):
 
         """
         @param [in] obs_metadata is an instantiation of the ObservationMetaData class which
@@ -43,6 +43,10 @@ class GalSimInterpreter(object):
         @param [in] seed is an integer that will use to seed the random number generator
         used when drawing images (if None, GalSim will automatically create a random number
         generator seeded with the system clock)
+
+        @param [in] tree_rings is a TreeRings object that provides the tree ring properties
+        of the sensors.  If None, then a default TreeRings object is created that provides
+        default parameters to the galsim.SiliconSensor constructor.
         """
 
         self.obs_metadata = obs_metadata
@@ -65,6 +69,9 @@ class GalSimInterpreter(object):
         self.blankImageCache = {}  # this dict will cache blank images associated with specific detectors.
                                    # It turns out that calling the image's constructor is more
                                    # time-consuming than returning a deep copy
+
+        if tree_rings is None:
+            self.tree_rings = TreeRings()
 
     def setPSF(self, PSF=None):
         """
@@ -340,16 +347,14 @@ class GalSimInterpreter(object):
                                                                                 gsObject.yPupilRadians,
                                                                                 chipName=detector.name)
 
-                obj = centeredObj.copy()
+                obj = centeredObj
 
                 # convolve the object's shape profile with the spectrum
                 obj = obj.withFlux(gsObject.flux(bandpassName))
 
-                treering_center = ...  # This should be a set PositionD(x,y) for each CCD.  Could be off the edge of the image.
-                treering_func = ... # This should be a LookupTable, probaby read from a file.  Maybe different for each CCD.
                 sensor = galsim.SiliconSensor(rng=self._rng,
-                                              treering_center=treering_center,
-                                              treering_func=treering_func)
+                                              treering_center=self.tree_rings.center(detector),
+                                              treering_func=self.tree_rings.func(detector))
 
                 self.detectorImages[name] = obj.drawImage(method='phot',
                                                           #gain=detector.photParams.gain,
@@ -453,3 +458,23 @@ class GalSimInterpreter(object):
 
         return namesWritten
 
+class TreeRings(object):
+    def __init__(self):
+        self.luts = None
+
+    def center(self, detector):
+        if self.luts is None:
+            return galsim.PositionD(0, 0)
+
+    def func(self, detector):
+        if self.luts is None:
+            return None
+
+    def _read(self, infile):
+        pass
+
+    @staticmethod
+    def create(infile):
+        tree_rings = TreeRings()
+        tree_rings._read(infile)
+        return tree_rings
