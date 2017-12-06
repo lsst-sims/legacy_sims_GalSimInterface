@@ -327,7 +327,8 @@ class GalSimInterpreter(object):
                 return outputString
 
             bandpass=self.bandpassDict[bandpassName]
-            gs_bandpass = galsim.Bandpass(galsim.LookupTable(x=bandpass.wavelen, f=bandpass.sb),
+            index = np.where(bandpass.sb != 0)
+            gs_bandpass = galsim.Bandpass(galsim.LookupTable(x=bandpass.wavelen[index], f=bandpass.sb[index]),
                                           wave_type='nm')
             waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass, rng=self._rng)
 
