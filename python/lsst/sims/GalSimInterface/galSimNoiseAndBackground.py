@@ -75,7 +75,8 @@ class NoiseAndBackgroundBase(object):
 
     def addNoiseAndBackground(self, image, bandpass=None, m5=None,
                               FWHMeff=None,
-                              photParams=None):
+                              photParams=None,
+                              detector=None):
         """
         This method actually adds the sky background and noise to an image.
 
@@ -94,6 +95,10 @@ class NoiseAndBackgroundBase(object):
         @param [in] photParams is an instantiation of the
         PhotometricParameters class that carries details about the
         photometric response of the telescope.  Defaults to None.
+
+        @param [in] A GalSimDetector object for subclass
+        re-implementations that would make use of detetor info such as
+        sensor properties.  Defaults to None.
 
         @param [out] the input image with the background and noise model added to it.
         """
