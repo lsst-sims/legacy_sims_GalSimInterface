@@ -29,7 +29,7 @@ class GalSimInterpreter(object):
 
     def __init__(self, obs_metadata=None, detectors=None,
                  bandpassDict=None, noiseWrapper=None,
-                 epoch=None, seed=None, tree_rings=None):
+                 epoch=None, seed=None):
 
         """
         @param [in] obs_metadata is an instantiation of the ObservationMetaData class which
@@ -46,10 +46,6 @@ class GalSimInterpreter(object):
         @param [in] seed is an integer that will use to seed the random number generator
         used when drawing images (if None, GalSim will automatically create a random number
         generator seeded with the system clock)
-
-        @param [in] tree_rings is a TreeRings object that provides the tree ring properties
-        of the sensors.  If None, then a default TreeRings object is created that provides
-        default parameters to the galsim.SiliconSensor constructor.
         """
 
         self.obs_metadata = obs_metadata
@@ -75,9 +71,6 @@ class GalSimInterpreter(object):
         self.checkpoint_file = None
         self.drawn_objects = set()
         self.nobj_checkpoint = 1000
-
-        if tree_rings is None:
-            self.tree_rings = TreeRings()
 
     def setPSF(self, PSF=None):
         """
@@ -331,7 +324,7 @@ class GalSimInterpreter(object):
                                                                     FWHMeff=
                                                                     self.obs_metadata.seeing[bandpassName],
                                                                     photParams=detector.photParams,
-                                                                    chipName=detector.name)
+                                                                    detector=detector)
 
         for bandpassName in self.bandpassDict:
 
@@ -360,8 +353,8 @@ class GalSimInterpreter(object):
                 obj = obj.withFlux(gsObject.flux(bandpassName))
 
                 sensor = galsim.SiliconSensor(rng=self._rng,
-                                              treering_center=self.tree_rings.center(detector),
-                                              treering_func=self.tree_rings.func(detector))
+                                              treering_center=detector.tree_rings.center,
+                                              treering_func=detector.tree_rings.func)
 
                 self.detectorImages[name] = obj.drawImage(method='phot',
                                                           #gain=detector.photParams.gain,
@@ -566,25 +559,3 @@ class GalSimInterpreter(object):
                 self.detectorImages[key] += image_state['images'][key]
             self._rng = image_state['rng']
             self.drawn_objects = image_state['drawn_objects']
-
-
-class TreeRings(object):
-    def __init__(self):
-        self.luts = None
-
-    def center(self, detector):
-        if self.luts is None:
-            return galsim.PositionD(0, 0)
-
-    def func(self, detector):
-        if self.luts is None:
-            return None
-
-    def _read(self, infile):
-        pass
-
-    @staticmethod
-    def create(infile):
-        tree_rings = TreeRings()
-        tree_rings._read(infile)
-        return tree_rings
