@@ -26,7 +26,7 @@ class GalSimInterpreter(object):
 
     def __init__(self, obs_metadata=None, detectors=None,
                  bandpassDict=None, noiseWrapper=None,
-                 epoch=None, seed=None):
+                 epoch=None, seed=None, apply_sensor_model=False):
 
         """
         @param [in] obs_metadata is an instantiation of the ObservationMetaData class which
@@ -43,6 +43,9 @@ class GalSimInterpreter(object):
         @param [in] seed is an integer that will use to seed the random number generator
         used when drawing images (if None, GalSim will automatically create a random number
         generator seeded with the system clock)
+
+        @param [in] apply_sensor_model is a flag to apply the GalSim sensor model to
+        the photons incident on the CCDs.
         """
 
         self.obs_metadata = obs_metadata
@@ -59,6 +62,8 @@ class GalSimInterpreter(object):
             raise RuntimeError("Will not create images; you passed no detectors to the GalSimInterpreter")
 
         self.detectors = detectors
+
+        self.apply_sensor_model = apply_sensor_model
 
         self.detectorImages = {}  # this dict will contain the FITS images (as GalSim images)
         self.bandpassDict = bandpassDict
@@ -292,16 +297,6 @@ class GalSimInterpreter(object):
             # there is nothing to draw
             return outputString
 
-        fratio = 1.234  # From https://www.lsst.org/scientists/keynumbers
-        obscuration = 0.606  # (8.4**2 - 6.68**2)**0.5 / 8.4
-        angles = galsim.FRatioAngles(fratio, obscuration, self._rng)
-
-        gs_sed = galsim.SED(galsim.LookupTable(x=gsObject.sed.wavelen, f=gsObject.sed.flambda),
-                            wave_type='nm',
-                            flux_type='flambda',
-                            redshift=0., # I think this was already applied when loading the gsObject?
-                            )
-
         # go through the list of detector/bandpass combinations and initialize
         # all of the FITS files we will need (if they have not already been initialized)
         for detector in detectorList:
@@ -320,6 +315,17 @@ class GalSimInterpreter(object):
                                                                     photParams=detector.photParams,
                                                                     detector=detector)
 
+        if self.apply_sensor_model:
+            fratio = 1.234  # From https://www.lsst.org/scientists/keynumbers
+            obscuration = 0.606  # (8.4**2 - 6.68**2)**0.5 / 8.4
+            angles = galsim.FRatioAngles(fratio, obscuration, self._rng)
+
+            gs_sed = galsim.SED(galsim.LookupTable(x=gsObject.sed.wavelen, f=gsObject.sed.flambda),
+                                wave_type='nm',
+                                flux_type='flambda',
+                                redshift=0. # I think this was already applied when loading the gsObject?
+                                )
+
         for bandpassName in self.bandpassDict:
 
             # create a new object if one has not already been created or if the PSF is wavelength
@@ -327,11 +333,12 @@ class GalSimInterpreter(object):
             if centeredObj is None:
                 return outputString
 
-            bandpass=self.bandpassDict[bandpassName]
-            index = np.where(bandpass.sb != 0)
-            gs_bandpass = galsim.Bandpass(galsim.LookupTable(x=bandpass.wavelen[index], f=bandpass.sb[index]),
-                                          wave_type='nm')
-            waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass, rng=self._rng)
+            if self.apply_sensor_model:
+                bandpass = self.bandpassDict[bandpassName]
+                index = np.where(bandpass.sb != 0)
+                gs_bandpass = galsim.Bandpass(galsim.LookupTable(x=bandpass.wavelen[index], f=bandpass.sb[index]),
+                                              wave_type='nm')
+                waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass, rng=self._rng)
 
             for detector in detectorList:
 
@@ -346,9 +353,14 @@ class GalSimInterpreter(object):
                 # convolve the object's shape profile with the spectrum
                 obj = obj.withFlux(gsObject.flux(bandpassName))
 
-                sensor = galsim.SiliconSensor(rng=self._rng,
-                                              treering_center=detector.tree_rings.center,
-                                              treering_func=detector.tree_rings.func)
+                if self.apply_sensor_model:
+                    sensor = galsim.SiliconSensor(rng=self._rng,
+                                                  treering_center=detector.tree_rings.center,
+                                                  treering_func=detector.tree_rings.func)
+                    surface_ops = [waves, angles]
+                else:
+                    sensor = None
+                    surface_ops = ()
 
                 self.detectorImages[name] = obj.drawImage(method='phot',
                                                           #gain=detector.photParams.gain,
@@ -357,7 +369,7 @@ class GalSimInterpreter(object):
                                                           rng=self._rng,
                                                           image=self.detectorImages[name],
                                                           sensor=sensor,
-                                                          surface_ops=[waves, angles],
+                                                          surface_ops=surface_ops,
                                                           add_to_image=True)
 
         return outputString
