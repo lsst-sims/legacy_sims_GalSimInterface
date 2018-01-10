@@ -379,6 +379,33 @@ class GalSimInterpreter(object):
 
         return centeredObj
 
+    def drawRandomWalk(self, gsObject):
+        """
+        Draw the image of a RandomWalk light profile.
+
+        @param [in] gsObject is an instantiation of the GalSimCelestialObject class
+        carrying information about the object whose image is to be drawn
+        """
+
+        # Create the RandomWalk profile
+        centeredObj = galsim.RandomWalk(npoints=int(gsObject.npoints),
+                                        half_light_radius=float(gsObject.halfLightRadiusArcsec))
+
+        # Apply intrinsic ellipticity to the profile
+        centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians,
+                                        beta=(0.5*np.pi+gsObject.positionAngleRadians)*galsim.radians)
+
+        # Apply weak lensing distortion.
+        centeredObj = centeredObj.lens(gsObject.g1, gsObject.g2, gsObject.mu)
+
+        # Apply the PSF.
+        if self.PSF is not None:
+            centeredObj = self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
+                                            yPupil=gsObject.yPupilArcsec,
+                                            obj=centeredObj)
+
+        return centeredObj
+
     def createCenteredObject(self, gsObject):
         """
         Create a centered GalSim Object (i.e. if we were just to draw this object as an image,
@@ -396,6 +423,9 @@ class GalSimInterpreter(object):
 
         elif gsObject.galSimType == 'pointSource':
             centeredObj = self.drawPointSource(gsObject)
+
+        elif gsObject.galSimType == 'RandomWalk':
+            centeredObj = self.drawRandomWalk(gsObject)
         else:
             print("Apologies: the GalSimInterpreter does not yet have a method to draw ")
             print(gsObject.galSimType)
@@ -428,4 +458,3 @@ class GalSimInterpreter(object):
             namesWritten.append(fileName)
 
         return namesWritten
-

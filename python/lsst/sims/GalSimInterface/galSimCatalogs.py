@@ -31,7 +31,7 @@ import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
 from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
 
-__all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars"]
+__all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars", "GalSimRandomWalk"]
 
 
 def _is_null(argument):
@@ -577,6 +577,15 @@ class GalSimGalaxies(GalSimBase, AstrometryGalaxies, EBVmixin):
                        ('gamma2', 0.0, float),
                        ('kappa', 0.0, float)]
 
+class GalSimRandomWalk(GalSimGalaxies):
+    """
+    This is a GalSimCatalog class for galaxy components (i.e. objects that are shaped
+    like Sersic profiles).
+
+    See the docstring in GalSimBase for explanation of how this class should be used.
+    """
+
+    galsim_type = 'RandomWalk'
 
 class GalSimAgn(GalSimBase, AstrometryGalaxies, EBVmixin):
     """
