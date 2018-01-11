@@ -363,6 +363,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         majorAxis = self.column_by_name('majorAxis')
         positionAngle = self.column_by_name('positionAngle')
         sindex = self.column_by_name('sindex')
+        npoints = self.column_by_name('npoints')
         gamma1 = self.column_by_name('gamma1')
         gamma2 = self.column_by_name('gamma2')
         kappa = self.column_by_name('kappa')
@@ -378,9 +379,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
 
         output = []
-        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, gam1, gam2, kap) in \
+        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, npt, gam1, gam2, kap) in \
             zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight,
-                 minorAxis, majorAxis, positionAngle, sedList, sindex,
+                 minorAxis, majorAxis, positionAngle, sedList, sindex, npoints,
                  gamma1, gamma2, kappa):
 
             if name in self.objectHasBeenDrawn:
@@ -397,7 +398,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     flux_dict[bb] = adu*self.photParams.gain
 
                 gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp,
-                                              hlr, minor, major, pa, sn, flux_dict, gam1, gam2, kap)
+                                              hlr, minor, major, pa, sn, npt, flux_dict, gam1, gam2, kap)
 
                 # actually draw the object
                 detectorsString = self.galSimInterpreter.drawObject(gsObj)
