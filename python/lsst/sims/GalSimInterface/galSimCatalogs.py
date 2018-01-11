@@ -574,6 +574,7 @@ class GalSimGalaxies(GalSimBase, AstrometryGalaxies, EBVmixin):
     default_columns = [('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
                        ('galSimType', 'sersic', str, 6),
+                       ('npoints', 0, int),
                        ('gamma1', 0.0, float),
                        ('gamma2', 0.0, float),
                        ('kappa', 0.0, float)]
@@ -602,6 +603,7 @@ class GalSimAgn(GalSimBase, AstrometryGalaxies, EBVmixin):
                        ('majorAxis', 0.0, float),
                        ('minorAxis', 0.0, float),
                        ('sindex', 0.0, float),
+                       ('npoints', 0, int),
                        ('positionAngle', 0.0, float),
                        ('halfLightRadius', 0.0, float),
                        ('internalAv', 0.0, float),
@@ -628,6 +630,7 @@ class GalSimStars(GalSimBase, AstrometryStars, EBVmixin):
                        ('majorAxis', 0.0, float),
                        ('minorAxis', 0.0, float),
                        ('sindex', 0.0, float),
+                       ('npoints', 0, int),
                        ('positionAngle', 0.0, float),
                        ('halfLightRadius', 0.0, float),
                        ('gamma1', 0.0, float),
