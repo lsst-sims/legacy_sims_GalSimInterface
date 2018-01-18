@@ -389,7 +389,7 @@ class GalSimInterpreter(object):
 
         # Create the RandomWalk profile
         centeredObj = galsim.RandomWalk(npoints=int(gsObject.npoints),
-                                        half_light_radius=float(gsObject.halfLightRadiusArcsec))
+                                        half_light_radius=float(gsObject.sindex))
 
         # Apply intrinsic ellipticity to the profile
         centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians,
