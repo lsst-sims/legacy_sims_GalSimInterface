@@ -13,12 +13,10 @@ class GalSimCelestialObject(object):
     a bunch of different arguments, one for each datum.
     """
 
-    def __init__(self, uniqueId, galSimType, sed, ra, dec, xPupil, yPupil,
+    def __init__(self, galSimType, sed, ra, dec, xPupil, yPupil,
                  halfLightRadius, minorAxis, majorAxis, positionAngle,
-                 sindex, fluxDict, gamma1=0, gamma2=0, kappa=0):
+                 sindex, fluxDict, gamma1=0, gamma2=0, kappa=0, uniqueId=None):
         """
-        @param [in] uniqueId is an int storing a unique identifier for this object
-
         @param [in] galSimType is a string, either 'pointSource', 'sersic' or 'RandomWalk' denoting the shape of the object
 
         @param [in] sed is the SED of the object (an instantiation of the Sed class defined in
@@ -53,6 +51,8 @@ class GalSimCelestialObject(object):
         @param [in] gamma2 is the imaginary part of the WL shear parameter
 
         @param [in] kappa is the WL convergence parameter
+
+        @param [in] uniqueId is an int storing a unique identifier for this object
         """
         self._uniqueId = uniqueId
         self._galSimType = galSimType
