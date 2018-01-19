@@ -15,9 +15,9 @@ class GalSimCelestialObject(object):
 
     def __init__(self, galSimType, sed, ra, dec, xPupil, yPupil,
                  halfLightRadius, minorAxis, majorAxis, positionAngle,
-                 sindex, fluxDict, gamma1=0, gamma2=0, kappa=0):
+                 sindex, fluxDict, gamma1=0, gamma2=0, kappa=0, uniqueId=None):
         """
-        @param [in] galSimType is a string, either 'pointSource' or 'sersic' denoting the shape of the object
+        @param [in] galSimType is a string, either 'pointSource', 'sersic' or 'RandomWalk' denoting the shape of the object
 
         @param [in] sed is the SED of the object (an instantiation of the Sed class defined in
         sims_photUtils/../../Sed.py
@@ -51,8 +51,10 @@ class GalSimCelestialObject(object):
         @param [in] gamma2 is the imaginary part of the WL shear parameter
 
         @param [in] kappa is the WL convergence parameter
-        """
 
+        @param [in] uniqueId is an int storing a unique identifier for this object
+        """
+        self._uniqueId = uniqueId
         self._galSimType = galSimType
         self._sed = sed
         self._raRadians = ra
@@ -77,6 +79,14 @@ class GalSimCelestialObject(object):
         self._mu = 1./((1. - kappa)**2 - (gamma1**2 + gamma2**2)) # magnification
         self._fluxDict = fluxDict
 
+    @property
+    def uniqueId(self):
+        return self._uniqueId
+
+    @uniqueId.setter
+    def uniqueId(self, value):
+        raise RuntimeError("You should not be setting the unique id on the fly; " \
+                           + "just instantiate a new GalSimCelestialObject")
 
     @property
     def galSimType(self):
@@ -86,7 +96,6 @@ class GalSimCelestialObject(object):
     def galSimType(self, value):
         raise RuntimeError("You should not be setting galSimType on the fly; " \
                            + "just instantiate a new GalSimCelestialObject")
-
 
     @property
     def sed(self):
@@ -216,7 +225,6 @@ class GalSimCelestialObject(object):
     def sindex(self, value):
         raise RuntimeError("You should not be setting sindex on the fly; " \
         + "just instantiate a new GalSimCelestialObject")
-
 
     @property
     def g1(self):
