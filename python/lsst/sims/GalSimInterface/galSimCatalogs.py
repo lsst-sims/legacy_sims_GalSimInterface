@@ -589,7 +589,7 @@ class GalSimRandomWalk(GalSimBase, AstrometryGalaxies, EBVmixin):
     galsim_type = 'RandomWalk'
     default_columns = [('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
-                       ('galSimType', 'RandomWalk', str, 9),
+                       ('galSimType', 'RandomWalk', str, 10),
                        ('sindex', 0.0, float),
                        ('gamma1', 0.0, float),
                        ('gamma2', 0.0, float),
