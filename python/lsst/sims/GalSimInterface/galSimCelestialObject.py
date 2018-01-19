@@ -83,7 +83,7 @@ class GalSimCelestialObject(object):
     def uniqueId(self):
         return self._uniqueId
 
-    @galSimType.setter
+    @uniqueId.setter
     def uniqueId(self, value):
         raise RuntimeError("You should not be setting the unique id on the fly; " \
                            + "just instantiate a new GalSimCelestialObject")
