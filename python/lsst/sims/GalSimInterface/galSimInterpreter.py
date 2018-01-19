@@ -381,7 +381,9 @@ class GalSimInterpreter(object):
 
     def drawRandomWalk(self, gsObject):
         """
-        Draw the image of a RandomWalk light profile.
+        Draw the image of a RandomWalk light profile. In orider to allow for
+        reproducibility, the specific realisation of the random walk is seeded
+        by the object unique identifier.
 
         @param [in] gsObject is an instantiation of the GalSimCelestialObject class
         carrying information about the object whose image is to be drawn
@@ -389,7 +391,8 @@ class GalSimInterpreter(object):
 
         # Create the RandomWalk profile
         centeredObj = galsim.RandomWalk(npoints=int(gsObject.sindex),
-                                        half_light_radius=float(gsObject.halfLightRadiusArcsec))
+                                        half_light_radius=float(gsObject.halfLightRadiusArcsec),
+                                        rng=galsim.BaseDeviate(int(gsObject.uniqueId)))
 
         # Apply intrinsic ellipticity to the profile
         centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians,

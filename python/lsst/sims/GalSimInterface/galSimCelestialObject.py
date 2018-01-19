@@ -13,11 +13,13 @@ class GalSimCelestialObject(object):
     a bunch of different arguments, one for each datum.
     """
 
-    def __init__(self, galSimType, sed, ra, dec, xPupil, yPupil,
+    def __init__(self, uniqueId, galSimType, sed, ra, dec, xPupil, yPupil,
                  halfLightRadius, minorAxis, majorAxis, positionAngle,
                  sindex, fluxDict, gamma1=0, gamma2=0, kappa=0):
         """
-        @param [in] galSimType is a string, either 'pointSource' or 'sersic' denoting the shape of the object
+        @param [in] uniqueId is an int storing a unique identifier for this object
+
+        @param [in] galSimType is a string, either 'pointSource', 'sersic' or 'RandomWalk' denoting the shape of the object
 
         @param [in] sed is the SED of the object (an instantiation of the Sed class defined in
         sims_photUtils/../../Sed.py
@@ -52,7 +54,7 @@ class GalSimCelestialObject(object):
 
         @param [in] kappa is the WL convergence parameter
         """
-
+        self._uniqueId = uniqueId
         self._galSimType = galSimType
         self._sed = sed
         self._raRadians = ra
@@ -77,6 +79,14 @@ class GalSimCelestialObject(object):
         self._mu = 1./((1. - kappa)**2 - (gamma1**2 + gamma2**2)) # magnification
         self._fluxDict = fluxDict
 
+    @property
+    def uniqueId(self):
+        return self._uniqueId
+
+    @galSimType.setter
+    def uniqueId(self, value):
+        raise RuntimeError("You should not be setting the unique id on the fly; " \
+                           + "just instantiate a new GalSimCelestialObject")
 
     @property
     def galSimType(self):
@@ -86,7 +96,6 @@ class GalSimCelestialObject(object):
     def galSimType(self, value):
         raise RuntimeError("You should not be setting galSimType on the fly; " \
                            + "just instantiate a new GalSimCelestialObject")
-
 
     @property
     def sed(self):
