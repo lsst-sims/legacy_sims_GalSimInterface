@@ -10,6 +10,8 @@ GalSimInterpreter expects.
 from __future__ import print_function
 
 from builtins import object
+import os
+import pickle
 import numpy as np
 import galsim
 from lsst.sims.utils import radiansFromArcsec
@@ -65,6 +67,9 @@ class GalSimInterpreter(object):
         self.blankImageCache = {}  # this dict will cache blank images associated with specific detectors.
                                    # It turns out that calling the image's constructor is more
                                    # time-consuming than returning a deep copy
+        self.checkpoint_file = None
+        self.nobjects = 0
+        self.nobj_checkpoint = 1000
 
     def setPSF(self, PSF=None):
         """
@@ -466,3 +471,34 @@ class GalSimInterpreter(object):
             namesWritten.append(fileName)
 
         return namesWritten
+
+    def write_checkpoint(self, detector_strings):
+        """
+        Write a pickle file of detector images packaged with the number of
+        objects that have been drawn for every self.nobj_checkpoint
+        objects.
+        """
+        self.nobjects += 1
+        if (self.checkpoint_file is None or
+            self.nobjects % self.nobj_checkpoint != 0):
+            return
+        image_state = dict(nobjects=self.nobjects,
+                           images=self.detectorImages,
+                           rng=self._rng,
+                           detector_strings=detector_strings)
+        with open(self.checkpoint_file, 'w') as output:
+            pickle.dump(image_state, output)
+
+    def restore_checkpoint(self):
+        """
+        Restore image state from a checkpoint file.
+        """
+        if (self.checkpoint_file is None
+            or not os.path.isfile(self.checkpoint_file)):
+            return []
+        with open(self.checkpoint_file) as input_:
+            image_state = pickle.load(input_)
+            self.nobjects = image_state['nobjects']
+            self.detectorImages = image_state['images']
+            self._rng = image_state['rng']
+        return image_state['detector_strings']

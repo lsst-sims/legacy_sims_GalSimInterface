@@ -377,6 +377,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             if not hasattr(self, 'bandpassDict'):
                 raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
 
+        detector_strings = self.galSimInterpreter.restore_checkpoint()
         output = []
         for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, gam1, gam2, kap) in \
             zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight,
@@ -391,16 +392,23 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
                 self.objectHasBeenDrawn.add(name)
 
-                flux_dict = {}
-                for bb in self.bandpassNames:
-                    adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
-                    flux_dict[bb] = adu*self.photParams.gain
+                if len(output) >= self.galSimInterpreter.nobjects:
+                    flux_dict = {}
+                    for bb in self.bandpassNames:
+                        adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
+                        flux_dict[bb] = adu*self.photParams.gain
 
-                gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp,
-                                              hlr, minor, major, pa, sn, flux_dict, gam1, gam2, kap, uniqueId=name)
+                    gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp,
+                                                  hlr, minor, major, pa, sn, flux_dict, gam1, gam2, kap, uniqueId=name)
 
-                # actually draw the object
-                detectorsString = self.galSimInterpreter.drawObject(gsObj)
+                    # actually draw the object
+                    detectorsString = self.galSimInterpreter.drawObject(gsObj)
+                    self.galSimInterpreter.write_checkpoint(output)
+                else:
+                    # For objects that have already been drawn in the
+                    # checkpointed data, use the first one from the
+                    # persisted list.
+                    detectorsString = detector_strings.pop(0)
 
                 output.append(detectorsString)
 
