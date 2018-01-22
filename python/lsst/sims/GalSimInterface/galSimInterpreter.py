@@ -175,10 +175,10 @@ class GalSimInterpreter(object):
         # for reasons of speed.  A flux of 1000 photons ought to be enough to plot the true
         # extent of the object, but this is just a guess.
         centeredImage = centeredObj.drawImage(scale=testScale, method='phot', n_photons=1000, rng=self._rng)
-        xmax = testScale*(centeredImage.getXMax()/2) + gsObject.xPupilArcsec
-        xmin = testScale*(-1*centeredImage.getXMax()/2) + gsObject.xPupilArcsec
-        ymax = testScale*(centeredImage.getYMax()/2) + gsObject.yPupilArcsec
-        ymin = testScale*(-1*centeredImage.getYMin()/2) + gsObject.yPupilArcsec
+        xmax = testScale*(centeredImage.xmax/2) + gsObject.xPupilArcsec
+        xmin = testScale*(-1*centeredImage.xmax/2) + gsObject.xPupilArcsec
+        ymax = testScale*(centeredImage.ymax/2) + gsObject.yPupilArcsec
+        ymin = testScale*(-1*centeredImage.ymin/2) + gsObject.yPupilArcsec
 
         # first assemble a list of detectors which have any hope
         # of overlapping the test image
@@ -207,14 +207,14 @@ class GalSimInterpreter(object):
 
             # Find the pixels that have a flux greater than 0.001 times the flux of
             # the central pixel (remember that the object is centered on the test image)
-            maxPixel = centeredImage(centeredImage.getXMax()/2, centeredImage.getYMax()/2)
+            maxPixel = centeredImage(centeredImage.xmax/2, centeredImage.ymax/2)
             activePixels = np.where(centeredImage.array > maxPixel*0.001)
 
             # Find the bounds of those active pixels in pixel coordinates
-            xmin = testScale * (activePixels[0].min() - centeredImage.getXMax()/2) + gsObject.xPupilArcsec
-            xmax = testScale * (activePixels[0].max() - centeredImage.getXMax()/2) + gsObject.xPupilArcsec
-            ymin = testScale * (activePixels[1].min() - centeredImage.getYMax()/2) + gsObject.yPupilArcsec
-            ymax = testScale * (activePixels[1].max() - centeredImage.getYMax()/2) + gsObject.yPupilArcsec
+            xmin = testScale * (activePixels[0].min() - centeredImage.xmax/2) + gsObject.xPupilArcsec
+            xmax = testScale * (activePixels[0].max() - centeredImage.xmax/2) + gsObject.xPupilArcsec
+            ymin = testScale * (activePixels[1].min() - centeredImage.ymax/2) + gsObject.yPupilArcsec
+            ymax = testScale * (activePixels[1].max() - centeredImage.ymax/2) + gsObject.yPupilArcsec
 
             # find all of the detectors that overlap with the bounds of the active pixels.
             for dd in viableDetectors:
@@ -237,9 +237,9 @@ class GalSimInterpreter(object):
                 # specifically test that these overlapping detectors do contain active pixels
                 if xOverLaps and yOverLaps:
                     if self._doesObjectImpingeOnDetector(xPupil=gsObject.xPupilArcsec -
-                                                                centeredImage.getXMax()*testScale/2.0,
+                                                                centeredImage.xmax*testScale/2.0,
                                                          yPupil=gsObject.yPupilArcsec -
-                                                                centeredImage.getYMax()*testScale/2.0,
+                                                                centeredImage.ymax*testScale/2.0,
                                                          detector=dd, imgScale=centeredImage.scale,
                                                          nonZeroPixels=activePixels):
 
@@ -329,7 +329,7 @@ class GalSimInterpreter(object):
                                                                                 gsObject.yPupilRadians,
                                                                                 chipName=detector.name)
 
-                obj = centeredObj.copy()
+                obj = centeredObj
 
                 # convolve the object's shape profile with the spectrum
                 obj = obj.withFlux(gsObject.flux(bandpassName))
