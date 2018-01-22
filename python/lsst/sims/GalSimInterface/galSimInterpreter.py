@@ -68,7 +68,7 @@ class GalSimInterpreter(object):
                                    # It turns out that calling the image's constructor is more
                                    # time-consuming than returning a deep copy
         self.checkpoint_file = None
-        self.nobjects = 0
+        self.drawn_objects = set()
         self.nobj_checkpoint = 1000
 
     def setPSF(self, PSF=None):
@@ -342,6 +342,8 @@ class GalSimInterpreter(object):
                                                           image=self.detectorImages[name],
                                                           add_to_image=True)
 
+        self.drawn_objects.add(gsObject.uniqueId)
+        self.write_checkpoint()
         return outputString
 
     def drawPointSource(self, gsObject):
@@ -472,33 +474,51 @@ class GalSimInterpreter(object):
 
         return namesWritten
 
-    def write_checkpoint(self, detector_strings):
+    def write_checkpoint(self, force=False):
         """
-        Write a pickle file of detector images packaged with the number of
-        objects that have been drawn for every self.nobj_checkpoint
-        objects.
+        Write a pickle file of detector images packaged with the
+        objects that have been drawn. By default, write the checkpoint
+        every self.nobj_checkpoint objects.
         """
-        self.nobjects += 1
-        if (self.checkpoint_file is None or
-            self.nobjects % self.nobj_checkpoint != 0):
+        if self.checkpoint_file is None:
             return
-        image_state = dict(nobjects=self.nobjects,
-                           images=self.detectorImages,
-                           rng=self._rng,
-                           detector_strings=detector_strings)
-        with open(self.checkpoint_file, 'w') as output:
-            pickle.dump(image_state, output)
+        if force or len(self.drawn_objects) % self.nobj_checkpoint == 0:
+            # The galsim.Images in self.detectorImages cannot be
+            # pickled because they contain references to unpickleable
+            # afw objects, so just save the array data and rebuild
+            # the galsim.Images from scratch, given the detector name.
+            images = {key: value.array for key, value
+                      in self.detectorImages.items()}
+            image_state = dict(images=images,
+                               rng=self._rng,
+                               drawn_objects=self.drawn_objects)
+            with open(self.checkpoint_file, 'wb') as output:
+                pickle.dump(image_state, output)
 
-    def restore_checkpoint(self):
+    def restore_checkpoint(self, gs_catalog):
         """
-        Restore image state from a checkpoint file.
+        Restore self.detectorImages, self._rng, and self.drawn_objects states
+        from the checkpoint file.
+
+        Parameters
+        ----------
+        gs_catalog: GalSimBase subclass
+            Instance of a GalSimBase subclass that can return
+            a GalSimDetector object via GalSimBase.make_detector.
         """
         if (self.checkpoint_file is None
             or not os.path.isfile(self.checkpoint_file)):
-            return []
-        with open(self.checkpoint_file) as input_:
+            return
+        with open(self.checkpoint_file, 'rb') as input_:
             image_state = pickle.load(input_)
-            self.nobjects = image_state['nobjects']
-            self.detectorImages = image_state['images']
+            images = image_state['images']
+            for key in images:
+                # Unmangle the detector name.
+                detname = "R:{},{} S:{},{}".format(*tuple(key[1:3] + key[5:7]))
+                # Create the galsim.Image from scratch as a blank image and
+                # set the pixel data from the persisted image data array.
+                detector = gs_catalog.make_detector(detname)
+                self.detectorImages[key] = self.blankImage(detector=detector)
+                self.detectorImages[key] += image_state['images'][key]
             self._rng = image_state['rng']
-        return image_state['detector_strings']
+            self.drawn_objects = image_state['drawn_objects']

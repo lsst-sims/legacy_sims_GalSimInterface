@@ -334,7 +334,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     galacticAv, galacticRv, magNorm))
 
     @cached
-    def get_fitsFiles(self):
+    def get_fitsFiles(self, checkpoint_file=None):
         """
         This getter returns a column listing the names of the detectors whose corresponding
         FITS files contain the object in question.  The detector names will be separated by a '//'
@@ -376,8 +376,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             self._initializeGalSimCatalog()
             if not hasattr(self, 'bandpassDict'):
                 raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
+            self.galSimInterpreter.checkpoint_file = checkpoint_file
+            self.galSimInterpreter.restore_checkpoint(self)
 
-        detector_strings = self.galSimInterpreter.restore_checkpoint()
         output = []
         for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, gam1, gam2, kap) in \
             zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight,
@@ -392,7 +393,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
                 self.objectHasBeenDrawn.add(name)
 
-                if len(output) >= self.galSimInterpreter.nobjects:
+                if name not in self.galSimInterpreter.drawn_objects:
                     flux_dict = {}
                     for bb in self.bandpassNames:
                         adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
@@ -403,15 +404,16 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
                     # actually draw the object
                     detectorsString = self.galSimInterpreter.drawObject(gsObj)
-                    self.galSimInterpreter.write_checkpoint(output)
                 else:
                     # For objects that have already been drawn in the
-                    # checkpointed data, use the first one from the
-                    # persisted list.
-                    detectorsString = detector_strings.pop(0)
+                    # checkpointed data, use a blank string.
+                    detectorsString = ''
 
                 output.append(detectorsString)
 
+        # Force checkpoint at the end (if a checkpoint file has been specified).
+        if self.galSimInterpreter is not None:
+            self.galSimInterpreter.write_checkpoint(force=True)
         return np.array(output)
 
     def setPSF(self, PSF):
@@ -474,35 +476,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     continue
 
                 if self.allowed_chips is None or dd.getName() in self.allowed_chips:
-                    centerPupil = self.camera_wrapper.getCenterPupil(dd.getName())
-                    centerPixel = self.camera_wrapper.getCenterPixel(dd.getName())
-
-                    translationPupil = self.camera_wrapper.pupilCoordsFromPixelCoords(centerPixel.getX()+1,
-                                                                                      centerPixel.getY()+1,
-                                                                                      dd.getName())
-
-                    plateScale = np.sqrt(np.power(translationPupil[0]-centerPupil.getX(), 2) +
-                                         np.power(translationPupil[1]-centerPupil.getY(), 2))/np.sqrt(2.0)
-
-                    plateScale = 3600.0*np.degrees(plateScale)
-
-                    # make a detector-custom photParams that copies all of the quantities
-                    # in the catalog photParams, except the platescale, which is
-                    # calculated above
-                    params = PhotometricParameters(exptime=self.photParams.exptime,
-                                                   nexp=self.photParams.nexp,
-                                                   effarea=self.photParams.effarea,
-                                                   gain=self.photParams.gain,
-                                                   readnoise=self.photParams.readnoise,
-                                                   darkcurrent=self.photParams.darkcurrent,
-                                                   othernoise=self.photParams.othernoise,
-                                                   platescale=plateScale)
-
-                    detector = GalSimDetector(dd.getName(), self.camera_wrapper,
-                                              obs_metadata=self.obs_metadata, epoch=self.db_obj.epoch,
-                                              photParams=params)
-
-                    detectors.append(detector)
+                    detectors.append(self.make_detector(dd.getName()))
 
             if not hasattr(self, 'bandpassDict'):
                 if self.noise_and_background is not None:
@@ -546,6 +520,49 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                                                        seed=self.seed)
 
             self.galSimInterpreter.setPSF(PSF=self.PSF)
+
+    def make_detector(self, detname):
+        """
+        Create a GalSimDetector object given the desired detector name.
+
+        Parameters
+        ----------
+        detname: str
+            The name of the detector in the LSST focal plane to create,
+            e.g., "R:2,2 S:1,1".
+
+        Returns
+        -------
+        GalSimDetector
+        """
+        centerPupil = self.camera_wrapper.getCenterPupil(detname)
+        centerPixel = self.camera_wrapper.getCenterPixel(detname)
+
+        translationPupil = self.camera_wrapper.pupilCoordsFromPixelCoords(centerPixel.getX()+1,
+                                                                          centerPixel.getY()+1,
+                                                                          detname)
+
+        plateScale = np.sqrt(np.power(translationPupil[0]-centerPupil.getX(), 2) +
+                             np.power(translationPupil[1]-centerPupil.getY(), 2))/np.sqrt(2.0)
+
+        plateScale = 3600.0*np.degrees(plateScale)
+
+        # make a detector-custom photParams that copies all of the quantities
+        # in the catalog photParams, except the platescale, which is
+        # calculated above
+        params = PhotometricParameters(exptime=self.photParams.exptime,
+                                       nexp=self.photParams.nexp,
+                                       effarea=self.photParams.effarea,
+                                       gain=self.photParams.gain,
+                                       readnoise=self.photParams.readnoise,
+                                       darkcurrent=self.photParams.darkcurrent,
+                                       othernoise=self.photParams.othernoise,
+                                       platescale=plateScale)
+
+        return GalSimDetector(detname, self.camera_wrapper,
+                              obs_metadata=self.obs_metadata, epoch=self.db_obj.epoch,
+                              photParams=params)
+
 
     def write_images(self, nameRoot=None):
         """
