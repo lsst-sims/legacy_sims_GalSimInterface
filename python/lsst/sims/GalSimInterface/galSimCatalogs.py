@@ -334,7 +334,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     galacticAv, galacticRv, magNorm))
 
     @cached
-    def get_fitsFiles(self, checkpoint_file=None):
+    def get_fitsFiles(self, checkpoint_file=None, nobj_checkpoint=1000):
         """
         This getter returns a column listing the names of the detectors whose corresponding
         FITS files contain the object in question.  The detector names will be separated by a '//'
@@ -377,6 +377,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             if not hasattr(self, 'bandpassDict'):
                 raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
             self.galSimInterpreter.checkpoint_file = checkpoint_file
+            self.galSimInterpreter.nobj_checkpoint = nobj_checkpoint
             self.galSimInterpreter.restore_checkpoint(self)
 
         output = []
