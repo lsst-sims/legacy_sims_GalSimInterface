@@ -1028,11 +1028,18 @@ class CheckPointingTestCase(unittest.TestCase):
     TestCase class for testing the GalSimInterpreter checkpointing functions.
     """
     def setUp(self):
-        self.cp_file = 'checkpoint_test.pkl'
+        self.output_dir = os.path.join(getPackageDir('sims_GalSimInterface'),
+                                       'tests', 'checkpoint_dir')
+        try:
+            os.makedirs(self.output_dir)
+        except OSError:
+            pass
+        self.cp_file = os.path.join(self.output_dir, 'checkpoint_test.pkl')
 
     def tearDown(self):
         try:
             os.remove(self.cp_file)
+            os.rmdir(self.output_dir)
         except OSError:
             pass
 
