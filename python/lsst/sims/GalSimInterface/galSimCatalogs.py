@@ -360,13 +360,11 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 self.objectHasBeenDrawn.add(name)
 
                 if name not in self.galSimInterpreter.drawn_objects:
-                    flux_dict = {}
-                    for bb in self.bandpassNames:
-                        adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
-                        flux_dict[bb] = adu*self.photParams.gain
 
                     gsObj = GalSimCelestialObject(self.galsim_type, xp, yp,
-                                                  hlr, minor, major, pa, sn, flux_dict, gam1, gam2, kap, uniqueId=name)
+                                                  hlr, minor, major, pa, sn,
+                                                  ss, self.bandpassDict, self.photParams,
+                                                  gam1, gam2, kap, uniqueId=name)
 
                     # actually draw the object
                     detectorsString = self.galSimInterpreter.drawObject(gsObj)
