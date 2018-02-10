@@ -293,7 +293,7 @@ class GalSimInterpreter(object):
         detectorList, \
         centeredObj = self.findAllDetectors(gsObject)
 
-        if gsObject.sed is None or len(detectorList) == 0:
+        if len(detectorList) == 0:
             # there is nothing to draw
             return outputString
 

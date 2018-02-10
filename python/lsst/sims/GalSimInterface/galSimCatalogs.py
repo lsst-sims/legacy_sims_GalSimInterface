@@ -400,7 +400,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                         adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
                         flux_dict[bb] = adu*self.photParams.gain
 
-                    gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp,
+                    gsObj = GalSimCelestialObject(self.galsim_type, ra, dec, xp, yp,
                                                   hlr, minor, major, pa, sn, flux_dict, gam1, gam2, kap, uniqueId=name)
 
                     # actually draw the object
