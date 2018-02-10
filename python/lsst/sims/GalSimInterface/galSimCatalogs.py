@@ -300,19 +300,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             sed = Sed()
             sedFile = os.path.join(self.sedDir, sedName)
             sed.readSED_flambda(sedFile)
+            self.uniqueSeds[sedName] = copy.deepcopy(sed)
 
-            flambdaCopy = copy.deepcopy(sed.flambda)
-
-            # If the SED is zero inside of the bandpass, GalSim raises an error.
-            # This sets a minimum flux value of 1.0e-30 so that the SED is never technically
-            # zero inside of the bandpass.
-            sed.flambda = np.array([ff if ff > 1.0e-30 else 1.0e-30 for ff in flambdaCopy])
-            sed.fnu = None
-
-            # copy the unnormalized file to uniqueSeds so we don't have to read it in again
-            sedCopy = Sed(wavelen=sed.wavelen, flambda=sed.flambda,
-                          fnu=sed.fnu, name=sed.name)
-            self.uniqueSeds[sedName] = sedCopy
         return sed
 
     def _calculateGalSimSeds(self):
