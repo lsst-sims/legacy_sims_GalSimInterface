@@ -193,8 +193,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     # galSimCameraWrapper.py
     _camera_wrapper = None
 
-    uniqueSeds = {}  # a cache for un-normalized SED files, so that we do not waste time on I/O
-
     hasBeenInitialized = False
 
     galSimInterpreter = None  # the GalSimInterpreter instantiation for this catalog
@@ -241,7 +239,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         """
         if _is_null(sedName):
             return None
-        sed = self._getSedCopy(sedName)
+        sed = Sed()
+        sed.readSED_flambda(os.path.join(self.sedDir, sedName))
         imsimband = Bandpass()
         imsimband.imsimBandpass()
         # normalize the SED
@@ -281,27 +280,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         if gAv != 0.0 and gRv != 0.0:
             a_int, b_int = sed.setupCCMab()
             sed.addCCMDust(a_int, b_int, A_v=gAv, R_v=gRv)
-        return sed
-
-    def _getSedCopy(self, sedName):
-        """
-        Return a copy of the requested SED, either from the cached
-        version or creating a new one and caching a copy for later
-        reuse.
-        """
-        if sedName in self.uniqueSeds:
-            # we have already read in this file; no need to do it again
-            sed = Sed(wavelen=self.uniqueSeds[sedName].wavelen,
-                      flambda=self.uniqueSeds[sedName].flambda,
-                      fnu=self.uniqueSeds[sedName].fnu,
-                      name=self.uniqueSeds[sedName].name)
-        else:
-            # load the SED of the object
-            sed = Sed()
-            sedFile = os.path.join(self.sedDir, sedName)
-            sed.readSED_flambda(sedFile)
-            self.uniqueSeds[sedName] = copy.deepcopy(sed)
-
         return sed
 
     def _calculateGalSimSeds(self):
