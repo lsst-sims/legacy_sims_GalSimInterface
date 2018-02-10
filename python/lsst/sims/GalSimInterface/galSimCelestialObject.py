@@ -13,17 +13,11 @@ class GalSimCelestialObject(object):
     a bunch of different arguments, one for each datum.
     """
 
-    def __init__(self, galSimType, ra, dec, xPupil, yPupil,
+    def __init__(self, galSimType, xPupil, yPupil,
                  halfLightRadius, minorAxis, majorAxis, positionAngle,
                  sindex, fluxDict, gamma1=0, gamma2=0, kappa=0, uniqueId=None):
         """
         @param [in] galSimType is a string, either 'pointSource', 'sersic' or 'RandomWalk' denoting the shape of the object
-
-        @param [in] ra is the RA coordinate of the object in radians
-        (ICRS)
-
-        @param [in] dec is the Dec coordinate of the object in radians
-        (ICRS)
 
         @param [in] xPupil is the x pupil coordinate of the object in radians
 
@@ -53,8 +47,6 @@ class GalSimCelestialObject(object):
         """
         self._uniqueId = uniqueId
         self._galSimType = galSimType
-        self._raRadians = ra
-        self._decRadians = dec
         self._xPupilRadians = xPupil
         self._xPupilArcsec = arcsecFromRadians(xPupil)
         self._yPupilRadians = yPupil
@@ -92,26 +84,6 @@ class GalSimCelestialObject(object):
     def galSimType(self, value):
         raise RuntimeError("You should not be setting galSimType on the fly; " \
                            + "just instantiate a new GalSimCelestialObject")
-
-    @property
-    def raRadians(self):
-        return self._raRadians
-
-    @raRadians.setter
-    def raRadians(self, value):
-        raise RuntimeError("You should not be setting raRadians on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
-
-    @property
-    def decRadians(self):
-        return self._decRadians
-
-    @decRadians.setter
-    def decRadians(self, value):
-        raise RuntimeError("You should not be setting decRadians on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
 
     @property
     def xPupilRadians(self):

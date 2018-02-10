@@ -354,8 +354,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 self.bandpassNames = self.obs_metadata.bandpass
 
         objectNames = self.column_by_name('uniqueId')
-        raICRS = self.column_by_name('raICRS')
-        decICRS = self.column_by_name('decICRS')
         xPupil = self.column_by_name('x_pupil')
         yPupil = self.column_by_name('y_pupil')
         halfLight = self.column_by_name('halfLightRadius')
@@ -381,8 +379,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             self.galSimInterpreter.restore_checkpoint(self)
 
         output = []
-        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, gam1, gam2, kap) in \
-            zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight,
+        for (name, xp, yp, hlr, minor, major, pa, ss, sn, gam1, gam2, kap) in \
+            zip(objectNames, xPupil, yPupil, halfLight,
                  minorAxis, majorAxis, positionAngle, sedList, sindex,
                  gamma1, gamma2, kappa):
 
@@ -400,7 +398,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                         adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
                         flux_dict[bb] = adu*self.photParams.gain
 
-                    gsObj = GalSimCelestialObject(self.galsim_type, ra, dec, xp, yp,
+                    gsObj = GalSimCelestialObject(self.galsim_type, xp, yp,
                                                   hlr, minor, major, pa, sn, flux_dict, gam1, gam2, kap, uniqueId=name)
 
                     # actually draw the object
