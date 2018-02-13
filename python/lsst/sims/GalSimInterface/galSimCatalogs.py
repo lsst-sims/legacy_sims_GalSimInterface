@@ -627,7 +627,7 @@ class GalSimAgn(GalSimBase, AstrometryGalaxies, EBVmixin):
                        ('kappa', 0.0, float)]
 
 
-class GalSimStars(GalSimBase, AstrometryStars, EBVmixin):
+class GalSimStars(GalSimBase, AstrometryStars):
     """
     This is a GalSimCatalog class for stars.
 
