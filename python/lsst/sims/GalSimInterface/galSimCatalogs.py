@@ -344,7 +344,10 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
             self.galSimInterpreter.checkpoint_file = checkpoint_file
             self.galSimInterpreter.nobj_checkpoint = nobj_checkpoint
-            self.galSimInterpreter.restore_checkpoint(self)
+            self.galSimInterpreter.restore_checkpoint(self._camera_wrapper,
+                                                      self.photParams,
+                                                      self.obs_metadata,
+                                                      epoch=self.db_obj.epoch)
 
         output = []
         for (name, xp, yp, hlr, minor, major, pa, ss, sn, gam1, gam2, kap) in \
