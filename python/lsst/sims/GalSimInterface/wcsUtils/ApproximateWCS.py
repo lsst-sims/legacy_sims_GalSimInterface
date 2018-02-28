@@ -34,7 +34,6 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.coord as afwCoord
 from lsst.meas.base import SingleFrameMeasurementTask
 from lsst.meas.astrom.sip import makeCreateWcsWithSip
-from lsst.afw.image.basicUtils import assertWcsNearlyEqualOverBBox
 from lsst.sims.coordUtils import raDecFromPixelCoords
 
 __all__ = ["approximateWcs"]
