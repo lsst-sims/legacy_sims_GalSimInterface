@@ -24,6 +24,7 @@ from lsst.sims.catUtils.mixins import (CameraCoords, AstrometryGalaxies, Astrome
                                        EBVmixin)
 from lsst.sims.GalSimInterface import GalSimInterpreter, GalSimDetector, GalSimCelestialObject
 from lsst.sims.GalSimInterface import GalSimCameraWrapper
+from lsst.sims.GalSimInterface import make_galsim_detector
 from lsst.sims.photUtils import (Sed, Bandpass, BandpassDict,
                                  PhotometricParameters)
 import lsst.afw.cameraGeom.testUtils as camTestUtils
@@ -31,8 +32,7 @@ import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
 from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
 
-__all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars", "GalSimRandomWalk",
-           "make_galsim_detector"]
+__all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars", "GalSimRandomWalk"]
 
 
 def _is_null(argument):
@@ -61,64 +61,6 @@ def _is_null(argument):
         return True
 
     return False
-
-
-
-def make_galsim_detector(camera_wrapper, detname, phot_params, obs_metadata, epoch=2000.0):
-    """
-    Create a GalSimDetector object given the desired detector name.
-
-    Parameters
-    ----------
-    camera_wrapper: lsst.sims.GalSimInterface.GalSimCameraWrapper
-        An object representing the camera being simulated
-
-    detname: str
-        The name of the detector in the LSST focal plane to create,
-        e.g., "R:2,2 S:1,1".
-
-    phot_params: lsst.sims.photUtils.PhotometricParameters
-        An object containing the physical parameters representing
-        the photometric properties of the system
-
-    obs_metadata: lsst.sims.utils.ObservationMetaData
-        Characterizing the pointing of the telescope
-
-    epoch: float
-        Representing the Julian epoch against which RA, Dec are
-        reckoned (default = 2000)
-
-    Returns
-    -------
-    GalSimDetector
-    """
-    centerPupil = camera_wrapper.getCenterPupil(detname)
-    centerPixel = camera_wrapper.getCenterPixel(detname)
-
-    translationPupil = camera_wrapper.pupilCoordsFromPixelCoords(centerPixel.getX()+1,
-                                                                 centerPixel.getY()+1,
-                                                                 detname)
-
-    plateScale = np.sqrt(np.power(translationPupil[0]-centerPupil.getX(), 2) +
-                         np.power(translationPupil[1]-centerPupil.getY(), 2))/np.sqrt(2.0)
-
-    plateScale = 3600.0*np.degrees(plateScale)
-
-    # make a detector-custom photParams that copies all of the quantities
-    # in the catalog photParams, except the platescale, which is
-    # calculated above
-    params = PhotometricParameters(exptime=phot_params.exptime,
-                                   nexp=phot_params.nexp,
-                                   effarea=phot_params.effarea,
-                                   gain=phot_params.gain,
-                                   readnoise=phot_params.readnoise,
-                                   darkcurrent=phot_params.darkcurrent,
-                                   othernoise=phot_params.othernoise,
-                                   platescale=plateScale)
-
-    return GalSimDetector(detname, camera_wrapper,
-                          obs_metadata=obs_metadata, epoch=epoch,
-                          photParams=params)
 
 
 class GalSimBase(InstanceCatalog, CameraCoords):
