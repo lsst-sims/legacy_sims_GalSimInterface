@@ -122,13 +122,7 @@ def tanWcsFromDetector(detector_name, camera_wrapper, obs_metadata, epoch):
     fitsHeader.setDouble("CD2_1", coeffs[2])
     fitsHeader.setDouble("CD2_2", coeffs[3])
 
-    # 20 March 2017
-    # the 'try' block is required by the SWIG stack;
-    # the 'except' block is required by the pybind11 stack.
-    try:
-        tanWcs = afwImage.cast_TanWcs(afwImage.makeWcs(fitsHeader))
-    except AttributeError:
-        tanWcs = afwImage.makeWcs(fitsHeader)
+    tanWcs = afwGeom.makeSkyWcs(fitsHeader)
 
     return tanWcs
 
