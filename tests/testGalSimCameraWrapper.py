@@ -54,13 +54,13 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
 
             center_point = camera[name].getCenter(FOCAL_PLANE)
             pixel_system = camera[name].makeCameraSys(PIXELS)
-            center_pix = camera.transform(center_point, pixel_system).getPoint()
+            center_pix = camera.transform(center_point, FOCAL_PLANE, pixel_system)
             center_pix_wrapper = camera_wrapper.getCenterPixel(name)
             self.assertEqual(center_pix.getX(), center_pix_wrapper.getX())
             self.assertEqual(center_pix.getY(), center_pix_wrapper.getY())
 
             pupil_system = camera[name].makeCameraSys(FIELD_ANGLE)
-            center_pupil = camera.transform(center_point, pupil_system).getPoint()
+            center_pupil = camera.transform(center_point, FOCAL_PLANE, pupil_system)
             center_pupil_wrapper = camera_wrapper.getCenterPupil(name)
             self.assertEqual(center_pupil.getX(), center_pupil_wrapper.getX())
             self.assertEqual(center_pupil.getY(), center_pupil_wrapper.getY())
@@ -68,12 +68,11 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             corner_pupil_wrapper = camera_wrapper.getCornerPupilList(name)
             corner_point_list = camera[name].getCorners(FOCAL_PLANE)
             for point in corner_point_list:
-                camera_point = camera[name].makeCameraPoint(point, FOCAL_PLANE)
-                camera_point_pupil = camera.transform(camera_point, pupil_system).getPoint()
+                point_pupil = camera.transform(point, FOCAL_PLANE, pupil_system)
                 dd_min = 1.0e10
                 for wrapper_point in corner_pupil_wrapper:
-                    dd = np.sqrt((camera_point_pupil.getX()-wrapper_point.getX())**2 +
-                                 (camera_point_pupil.getY()-wrapper_point.getY())**2)
+                    dd = np.sqrt((point_pupil.getX()-wrapper_point.getX())**2 +
+                                 (point_pupil.getY()-wrapper_point.getY())**2)
 
                     if dd < dd_min:
                         dd_min = dd
@@ -219,7 +218,7 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
 
             center_point = camera[name].getCenter(FOCAL_PLANE)
             pixel_system = camera[name].makeCameraSys(PIXELS)
-            center_pix = camera.transform(center_point, pixel_system).getPoint()
+            center_pix = camera.transform(center_point, FOCAL_PLANE, pixel_system)
             center_pix_wrapper = camera_wrapper.getCenterPixel(name)
             self.assertEqual(center_pix.getX(), center_pix_wrapper.getY())
             self.assertEqual(center_pix.getY(), center_pix_wrapper.getX())
@@ -227,7 +226,7 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             # Note that DM and the Camera team agree on the orientation
             # of the pupil coordinate/field angle axes
             pupil_system = camera[name].makeCameraSys(FIELD_ANGLE)
-            center_pupil = camera.transform(center_point, pupil_system).getPoint()
+            center_pupil = camera.transform(center_point, FOCAL_PLANE, pupil_system)
             center_pupil_wrapper = camera_wrapper.getCenterPupil(name)
             self.assertEqual(center_pupil.getX(), center_pupil_wrapper.getX())
             self.assertEqual(center_pupil.getY(), center_pupil_wrapper.getY())
@@ -235,12 +234,11 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             corner_pupil_wrapper = camera_wrapper.getCornerPupilList(name)
             corner_point_list = camera[name].getCorners(FOCAL_PLANE)
             for point in corner_point_list:
-                camera_point = camera[name].makeCameraPoint(point, FOCAL_PLANE)
-                camera_point_pupil = camera.transform(camera_point, pupil_system).getPoint()
+                point_pupil = camera.transform(point, FOCAL_PLANE, pupil_system)
                 dd_min = 1.0e10
                 for wrapper_point in corner_pupil_wrapper:
-                    dd = np.sqrt((camera_point_pupil.getX()-wrapper_point.getX())**2 +
-                                 (camera_point_pupil.getY()-wrapper_point.getY())**2)
+                    dd = np.sqrt((point_pupil.getX()-wrapper_point.getX())**2 +
+                                 (point_pupil.getY()-wrapper_point.getY())**2)
 
                     if dd < dd_min:
                         dd_min = dd
