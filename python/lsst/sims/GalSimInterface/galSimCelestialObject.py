@@ -13,20 +13,12 @@ class GalSimCelestialObject(object):
     a bunch of different arguments, one for each datum.
     """
 
-    def __init__(self, galSimType, sed, ra, dec, xPupil, yPupil,
+    def __init__(self, galSimType, xPupil, yPupil,
                  halfLightRadius, minorAxis, majorAxis, positionAngle,
-                 sindex, fluxDict, gamma1=0, gamma2=0, kappa=0, uniqueId=None):
+                 sindex, sed, bp_dict, photParams,
+                 gamma1=0, gamma2=0, kappa=0, uniqueId=None):
         """
         @param [in] galSimType is a string, either 'pointSource', 'sersic' or 'RandomWalk' denoting the shape of the object
-
-        @param [in] sed is the SED of the object (an instantiation of the Sed class defined in
-        sims_photUtils/../../Sed.py
-
-        @param [in] ra is the RA coordinate of the object in radians
-        (ICRS)
-
-        @param [in] dec is the Dec coordinate of the object in radians
-        (ICRS)
 
         @param [in] xPupil is the x pupil coordinate of the object in radians
 
@@ -42,9 +34,20 @@ class GalSimCelestialObject(object):
 
         @param [in] sindex is the sersic index of the object
 
-        @param [in] fluxDict is a dict of electron count (not ADU) values keyed to bandpass names,
-        i.e. {'u':44000, 'g':41000} would mean the source produces 44000 electrons in the
-        u band and 41000 electrons in the g band.
+        @param [in] sed is an instantiation of lsst.sims.photUtils.Sed
+        representing the SED of the object (with all normalization,
+        dust extinction, redshifting, etc. applied)
+
+        @param [in] bp_dict is an instantiation of lsst.sims.photUtils.BandpassDict
+        representing the bandpasses of this telescope
+
+        @param [in] photParams is an instantioation of
+        lsst.sims.photUtils.PhotometricParameters representing the physical
+        parameters of the telescope that inform simulated photometry
+
+            Together, sed, bp_dict, and photParams will be used to create
+            a dict that maps bandpass name to electron counts for this
+            celestial object.
 
         @param [in] gamma1 is the real part of the WL shear parameter
 
@@ -56,9 +59,6 @@ class GalSimCelestialObject(object):
         """
         self._uniqueId = uniqueId
         self._galSimType = galSimType
-        self._sed = sed
-        self._raRadians = ra
-        self._decRadians = dec
         self._xPupilRadians = xPupil
         self._xPupilArcsec = arcsecFromRadians(xPupil)
         self._yPupilRadians = yPupil
@@ -77,7 +77,12 @@ class GalSimCelestialObject(object):
         self._g1 = gamma1/(1. - kappa)   # real part of reduced shear
         self._g2 = gamma2/(1. - kappa)   # imaginary part of reduced shear
         self._mu = 1./((1. - kappa)**2 - (gamma1**2 + gamma2**2)) # magnification
-        self._fluxDict = fluxDict
+
+        self._fluxDict = {}
+        for bb in bp_dict:
+            adu = sed.calcADU(bp_dict[bb], photParams)
+            self._fluxDict[bb] = adu*photParams.gain
+
 
     @property
     def uniqueId(self):
@@ -96,36 +101,6 @@ class GalSimCelestialObject(object):
     def galSimType(self, value):
         raise RuntimeError("You should not be setting galSimType on the fly; " \
                            + "just instantiate a new GalSimCelestialObject")
-
-    @property
-    def sed(self):
-        return self._sed
-
-    @sed.setter
-    def sed(self, value):
-        raise RuntimeError("You should not be setting sed on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
-
-    @property
-    def raRadians(self):
-        return self._raRadians
-
-    @raRadians.setter
-    def raRadians(self, value):
-        raise RuntimeError("You should not be setting raRadians on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
-
-    @property
-    def decRadians(self):
-        return self._decRadians
-
-    @decRadians.setter
-    def decRadians(self, value):
-        raise RuntimeError("You should not be setting decRadians on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
 
     @property
     def xPupilRadians(self):

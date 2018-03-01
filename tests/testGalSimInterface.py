@@ -22,7 +22,8 @@ from lsst.sims.catUtils.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.GalSimInterface import (GalSimGalaxies, GalSimStars, GalSimAgn,
                                        SNRdocumentPSF, ExampleCCDNoise,
-                                       GalSimInterpreter, GalSimCameraWrapper)
+                                       GalSimInterpreter, GalSimCameraWrapper,
+                                       make_galsim_detector)
 from lsst.sims.catUtils.utils import (calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj,
                                       testGalaxyAgnDBObj, testStarsDBObj)
 import lsst.afw.image as afwImage
@@ -1009,19 +1010,6 @@ class GsDetector(object):
     def name(self):
         return self.detname
 
-class GsCatalog(object):
-    """
-    Minimal implementation of an interface-compatible version
-    of GalSimBase for testing the GalSimInterpreter checkpointing
-    functions.
-    """
-    def __init__(self, cameraGeom_detectors):
-        self.detectors = dict()
-        for det in cameraGeom_detectors:
-            self.detectors[det.getName()] = GsDetector(det.getName())
-
-    def make_detector(self, detname):
-        return self.detectors[detname]
 
 class CheckPointingTestCase(unittest.TestCase):
     """
@@ -1047,12 +1035,16 @@ class CheckPointingTestCase(unittest.TestCase):
         "Test checkpointing of .detectorImages data."
         camera = camTestUtils.CameraWrapper().camera
         camera_wrapper = GalSimCameraWrapper(camera)
-        detectors = [dd for dd in camera_wrapper.camera]
+        phot_params = PhotometricParameters()
+        obs_md = ObservationMetaData(pointingRA=23.0,
+                                     pointingDec=12.0,
+                                     rotSkyPos=13.2,
+                                     mjd=59580.0,
+                                     bandpassName='r')
 
-        # This proxy for GalSimBase is used by the checkpointing
-        # code to serve up the GalSimDetector object that provides
-        # the WCS object to the galsim Image.
-        gs_cat = GsCatalog(detectors)
+        detectors = [make_galsim_detector(camera_wrapper, dd.getName(),
+                                          phot_params, obs_md)
+                     for dd in camera_wrapper.camera]
 
         # Create a GalSimInterpreter object and set the checkpoint
         # attributes.
@@ -1065,7 +1057,8 @@ class CheckPointingTestCase(unittest.TestCase):
         # Set the image data by hand.
         key = "R00_S00_r.fits"
         detname = "R:0,0 S:0,0"
-        detector = gs_cat.make_detector(detname)
+        detector = make_galsim_detector(camera_wrapper, detname,
+                                        phot_params, obs_md)
         image = gs_interpreter.blankImage(detector=detector)
         image += 17
         gs_interpreter.detectorImages[key] = image
@@ -1088,12 +1081,31 @@ class CheckPointingTestCase(unittest.TestCase):
         # Check the restore_checkpoint function.
         new_interpreter = GalSimInterpreter(detectors=detectors)
         new_interpreter.checkpoint_file = self.cp_file
-        new_interpreter.restore_checkpoint(gs_cat)
+        new_interpreter.restore_checkpoint(camera_wrapper,
+                                           phot_params,
+                                           obs_md)
 
         self.assertEqual(new_interpreter.drawn_objects,
                          gs_interpreter.drawn_objects)
-        self.assertEqual(new_interpreter.detectorImages,
-                         gs_interpreter.detectorImages)
+
+        self.assertEqual(set(new_interpreter.detectorImages.keys()),
+                         set(gs_interpreter.detectorImages.keys()))
+
+        for det_name in new_interpreter.detectorImages.keys():
+            new_img = new_interpreter.detectorImages[det_name]
+            gs_img = gs_interpreter.detectorImages[det_name]
+            np.testing.assert_array_equal(new_img.array,
+                                          gs_img.array)
+            self.assertEqual(new_img.bounds, gs_img.bounds)
+            self.assertEqual(new_img.wcs.crpix1, gs_img.wcs.crpix1)
+            self.assertEqual(new_img.wcs.crpix2, gs_img.wcs.crpix2)
+            self.assertEqual(new_img.wcs.crval1, gs_img.wcs.crval1)
+            self.assertEqual(new_img.wcs.crval2, gs_img.wcs.crval2)
+            self.assertEqual(new_img.wcs.detectorName, gs_img.wcs.detectorName)
+            for name in new_img.wcs.fitsHeader.names():
+                self.assertEqual(new_img.wcs.fitsHeader.get(name),
+                                 gs_img.wcs.fitsHeader.get(name))
+
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
     pass

@@ -16,6 +16,7 @@ import numpy as np
 import galsim
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
+from lsst.sims.GalSimInterface import make_galsim_detector
 
 __all__ = ["GalSimInterpreter"]
 
@@ -293,7 +294,7 @@ class GalSimInterpreter(object):
         detectorList, \
         centeredObj = self.findAllDetectors(gsObject)
 
-        if gsObject.sed is None or len(detectorList) == 0:
+        if len(detectorList) == 0:
             # there is nothing to draw
             return outputString
 
@@ -495,16 +496,27 @@ class GalSimInterpreter(object):
             with open(self.checkpoint_file, 'wb') as output:
                 pickle.dump(image_state, output)
 
-    def restore_checkpoint(self, gs_catalog):
+    def restore_checkpoint(self, camera_wrapper, phot_params, obs_metadata,
+                           epoch=2000.0):
         """
         Restore self.detectorImages, self._rng, and self.drawn_objects states
         from the checkpoint file.
 
         Parameters
         ----------
-        gs_catalog: GalSimBase subclass
-            Instance of a GalSimBase subclass that can return
-            a GalSimDetector object via GalSimBase.make_detector.
+        camera_wrapper: lsst.sims.GalSimInterface.GalSimCameraWrapper
+            An object representing the camera being simulated
+
+        phot_params: lsst.sims.photUtils.PhotometricParameters
+            An object containing the physical parameters representing
+            the photometric properties of the system
+
+        obs_metadata: lsst.sims.utils.ObservationMetaData
+            Characterizing the pointing of the telescope
+
+        epoch: float
+            Representing the Julian epoch against which RA, Dec are
+            reckoned (default = 2000)
         """
         if (self.checkpoint_file is None
             or not os.path.isfile(self.checkpoint_file)):
@@ -517,7 +529,9 @@ class GalSimInterpreter(object):
                 detname = "R:{},{} S:{},{}".format(*tuple(key[1:3] + key[5:7]))
                 # Create the galsim.Image from scratch as a blank image and
                 # set the pixel data from the persisted image data array.
-                detector = gs_catalog.make_detector(detname)
+                detector = make_galsim_detector(camera_wrapper, detname,
+                                                phot_params, obs_metadata,
+                                                epoch=epoch)
                 self.detectorImages[key] = self.blankImage(detector=detector)
                 self.detectorImages[key] += image_state['images'][key]
             self._rng = image_state['rng']
