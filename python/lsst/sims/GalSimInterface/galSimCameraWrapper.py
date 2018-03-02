@@ -104,7 +104,7 @@ class GalSimCameraWrapper(object):
              self._center_pixel_cache = {}
 
          if detector_name not in self._center_pixel_cache:
-             centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE).getPoint()
+             centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE)
              centerPixel = self._camera[detector_name].getTransform(FOCAL_PLANE, PIXELS).applyForward(centerPoint)
              self._center_pixel_cache[detector_name] = centerPixel
 
@@ -120,7 +120,7 @@ class GalSimCameraWrapper(object):
 
         if detector_name not in self._center_pupil_cache:
             dd = self._camera[detector_name]
-            centerPoint = dd.getCenter(FOCAL_PLANE).getPoint()
+            centerPoint = dd.getCenter(FOCAL_PLANE)
             pupilPoint = self.focal_to_field.applyForward(centerPoint)
             self._center_pupil_cache[detector_name] = pupilPoint
 
@@ -499,7 +499,7 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
              self._center_pixel_cache = {}
 
          if detector_name not in self._center_pixel_cache:
-             centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE).getPoint()
+             centerPoint = self._camera[detector_name].getCenter(FOCAL_PLANE)
              centerPixel_dm = self._camera[detector_name].getTransform(FOCAL_PLANE, PIXELS).applyForward(centerPoint)
              centerPixel_cam = afwGeom.coordinates.Point2D(centerPixel_dm.getY(), centerPixel_dm.getX())
              self._center_pixel_cache[detector_name] = centerPixel_cam

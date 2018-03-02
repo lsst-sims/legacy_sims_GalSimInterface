@@ -34,15 +34,13 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.coord as afwCoord
 from lsst.meas.base import SingleFrameMeasurementTask
 from lsst.meas.astrom.sip import makeCreateWcsWithSip
-from lsst.afw.image.basicUtils import assertWcsNearlyEqualOverBBox
 from lsst.sims.coordUtils import raDecFromPixelCoords
 
 __all__ = ["approximateWcs"]
 
 def approximateWcs(wcs, camera_wrapper=None, detector_name=None, obs_metadata=None,
                    order=3, nx=20, ny=20, iterations=3,
-                   skyTolerance=0.001*afwGeom.arcseconds, pixelTolerance=0.02,
-                   useTanWcs=False):
+                   skyTolerance=0.001*afwGeom.arcseconds, pixelTolerance=0.02):
     """Approximate an existing WCS as a TAN-SIP WCS
 
     The fit is performed by evaluating the WCS at a uniform grid of points within a bounding box.
@@ -59,17 +57,9 @@ def approximateWcs(wcs, camera_wrapper=None, detector_name=None, obs_metadata=No
                input wcs and approximate wcs (default is 0.001 arcsec)
     @param[in] pixelTolerance maximum allowed difference in pixel coordinates between
                input wcs and approximate wcs (default is 0.02 pixels)
-    @param[in] useTanWcs  send a TAN version of wcs to the fitter? It is documented to require that,
-        but I don't think the fitter actually cares
     @return the fit TAN-SIP WCS
     """
-    if useTanWcs:
-        crCoord = wcs.getSkyOrigin()
-        crPix = wcs.getPixelOrigin()
-        cdMat = wcs.getCDMatrix()
-        tanWcs = afwImage.makeWcs(crCoord, crPix, cdMat[0,0], cdMat[0,1], cdMat[1,0], cdMat[1,1])
-    else:
-        tanWcs = wcs
+    tanWcs = wcs
 
     # create a matchList consisting of a grid of points covering the bbox
     refSchema = afwTable.SimpleTable.makeMinimalSchema()
