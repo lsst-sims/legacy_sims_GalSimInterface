@@ -9,6 +9,7 @@ GalSimInterpreter expects.
 """
 from __future__ import print_function
 
+import math
 from builtins import object
 import numpy as np
 import galsim
@@ -362,15 +363,32 @@ class GalSimInterpreter(object):
                     sensor = None
                     surface_ops = ()
 
-                self.detectorImages[name] = obj.drawImage(method='phot',
-                                                          #gain=detector.photParams.gain,
-                                                          offset=galsim.PositionD(xPix-detector.xCenterPix,
-                                                                                  yPix-detector.yCenterPix),
-                                                          rng=self._rng,
-                                                          image=self.detectorImages[name],
-                                                          sensor=sensor,
-                                                          surface_ops=surface_ops,
-                                                          add_to_image=True)
+                # Desired position to draw the object.
+                image_pos = galsim.PositionD(xPix, yPix)
+
+                # Find a postage stamp region to draw onto.
+                my_image = self.detectorImages[name]
+                object_on_image = my_image.wcs.toImage(obj, image_pos=image_pos)
+                image_size = object_on_image.getGoodImageSize(1.0)
+                xmin = int(math.floor(image_pos.x) - image_size/2)
+                xmax = int(math.ceil(image_pos.x) + image_size/2)
+                ymin = int(math.floor(image_pos.y) - image_size/2)
+                ymax = int(math.ceil(image_pos.y) + image_size/2)
+
+                # Ensure the bounds of the postage stamp lie within the image.
+                bounds = galsim.BoundsI(xmin, xmax, ymin, ymax)
+                bounds = bounds & my_image.bounds
+
+                # offset is relative to the "true" center of the postage stamp.
+                offset = image_pos - bounds.true_center
+
+                obj.drawImage(method='phot',
+                              offset=offset,
+                              rng=self._rng,
+                              image=my_image[bounds],
+                              sensor=sensor,
+                              surface_ops=surface_ops,
+                              add_to_image=True)
 
         return outputString
 
