@@ -10,8 +10,9 @@ from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.GalSimInterface.wcsUtils import tanSipWcsFromDetector
 from lsst.sims.GalSimInterface import GalSimCameraWrapper
+from lsst.sims.photUtils import PhotometricParameters
 
-__all__ = ["GalSimDetector"]
+__all__ = ["GalSimDetector", "make_galsim_detector"]
 
 
 class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
@@ -62,6 +63,9 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.photParams = photParams
         self.epoch = epoch
 
+        # this is needed to match the GalSim v1.5 API
+        self._color = None
+
         self.fitsHeader = self._tanSipWcs.getFitsMetadata()
         self.fitsHeader.set("EXTTYPE", "IMAGE")
 
@@ -89,6 +93,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.origin = galsim.PositionD(x=self.crpix1, y=self.crpix2)
         self._color = None
 
+
     def _radec(self, x, y, color=None):
         """
         This is a method required by the GalSim WCS API
@@ -96,6 +101,9 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         Convert pixel coordinates into ra, dec coordinates.
         x and y already have crpix1 and crpix2 subtracted from them.
         Return ra, dec in radians.
+
+        Note: the color arg is ignored.  It is only there to
+        match the GalSim v1.5 API
         """
 
         chipNameList = [self.detectorName]
@@ -570,3 +578,60 @@ class GalSimDetector(object):
     @tree_rings.setter
     def tree_rings(self, center_func_tuple):
         self._tree_rings = TreeRingInfo(*center_func_tuple)
+
+def make_galsim_detector(camera_wrapper, detname, phot_params,
+                         obs_metadata, epoch=2000.0):
+    """
+    Create a GalSimDetector object given the desired detector name.
+
+    Parameters
+    ----------
+    camera_wrapper: lsst.sims.GalSimInterface.GalSimCameraWrapper
+        An object representing the camera being simulated
+
+    detname: str
+        The name of the detector in the LSST focal plane to create,
+        e.g., "R:2,2 S:1,1".
+
+    phot_params: lsst.sims.photUtils.PhotometricParameters
+        An object containing the physical parameters representing
+        the photometric properties of the system
+
+    obs_metadata: lsst.sims.utils.ObservationMetaData
+        Characterizing the pointing of the telescope
+
+    epoch: float
+        Representing the Julian epoch against which RA, Dec are
+        reckoned (default = 2000)
+
+    Returns
+    -------
+    GalSimDetector
+    """
+    centerPupil = camera_wrapper.getCenterPupil(detname)
+    centerPixel = camera_wrapper.getCenterPixel(detname)
+
+    translationPupil = camera_wrapper.pupilCoordsFromPixelCoords(centerPixel.getX()+1,
+                                                                 centerPixel.getY()+1,
+                                                                 detname)
+
+    plateScale = np.sqrt(np.power(translationPupil[0]-centerPupil.getX(), 2) +
+                         np.power(translationPupil[1]-centerPupil.getY(), 2))/np.sqrt(2.0)
+
+    plateScale = 3600.0*np.degrees(plateScale)
+
+    # make a detector-custom photParams that copies all of the quantities
+    # in the catalog photParams, except the platescale, which is
+    # calculated above
+    params = PhotometricParameters(exptime=phot_params.exptime,
+                                   nexp=phot_params.nexp,
+                                   effarea=phot_params.effarea,
+                                   gain=phot_params.gain,
+                                   readnoise=phot_params.readnoise,
+                                   darkcurrent=phot_params.darkcurrent,
+                                   othernoise=phot_params.othernoise,
+                                   platescale=plateScale)
+
+    return GalSimDetector(detname, camera_wrapper,
+                          obs_metadata=obs_metadata, epoch=epoch,
+                          photParams=params)

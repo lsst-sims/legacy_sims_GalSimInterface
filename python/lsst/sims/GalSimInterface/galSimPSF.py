@@ -30,7 +30,7 @@ class PSFbase(object):
     See galSimCompoundGenerator.py and galSimStarGenerator.py for example usages.
     """
 
-    def _getPSF(self, xPupil=None, yPupil=None):
+    def _getPSF(self, xPupil=None, yPupil=None, **kwargs):
         """
         If it had been implemented, this would return a GalSim PSF instantiation at the
         coordinates and wavelength specified and returned it to applyPSF.  As it is, this
@@ -105,14 +105,17 @@ class DoubleGaussianPSF(PSFbase):
         whenever _getPSF is called in this class.
         """
 
-        r1 = fwhm1/2.355
-        r2 = fwhm2/2.355
-        norm = 1.0/(wgt1 + wgt2)
+        self.r1 = fwhm1/2.355
+        self.r2 = fwhm2/2.355
+        self.norm = 1.0/(wgt1 + wgt2)
 
-        gaussian1 = galsim.Gaussian(sigma=r1)
-        gaussian2 = galsim.Gaussian(sigma=r2)
+        self._cached_psf = self._compute_psf()
 
-        self._cached_psf = norm*(wgt1*gaussian1 + wgt2*gaussian2)
+    def _compute_psf(self, gsparams=None):
+        gaussian1 = galsim.Gaussian(sigma=self.r1, gsparams=gsparams)
+        gaussian2 = galsim.Gaussian(sigma=self.r2, gsparams=gsparams)
+
+        return norm*(wgt1*gaussian1 + wgt2*gaussian2)
 
     def _getPSF(self, xPupil=None, yPupil=None, **kwargs):
         """
@@ -125,7 +128,10 @@ class DoubleGaussianPSF(PSFbase):
         Because this specific PSF depends on neither wavelength nor position,
         it will just return the cached PSF function.
         """
-        return self._cached_psf
+        if 'gsparams' in kwargs:
+            return self._compute_psf(gsparams=kwargs['gsparams'])
+        else:
+            return self._cached_psf
 
 
 
@@ -154,17 +160,24 @@ class SNRdocumentPSF(DoubleGaussianPSF):
         #the expression below is derived by solving equation (30) of the signal-to-noise
         #document (www.astro.washington.edu/uses/ivezic/Astr511/LSST_SNRdoc.pdf)
         #for r at half the maximum of the PSF
-        alpha = fwhm/2.3835
 
-        eff_pixel_sigma_sq = pixel_scale*pixel_scale/12.0
+        self.fwhm = fwhm
+        self.pixel_scale = pixel_scale
+
+        self._cached_psf = self._compute_psf()
+
+    def _compute_psf(self, gsparams=None):
+        alpha = self.fwhm/2.3835
+
+        eff_pixel_sigma_sq = self.pixel_scale*self.pixel_scale/12.0
 
         sigma = numpy.sqrt(alpha*alpha - eff_pixel_sigma_sq)
-        gaussian1 = galsim.Gaussian(sigma=sigma)
+        gaussian1 = galsim.Gaussian(sigma=sigma, gsparams=gsparams)
 
         sigma = numpy.sqrt(4.0*alpha*alpha - eff_pixel_sigma_sq)
-        gaussian2 = galsim.Gaussian(sigma=sigma)
+        gaussian2 = galsim.Gaussian(sigma=sigma, gsparams=gsparams)
 
-        self._cached_psf = 0.909*(gaussian1 + 0.1*gaussian2)
+        return 0.909*(gaussian1 + 0.1*gaussian2)
 
 
 class Kolmogorov_and_Gaussian_PSF(PSFbase):
@@ -188,22 +201,40 @@ class Kolmogorov_and_Gaussian_PSF(PSFbase):
 
         band is the bandpass of the observation [u,g,r,i,z,y]
         """
+        self.airmass = airmass
+        self.rawSeeing = rawSeeing
+        self.band = band
+
+        self._cached_psf = self._compute_psf()
+
+    def _compute_psf(self, gsparams=None):
         # This code was provided by David Kirkby in a private communication
 
-        wlen_eff = dict(u=365.49, g=480.03, r=622.20, i=754.06, z=868.21, y=991.66)[band]
+        wlen_eff = dict(u=365.49, g=480.03, r=622.20, i=754.06, z=868.21, y=991.66)[self.band]
         # wlen_eff is from Table 2 of LSE-40 (y=y2)
 
-        FWHMatm = rawSeeing * (wlen_eff / 500.) ** -0.3 * airmass ** 0.6
+        FWHMatm = self.rawSeeing * (wlen_eff / 500.) ** -0.3 * self.airmass ** 0.6
         # From LSST-20160 eqn (4.1)
 
-        FWHMsys = numpy.sqrt(0.25**2 + 0.3**2 + 0.08**2) * airmass ** 0.6
+        FWHMsys = numpy.sqrt(0.25**2 + 0.3**2 + 0.08**2) * self.airmass ** 0.6
         # From LSST-20160 eqn (4.2)
 
-        atm = galsim.Kolmogorov(fwhm=FWHMatm)
-        sys = galsim.Gaussian(fwhm=FWHMsys)
-        psf = galsim.Convolve((atm, sys))
+        atm = galsim.Kolmogorov(fwhm=FWHMatm, gsparams=gsparams)
+        sys = galsim.Gaussian(fwhm=FWHMsys, gsparams=gsparams)
+        return galsim.Convolve((atm, sys))
 
-        self._cached_psf = psf
+    def _getPSF(self, xPupil=None, yPupil=None, **kwargs):
+        """
+        Return a the PSF to be convolved with sources.
 
-    def _getPSF(self, xPupil=None, yPupil=None):
-        return self._cached_psf
+        @param [in] xPupil the x coordinate on the pupil in arc seconds
+
+        @param [in] yPupil the y coordinate on the pupil in arc seconds
+
+        Because this specific PSF depends on neither wavelength nor position,
+        it will just return the cached PSF function.
+        """
+        if 'gsparams' in kwargs:
+            return self._compute_psf(gsparams=kwargs['gsparams'])
+        else:
+            return self._cached_psf

@@ -5,6 +5,7 @@ import os
 import copy
 import numpy as np
 import unittest
+import pickle
 import galsim
 import tempfile
 import shutil
@@ -21,7 +22,8 @@ from lsst.sims.catUtils.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.GalSimInterface import (GalSimGalaxies, GalSimStars, GalSimAgn,
                                        SNRdocumentPSF, ExampleCCDNoise,
-                                       GalSimCameraWrapper)
+                                       GalSimInterpreter, GalSimCameraWrapper,
+                                       make_galsim_detector)
 from lsst.sims.catUtils.utils import (calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj,
                                       testGalaxyAgnDBObj, testStarsDBObj)
 import lsst.afw.image as afwImage
@@ -989,6 +991,120 @@ class GalSimInterfaceTest(unittest.TestCase):
         self.assertGreater(midM1, 0.5*maxValue, msg=msg)
         msg = '%e is not < %e ' % (midP1, 0.5*maxValue)
         self.assertLess(midP1, 0.5*maxValue, msg=msg)
+
+
+class GsDetector(object):
+    """
+    Minimal implementation of an interface-compatible version
+    of GalSimDetector for testing the GalSimInterpreter checkpointing
+    functions.
+    """
+    def __init__(self, detname):
+        self.detname = detname
+        self.xMaxPix = 4000
+        self.yMaxPix = 4000
+        self.xMinPix = 1
+        self.yMinPix = 1
+        self.wcs = galsim.wcs.BaseWCS()
+
+    def name(self):
+        return self.detname
+
+
+class CheckPointingTestCase(unittest.TestCase):
+    """
+    TestCase class for testing the GalSimInterpreter checkpointing functions.
+    """
+    def setUp(self):
+        self.output_dir = os.path.join(getPackageDir('sims_GalSimInterface'),
+                                       'tests', 'checkpoint_dir')
+        try:
+            os.makedirs(self.output_dir)
+        except OSError:
+            pass
+        self.cp_file = os.path.join(self.output_dir, 'checkpoint_test.pkl')
+
+    def tearDown(self):
+        try:
+            os.remove(self.cp_file)
+            os.rmdir(self.output_dir)
+        except OSError:
+            pass
+
+    def test_checkpointing(self):
+        "Test checkpointing of .detectorImages data."
+        camera = camTestUtils.CameraWrapper().camera
+        camera_wrapper = GalSimCameraWrapper(camera)
+        phot_params = PhotometricParameters()
+        obs_md = ObservationMetaData(pointingRA=23.0,
+                                     pointingDec=12.0,
+                                     rotSkyPos=13.2,
+                                     mjd=59580.0,
+                                     bandpassName='r')
+
+        detectors = [make_galsim_detector(camera_wrapper, dd.getName(),
+                                          phot_params, obs_md)
+                     for dd in camera_wrapper.camera]
+
+        # Create a GalSimInterpreter object and set the checkpoint
+        # attributes.
+        gs_interpreter = GalSimInterpreter(detectors=detectors)
+        gs_interpreter.checkpoint_file = self.cp_file
+
+        nobj = 10
+        gs_interpreter.nobj_checkpoint = nobj
+
+        # Set the image data by hand.
+        key = "R00_S00_r.fits"
+        detname = "R:0,0 S:0,0"
+        detector = make_galsim_detector(camera_wrapper, detname,
+                                        phot_params, obs_md)
+        image = gs_interpreter.blankImage(detector=detector)
+        image += 17
+        gs_interpreter.detectorImages[key] = image
+
+        # Add some drawn objects and check that the checkpoint file is
+        # written at the right cadence.
+        for uniqueId in range(1, nobj+1):
+            gs_interpreter.drawn_objects.add(uniqueId)
+            gs_interpreter.write_checkpoint()
+            if uniqueId < nobj:
+                self.assertFalse(os.path.isfile(self.cp_file))
+            else:
+                self.assertTrue(os.path.isfile(self.cp_file))
+
+        # Verify that the checkpointed data has the expected content.
+        with open(self.cp_file, 'rb') as input_:
+            cp_data = pickle.load(input_)
+        self.assertTrue(np.array_equal(cp_data['images'][key], image.array))
+
+        # Check the restore_checkpoint function.
+        new_interpreter = GalSimInterpreter(detectors=detectors)
+        new_interpreter.checkpoint_file = self.cp_file
+        new_interpreter.restore_checkpoint(camera_wrapper,
+                                           phot_params,
+                                           obs_md)
+
+        self.assertEqual(new_interpreter.drawn_objects,
+                         gs_interpreter.drawn_objects)
+
+        self.assertEqual(set(new_interpreter.detectorImages.keys()),
+                         set(gs_interpreter.detectorImages.keys()))
+
+        for det_name in new_interpreter.detectorImages.keys():
+            new_img = new_interpreter.detectorImages[det_name]
+            gs_img = gs_interpreter.detectorImages[det_name]
+            np.testing.assert_array_equal(new_img.array,
+                                          gs_img.array)
+            self.assertEqual(new_img.bounds, gs_img.bounds)
+            self.assertEqual(new_img.wcs.crpix1, gs_img.wcs.crpix1)
+            self.assertEqual(new_img.wcs.crpix2, gs_img.wcs.crpix2)
+            self.assertEqual(new_img.wcs.crval1, gs_img.wcs.crval1)
+            self.assertEqual(new_img.wcs.crval2, gs_img.wcs.crval2)
+            self.assertEqual(new_img.wcs.detectorName, gs_img.wcs.detectorName)
+            for name in new_img.wcs.fitsHeader.names():
+                self.assertEqual(new_img.wcs.fitsHeader.get(name),
+                                 gs_img.wcs.fitsHeader.get(name))
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):

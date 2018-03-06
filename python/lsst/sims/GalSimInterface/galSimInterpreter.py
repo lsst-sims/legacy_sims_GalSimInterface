@@ -11,10 +11,13 @@ from __future__ import print_function
 
 import math
 from builtins import object
+import os
+import pickle
 import numpy as np
 import galsim
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
+from lsst.sims.GalSimInterface import make_galsim_detector
 
 __all__ = ["GalSimInterpreter"]
 
@@ -71,6 +74,10 @@ class GalSimInterpreter(object):
         self.blankImageCache = {}  # this dict will cache blank images associated with specific detectors.
                                    # It turns out that calling the image's constructor is more
                                    # time-consuming than returning a deep copy
+        self.checkpoint_file = None
+        self.drawn_objects = set()
+        self.nobj_checkpoint = 1000
+        self.sky_bg_per_pixel = None
 
     def setPSF(self, PSF=None):
         """
@@ -294,7 +301,7 @@ class GalSimInterpreter(object):
         detectorList, \
         centeredObj = self.findAllDetectors(gsObject)
 
-        if gsObject.sed is None or len(detectorList) == 0:
+        if len(detectorList) == 0:
             # there is nothing to draw
             return outputString
 
@@ -382,14 +389,18 @@ class GalSimInterpreter(object):
                 # offset is relative to the "true" center of the postage stamp.
                 offset = image_pos - bounds.true_center
 
-                obj.drawImage(method='phot',
-                              offset=offset,
-                              rng=self._rng,
-                              image=my_image[bounds],
-                              sensor=sensor,
-                              surface_ops=surface_ops,
-                              add_to_image=True)
+                # skip objects with larger stamp regions for now.
+                if object_on_image.gsparams.folding_threshold <= 0.005:
+                    obj.drawImage(method='phot',
+                                  offset=offset,
+                                  rng=self._rng,
+                                  image=my_image[bounds],
+                                  sensor=sensor,
+                                  surface_ops=surface_ops,
+                                  add_to_image=True)
 
+        self.drawn_objects.add(gsObject.uniqueId)
+        self.write_checkpoint()
         return outputString
 
     def drawPointSource(self, gsObject):
@@ -403,7 +414,35 @@ class GalSimInterpreter(object):
         if self.PSF is None:
             raise RuntimeError("Cannot draw a point source in GalSim without a PSF")
 
-        return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec)
+        # Get the bandpass name.  If there is not exactly one, raise an exception.
+        if len(self.bandpassDict) != 1:
+            raise RuntimeError("Number of bandpasses != 1")
+
+        bandpass = [x for x in self.bandpassDict.keys()][0]
+        flux = gsObject.flux(bandpass)
+
+        # Compute the candidate folding_threshold based on the sky
+        # background per pixel and the point source flux.
+        folding_threshold = self.sky_bg_per_pixel/flux
+
+        if folding_threshold > 0.005:
+            # The default folding_threshold = 0.005. In this case,
+            # just return the PSF.
+            return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
+                                     yPupil=gsObject.yPupilArcsec)
+        else:
+            # Build a PSF with a folding_threshold set to the
+            # sky_bg/flux ratio and convolve with a delta function.
+            gsparams = galsim.GSParams(folding_threshold=folding_threshold)
+
+            # Create a delta function with the desired flux for the star.
+            centeredObj = galsim.DeltaFunction(flux=flux, gsparams=gsparams)
+
+            # Apply the PSF and return.
+            return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
+                                     yPupil=gsObject.yPupilArcsec,
+                                     obj=centeredObj,
+                                     gsparams=gsparams)
 
     def drawSersic(self, gsObject):
         """
@@ -418,6 +457,41 @@ class GalSimInterpreter(object):
                                     half_light_radius=float(gsObject.halfLightRadiusArcsec))
 
         # Turn the Sersic profile into an ellipse
+        centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians,
+                                        beta=(0.5*np.pi+gsObject.positionAngleRadians)*galsim.radians)
+
+        # Apply weak lensing distortion.
+        centeredObj = centeredObj.lens(gsObject.g1, gsObject.g2, gsObject.mu)
+
+        # Apply the PSF.
+        if self.PSF is not None:
+            centeredObj = self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
+                                            yPupil=gsObject.yPupilArcsec,
+                                            obj=centeredObj)
+
+        return centeredObj
+
+    def drawRandomWalk(self, gsObject):
+        """
+        Draw the image of a RandomWalk light profile. In orider to allow for
+        reproducibility, the specific realisation of the random walk is seeded
+        by the object unique identifier, if provided.
+
+        @param [in] gsObject is an instantiation of the GalSimCelestialObject class
+        carrying information about the object whose image is to be drawn
+        """
+        # Seeds the random walk with the object id if available
+        if gsObject.uniqueId is None:
+            rng=None
+        else:
+            rng=galsim.BaseDeviate(int(gsObject.uniqueId))
+
+        # Create the RandomWalk profile
+        centeredObj = galsim.RandomWalk(npoints=int(gsObject.sindex),
+                                        half_light_radius=float(gsObject.halfLightRadiusArcsec),
+                                        rng=rng)
+
+        # Apply intrinsic ellipticity to the profile
         centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians,
                                         beta=(0.5*np.pi+gsObject.positionAngleRadians)*galsim.radians)
 
@@ -449,6 +523,9 @@ class GalSimInterpreter(object):
 
         elif gsObject.galSimType == 'pointSource':
             centeredObj = self.drawPointSource(gsObject)
+
+        elif gsObject.galSimType == 'RandomWalk':
+            centeredObj = self.drawRandomWalk(gsObject)
         else:
             print("Apologies: the GalSimInterpreter does not yet have a method to draw ")
             print(gsObject.galSimType)
@@ -481,3 +558,65 @@ class GalSimInterpreter(object):
             namesWritten.append(fileName)
 
         return namesWritten
+
+    def write_checkpoint(self, force=False):
+        """
+        Write a pickle file of detector images packaged with the
+        objects that have been drawn. By default, write the checkpoint
+        every self.nobj_checkpoint objects.
+        """
+        if self.checkpoint_file is None:
+            return
+        if force or len(self.drawn_objects) % self.nobj_checkpoint == 0:
+            # The galsim.Images in self.detectorImages cannot be
+            # pickled because they contain references to unpickleable
+            # afw objects, so just save the array data and rebuild
+            # the galsim.Images from scratch, given the detector name.
+            images = {key: value.array for key, value
+                      in self.detectorImages.items()}
+            image_state = dict(images=images,
+                               rng=self._rng,
+                               drawn_objects=self.drawn_objects)
+            with open(self.checkpoint_file, 'wb') as output:
+                pickle.dump(image_state, output)
+
+    def restore_checkpoint(self, camera_wrapper, phot_params, obs_metadata,
+                           epoch=2000.0):
+        """
+        Restore self.detectorImages, self._rng, and self.drawn_objects states
+        from the checkpoint file.
+
+        Parameters
+        ----------
+        camera_wrapper: lsst.sims.GalSimInterface.GalSimCameraWrapper
+            An object representing the camera being simulated
+
+        phot_params: lsst.sims.photUtils.PhotometricParameters
+            An object containing the physical parameters representing
+            the photometric properties of the system
+
+        obs_metadata: lsst.sims.utils.ObservationMetaData
+            Characterizing the pointing of the telescope
+
+        epoch: float
+            Representing the Julian epoch against which RA, Dec are
+            reckoned (default = 2000)
+        """
+        if (self.checkpoint_file is None
+            or not os.path.isfile(self.checkpoint_file)):
+            return
+        with open(self.checkpoint_file, 'rb') as input_:
+            image_state = pickle.load(input_)
+            images = image_state['images']
+            for key in images:
+                # Unmangle the detector name.
+                detname = "R:{},{} S:{},{}".format(*tuple(key[1:3] + key[5:7]))
+                # Create the galsim.Image from scratch as a blank image and
+                # set the pixel data from the persisted image data array.
+                detector = make_galsim_detector(camera_wrapper, detname,
+                                                phot_params, obs_metadata,
+                                                epoch=epoch)
+                self.detectorImages[key] = self.blankImage(detector=detector)
+                self.detectorImages[key] += image_state['images'][key]
+            self._rng = image_state['rng']
+            self.drawn_objects = image_state['drawn_objects']

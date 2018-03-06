@@ -24,6 +24,7 @@ from lsst.sims.catUtils.mixins import (CameraCoords, AstrometryGalaxies, Astrome
                                        EBVmixin)
 from lsst.sims.GalSimInterface import GalSimInterpreter, GalSimDetector, GalSimCelestialObject
 from lsst.sims.GalSimInterface import GalSimCameraWrapper
+from lsst.sims.GalSimInterface import make_galsim_detector
 from lsst.sims.photUtils import (Sed, Bandpass, BandpassDict,
                                  PhotometricParameters)
 import lsst.afw.cameraGeom.testUtils as camTestUtils
@@ -31,7 +32,7 @@ import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
 from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
 
-__all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars"]
+__all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars", "GalSimRandomWalk"]
 
 
 def _is_null(argument):
@@ -193,8 +194,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     # galSimCameraWrapper.py
     _camera_wrapper = None
 
-    uniqueSeds = {}  # a cache for un-normalized SED files, so that we do not waste time on I/O
-
     hasBeenInitialized = False
 
     galSimInterpreter = None  # the GalSimInterpreter instantiation for this catalog
@@ -244,7 +243,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         """
         if _is_null(sedName):
             return None
-        sed = self._getSedCopy(sedName)
+        sed = Sed()
+        sed.readSED_flambda(os.path.join(self.sedDir, sedName))
         imsimband = Bandpass()
         imsimband.imsimBandpass()
         # normalize the SED
@@ -286,38 +286,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             sed.addCCMDust(a_int, b_int, A_v=gAv, R_v=gRv)
         return sed
 
-    def _getSedCopy(self, sedName):
-        """
-        Return a copy of the requested SED, either from the cached
-        version or creating a new one and caching a copy for later
-        reuse.
-        """
-        if sedName in self.uniqueSeds:
-            # we have already read in this file; no need to do it again
-            sed = Sed(wavelen=self.uniqueSeds[sedName].wavelen,
-                      flambda=self.uniqueSeds[sedName].flambda,
-                      fnu=self.uniqueSeds[sedName].fnu,
-                      name=self.uniqueSeds[sedName].name)
-        else:
-            # load the SED of the object
-            sed = Sed()
-            sedFile = os.path.join(self.sedDir, sedName)
-            sed.readSED_flambda(sedFile)
-
-            flambdaCopy = copy.deepcopy(sed.flambda)
-
-            # If the SED is zero inside of the bandpass, GalSim raises an error.
-            # This sets a minimum flux value of 1.0e-30 so that the SED is never technically
-            # zero inside of the bandpass.
-            sed.flambda = np.array([ff if ff > 1.0e-30 else 1.0e-30 for ff in flambdaCopy])
-            sed.fnu = None
-
-            # copy the unnormalized file to uniqueSeds so we don't have to read it in again
-            sedCopy = Sed(wavelen=sed.wavelen, flambda=sed.flambda,
-                          fnu=sed.fnu, name=sed.name)
-            self.uniqueSeds[sedName] = sedCopy
-        return sed
-
     def _calculateGalSimSeds(self):
         """
         Apply any physical corrections to the objects' SEDS (redshift them, apply dust, etc.).
@@ -337,7 +305,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     galacticAv, galacticRv, magNorm))
 
     @cached
-    def get_fitsFiles(self):
+    def get_fitsFiles(self, checkpoint_file=None, nobj_checkpoint=1000):
         """
         This getter returns a column listing the names of the detectors whose corresponding
         FITS files contain the object in question.  The detector names will be separated by a '//'
@@ -357,8 +325,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                 self.bandpassNames = self.obs_metadata.bandpass
 
         objectNames = self.column_by_name('uniqueId')
-        raICRS = self.column_by_name('raICRS')
-        decICRS = self.column_by_name('decICRS')
         xPupil = self.column_by_name('x_pupil')
         yPupil = self.column_by_name('y_pupil')
         halfLight = self.column_by_name('halfLightRadius')
@@ -379,10 +345,16 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             self._initializeGalSimCatalog()
             if not hasattr(self, 'bandpassDict'):
                 raise RuntimeError('ran initializeGalSimCatalog but do not have bandpassDict')
+            self.galSimInterpreter.checkpoint_file = checkpoint_file
+            self.galSimInterpreter.nobj_checkpoint = nobj_checkpoint
+            self.galSimInterpreter.restore_checkpoint(self._camera_wrapper,
+                                                      self.photParams,
+                                                      self.obs_metadata,
+                                                      epoch=self.db_obj.epoch)
 
         output = []
-        for (name, ra, dec, xp, yp, hlr, minor, major, pa, ss, sn, gam1, gam2, kap) in \
-            zip(objectNames, raICRS, decICRS, xPupil, yPupil, halfLight,
+        for (name, xp, yp, hlr, minor, major, pa, ss, sn, gam1, gam2, kap) in \
+            zip(objectNames, xPupil, yPupil, halfLight,
                  minorAxis, majorAxis, positionAngle, sedList, sindex,
                  gamma1, gamma2, kappa):
 
@@ -394,19 +366,25 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
                 self.objectHasBeenDrawn.add(name)
 
-                flux_dict = {}
-                for bb in self.bandpassNames:
-                    adu = ss.calcADU(self.bandpassDict[bb], self.photParams)
-                    flux_dict[bb] = adu*self.photParams.gain
+                if name not in self.galSimInterpreter.drawn_objects:
 
-                gsObj = GalSimCelestialObject(self.galsim_type, ss, ra, dec, xp, yp,
-                                              hlr, minor, major, pa, sn, flux_dict, gam1, gam2, kap)
+                    gsObj = GalSimCelestialObject(self.galsim_type, xp, yp,
+                                                  hlr, minor, major, pa, sn,
+                                                  ss, self.bandpassDict, self.photParams,
+                                                  gam1, gam2, kap, uniqueId=name)
 
-                # actually draw the object
-                detectorsString = self.galSimInterpreter.drawObject(gsObj)
+                    # actually draw the object
+                    detectorsString = self.galSimInterpreter.drawObject(gsObj)
+                else:
+                    # For objects that have already been drawn in the
+                    # checkpointed data, use a blank string.
+                    detectorsString = ''
 
                 output.append(detectorsString)
 
+        # Force checkpoint at the end (if a checkpoint file has been specified).
+        if self.galSimInterpreter is not None:
+            self.galSimInterpreter.write_checkpoint(force=True)
         return np.array(output)
 
     def setPSF(self, PSF):
@@ -469,35 +447,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     continue
 
                 if self.allowed_chips is None or dd.getName() in self.allowed_chips:
-                    centerPupil = self.camera_wrapper.getCenterPupil(dd.getName())
-                    centerPixel = self.camera_wrapper.getCenterPixel(dd.getName())
-
-                    translationPupil = self.camera_wrapper.pupilCoordsFromPixelCoords(centerPixel.getX()+1,
-                                                                                      centerPixel.getY()+1,
-                                                                                      dd.getName())
-
-                    plateScale = np.sqrt(np.power(translationPupil[0]-centerPupil.getX(), 2) +
-                                         np.power(translationPupil[1]-centerPupil.getY(), 2))/np.sqrt(2.0)
-
-                    plateScale = 3600.0*np.degrees(plateScale)
-
-                    # make a detector-custom photParams that copies all of the quantities
-                    # in the catalog photParams, except the platescale, which is
-                    # calculated above
-                    params = PhotometricParameters(exptime=self.photParams.exptime,
-                                                   nexp=self.photParams.nexp,
-                                                   effarea=self.photParams.effarea,
-                                                   gain=self.photParams.gain,
-                                                   readnoise=self.photParams.readnoise,
-                                                   darkcurrent=self.photParams.darkcurrent,
-                                                   othernoise=self.photParams.othernoise,
-                                                   platescale=plateScale)
-
-                    detector = GalSimDetector(dd.getName(), self.camera_wrapper,
-                                              obs_metadata=self.obs_metadata, epoch=self.db_obj.epoch,
-                                              photParams=params)
-
-                    detectors.append(detector)
+                    detectors.append(make_galsim_detector(self.camera_wrapper, dd.getName(),
+                                                          self.photParams, self.obs_metadata,
+                                                          epoch=self.db_obj.epoch))
 
             if not hasattr(self, 'bandpassDict'):
                 if self.noise_and_background is not None:
@@ -543,6 +495,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
             self.galSimInterpreter.setPSF(PSF=self.PSF)
 
+
+
     def write_images(self, nameRoot=None):
         """
         Writes the FITS images associated with this InstanceCatalog.
@@ -581,6 +535,23 @@ class GalSimGalaxies(GalSimBase, AstrometryGalaxies, EBVmixin):
                        ('gamma2', 0.0, float),
                        ('kappa', 0.0, float)]
 
+class GalSimRandomWalk(GalSimBase, AstrometryGalaxies, EBVmixin):
+    """
+    This is a GalSimCatalog class for galaxy components (i.e. objects that are shaped
+    like Sersic profiles).
+
+    See the docstring in GalSimBase for explanation of how this class should be used.
+    """
+
+    catalog_type = 'galsim_random_walk'
+    galsim_type = 'RandomWalk'
+    default_columns = [('galacticAv', 0.1, float),
+                       ('galacticRv', 3.1, float),
+                       ('galSimType', 'RandomWalk', str, 10),
+                       ('sindex', 0.0, float),
+                       ('gamma1', 0.0, float),
+                       ('gamma2', 0.0, float),
+                       ('kappa', 0.0, float)]
 
 class GalSimAgn(GalSimBase, AstrometryGalaxies, EBVmixin):
     """
@@ -605,7 +576,7 @@ class GalSimAgn(GalSimBase, AstrometryGalaxies, EBVmixin):
                        ('kappa', 0.0, float)]
 
 
-class GalSimStars(GalSimBase, AstrometryStars, EBVmixin):
+class GalSimStars(GalSimBase, AstrometryStars):
     """
     This is a GalSimCatalog class for stars.
 
