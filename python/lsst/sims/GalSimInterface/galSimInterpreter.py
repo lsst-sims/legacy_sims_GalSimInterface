@@ -399,7 +399,7 @@ class GalSimInterpreter(object):
                 offset = image_pos - bounds.true_center
 
                 # Only draw objects with folding thresholds less than or
-                # equal to the default. (There should be none of these.)
+                # equal to the default.
                 if object_on_image.gsparams.folding_threshold <= self._ft_default:
                     obj.drawImage(method='phot',
                                   offset=offset,
@@ -409,6 +409,7 @@ class GalSimInterpreter(object):
                                   surface_ops=surface_ops,
                                   add_to_image=True)
                 else:
+                    # There should be none of these, but add a warning just in case.
                     warnings.warn('Object %s has folding_threshold %s. Skipped.'
                                   % (gsObject.uniqueId, object_on_image.gsparams.folding_threshold))
 
