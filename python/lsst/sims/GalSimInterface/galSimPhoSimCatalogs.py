@@ -52,6 +52,7 @@ class GalSimPhoSimStars(GalSimAstrometryStars, PhoSimCatalogPoint, GalSimStars):
                        ('majorAxis', 0.0, float),
                        ('minorAxis', 0.0, float),
                        ('sindex', 0.0, float),
+                       ('npoints', 0, int),
                        ('positionAngle', 0.0, float),
                        ('halfLightRadius', 0.0, float)]
 
@@ -69,6 +70,7 @@ class GalSimPhoSimGalaxies(GalSimAstrometryGalaxies, PhoSimCatalogSersic2D, GalS
                        ('galacticExtinctionModel', 'CCM', (str,3)),
                        ('internalExtinctionModel', 'CCM', (str,3)), ('internalAv', 0., float),
                        ('internalRv', 3.1, float),
+                       ('npoints', 0, int),
                        ('galSimType', 'sersic', (str, 6))]
 
 
@@ -89,6 +91,7 @@ class GalSimPhoSimAgn(GalSimAstrometryGalaxies, PhoSimCatalogZPoint, GalSimAgn):
                        ('majorAxis', 0.0, float),
                        ('minorAxis', 0.0, float),
                        ('sindex', 0.0, float),
+                       ('npoints', 0, int),
                        ('positionAngle', 0.0, float),
                        ('halfLightRadius', 0.0, float),
                        ('internalAv', 0.0, float),

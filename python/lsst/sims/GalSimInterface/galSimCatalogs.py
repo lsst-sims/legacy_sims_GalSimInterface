@@ -151,7 +151,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     column_outputs = ['galSimType', 'uniqueId', 'raICRS', 'decICRS',
                       'chipName', 'x_pupil', 'y_pupil', 'sedFilepath',
                       'majorAxis', 'minorAxis', 'sindex', 'halfLightRadius',
-                      'positionAngle', 'fitsFiles']
+                      'npoints', 'positionAngle', 'fitsFiles']
 
     transformations = {'raICRS': np.degrees,
                        'decICRS': np.degrees,
@@ -329,6 +329,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         majorAxis = self.column_by_name('majorAxis')
         positionAngle = self.column_by_name('positionAngle')
         sindex = self.column_by_name('sindex')
+        npoints = self.column_by_name('npoints')
         gamma1 = self.column_by_name('gamma1')
         gamma2 = self.column_by_name('gamma2')
         kappa = self.column_by_name('kappa')
@@ -350,9 +351,9 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                                                       epoch=self.db_obj.epoch)
 
         output = []
-        for (name, xp, yp, hlr, minor, major, pa, ss, sn, gam1, gam2, kap) in \
+        for (name, xp, yp, hlr, minor, major, pa, ss, sn, np, gam1, gam2, kap) in \
             zip(objectNames, xPupil, yPupil, halfLight,
-                 minorAxis, majorAxis, positionAngle, sedList, sindex,
+                 minorAxis, majorAxis, positionAngle, sedList, sindex, npoints
                  gamma1, gamma2, kappa):
 
             if name in self.objectHasBeenDrawn:
@@ -368,7 +369,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     gsObj = GalSimCelestialObject(self.galsim_type, xp, yp,
                                                   hlr, minor, major, pa, sn,
                                                   ss, self.bandpassDict, self.photParams,
-                                                  gam1, gam2, kap, uniqueId=name)
+                                                  np, gam1, gam2, kap, uniqueId=name)
 
                     # actually draw the object
                     detectorsString = self.galSimInterpreter.drawObject(gsObj)
@@ -527,6 +528,7 @@ class GalSimGalaxies(GalSimBase, AstrometryGalaxies, EBVmixin):
     default_columns = [('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
                        ('galSimType', 'sersic', str, 6),
+                       ('npoints', 0, int),
                        ('gamma1', 0.0, float),
                        ('gamma2', 0.0, float),
                        ('kappa', 0.0, float)]
@@ -544,7 +546,6 @@ class GalSimRandomWalk(GalSimBase, AstrometryGalaxies, EBVmixin):
     default_columns = [('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
                        ('galSimType', 'RandomWalk', str, 10),
-                       ('sindex', 0.0, float),
                        ('gamma1', 0.0, float),
                        ('gamma2', 0.0, float),
                        ('kappa', 0.0, float)]
@@ -563,6 +564,7 @@ class GalSimAgn(GalSimBase, AstrometryGalaxies, EBVmixin):
                        ('majorAxis', 0.0, float),
                        ('minorAxis', 0.0, float),
                        ('sindex', 0.0, float),
+                       ('npoints', 0, int),
                        ('positionAngle', 0.0, float),
                        ('halfLightRadius', 0.0, float),
                        ('internalAv', 0.0, float),
@@ -589,6 +591,7 @@ class GalSimStars(GalSimBase, AstrometryStars):
                        ('majorAxis', 0.0, float),
                        ('minorAxis', 0.0, float),
                        ('sindex', 0.0, float),
+                       ('npoints', 0, int),
                        ('positionAngle', 0.0, float),
                        ('halfLightRadius', 0.0, float),
                        ('gamma1', 0.0, float),
