@@ -353,7 +353,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
         output = []
         for (name, xp, yp, hlr, minor, major, pa, ss, sn, np, gam1, gam2, kap) in \
             zip(objectNames, xPupil, yPupil, halfLight,
-                 minorAxis, majorAxis, positionAngle, sedList, sindex, npoints
+                 minorAxis, majorAxis, positionAngle, sedList, sindex, npoints,
                  gamma1, gamma2, kappa):
 
             if name in self.objectHasBeenDrawn:
