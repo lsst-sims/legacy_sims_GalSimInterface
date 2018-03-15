@@ -407,7 +407,8 @@ class GalSimInterpreter(object):
                                   image=my_image[bounds],
                                   sensor=sensor,
                                   surface_ops=surface_ops,
-                                  add_to_image=True)
+                                  add_to_image=True,
+                                  gain=detector.photParams.gain)
                 else:
                     # There should be none of these, but add a warning just in case.
                     warnings.warn('Object %s has folding_threshold %s. Skipped.'
