@@ -59,6 +59,8 @@ class allowedChipsCatalog(GalSimStars):
 
 class allowedChipsTest(unittest.TestCase):
 
+    longMessage = True
+
     @classmethod
     def setUpClass(cls):
         cls.scratchDir = tempfile.mkdtemp(dir=ROOT, prefix='allowedChipsTest-')
@@ -199,7 +201,9 @@ class allowedChipsTest(unittest.TestCase):
             msg = '%s does not exist; it should' % control_image_name
             self.assertTrue(os.path.exists(control_image_name), msg=msg)
             im = afwImage.ImageF(control_image_name).getArray()
-            self.assertLess(np.abs(im.sum()-self.controlADU), 3.0*self.countSigma)
+            msg="\nimage contains %e counts\nshould contain %e\n\n" % (im.sum(), self.controlADU)
+            self.assertLess(np.abs(im.sum()-self.controlADU), 3.0*self.countSigma,
+                            msg=msg)
             os.unlink(control_image_name)
 
             if name in allowed_chips:
