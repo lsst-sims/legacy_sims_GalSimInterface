@@ -82,7 +82,11 @@ class GalSimCelestialObject(object):
         for bb in bp_dict:
             adu = sed.calcADU(bp_dict[bb], photParams)
             self._fluxDict[bb] = adu*photParams.gain
+        self._sed = sed
 
+    @property
+    def sed(self):
+        return self._sed
 
     @property
     def uniqueId(self):
