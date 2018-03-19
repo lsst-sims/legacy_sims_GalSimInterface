@@ -53,6 +53,7 @@ class hlrCatSersic(GalSimGalaxies):
                        ('majorAxis', radiansFromArcsec(1.0), float),
                        ('minorAxis', radiansFromArcsec(1.0), float),
                        ('sindex', 4.0, float),
+                       ('npoints', 0, int),
                        ('gamma1', 0.0, float),
                        ('gamma2', 0.0, float),
                        ('kappa', 0.0, float),
@@ -64,7 +65,7 @@ class hlrCatRandomWalk(GalSimRandomWalk):
                        ('magNorm', 21.0, float),
                        ('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
-                       ('galSimType', 'sersic', (str, 11)),
+                       ('galSimType', 'RandomWalk', (str, 10)),
                        ('internalAv', 0.1, float),
                        ('internalRv', 3.1, float),
                        ('redshift', 0.0, float),
@@ -198,7 +199,7 @@ class GalSimHlrTest(unittest.TestCase):
         if os.path.exists(scratchDir):
             shutil.rmtree(scratchDir)
 
-    def testHalfLightRadiusOfImageRandomWalk(self):
+    def HalfLightRadiusOfImageRandomWalk(self):
         """
         Test that GalSim is generating images of objects with the expected half light radius
         by generating images with one object on them and comparing the total flux in the image
