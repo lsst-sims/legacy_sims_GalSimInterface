@@ -71,7 +71,8 @@ class hlrCatRandomWalk(GalSimRandomWalk):
                        ('redshift', 0.0, float),
                        ('majorAxis', radiansFromArcsec(1.0), float),
                        ('minorAxis', radiansFromArcsec(1.0), float),
-                       ('npoints', 100, int),
+                       ('npoints', 10000, int),
+                       ('sindex', 0.0, float),
                        ('gamma1', 0.0, float),
                        ('gamma2', 0.0, float),
                        ('kappa', 0.0, float),
@@ -118,16 +119,6 @@ class GalSimHlrTest(unittest.TestCase):
         im = afwImage.ImageF(fileName).getArray()
         totalFlux = im.sum()
 
-        _maxPixel = np.array([im.argmax()/im.shape[1], im.argmax()%im.shape[1]])
-        maxPixel = np.array([_maxPixel[1], _maxPixel[0]])
-
-        raMax, decMax = _raDecFromPixelCoords(maxPixel[0:1],
-                                              maxPixel[1:2],
-                                              [detector.getName()],
-                                              camera=camera,
-                                              obs_metadata=obs,
-                                              epoch=epoch)
-
         activePoints = np.where(im > 1.0e-10)
         self.assertGreater(len(activePoints), 0)
 
@@ -135,11 +126,23 @@ class GalSimHlrTest(unittest.TestCase):
         yPixList = activePoints[0]  # arrays, the first index indicates what row it is in (the y coordinate)
         chipNameList = [detector.getName()]*len(xPixList)
 
+        # Compute luminosity weighted centroid
+        xCen = np.sum(im[yPixList, xPixList] * xPixList) / np.sum(im[yPixList, xPixList])
+        yCen = np.sum(im[yPixList, xPixList] * yPixList) / np.sum(im[yPixList, xPixList])
+        cenPixel = np.array([xCen, yCen])
+
+        raCen, decCen = _raDecFromPixelCoords(cenPixel[0:1],
+                                              cenPixel[1:2],
+                                              [detector.getName()],
+                                              camera=camera,
+                                              obs_metadata=obs,
+                                              epoch=epoch)
+
         raList, decList = _raDecFromPixelCoords(xPixList, yPixList, chipNameList,
                                                 camera=camera, obs_metadata=obs,
                                                 epoch=epoch)
 
-        distanceList = arcsecFromRadians(haversine(raList, decList, raMax[0], decMax[0]))
+        distanceList = arcsecFromRadians(haversine(raList, decList, raCen[0], decCen[0]))
 
         dexContained = [ix for ix, dd in enumerate(distanceList) if dd <= hlr]
         measuredHalfFlux = np.array([im[yPixList[dex]][xPixList[dex]] for dex in dexContained]).sum()
@@ -199,7 +202,7 @@ class GalSimHlrTest(unittest.TestCase):
         if os.path.exists(scratchDir):
             shutil.rmtree(scratchDir)
 
-    def HalfLightRadiusOfImageRandomWalk(self):
+    def testHalfLightRadiusOfImageRandomWalk(self):
         """
         Test that GalSim is generating images of objects with the expected half light radius
         by generating images with one object on them and comparing the total flux in the image
@@ -222,7 +225,7 @@ class GalSimHlrTest(unittest.TestCase):
                                   rotSkyPos = 33.0,
                                   mjd = 49250.0)
 
-        hlrTestList = [1.0, 2.0, 4.0]
+        hlrTestList = [1., 2., 4.]
 
         for hlr in hlrTestList:
             create_text_catalog(obs, dbFileName, np.array([3.0]), np.array([1.0]),
@@ -238,7 +241,7 @@ class GalSimHlrTest(unittest.TestCase):
 
             totalFlux, hlrFlux = self.get_flux_in_half_light_radius(imageName, hlr, detector, self.camera, obs)
             self.assertGreater(totalFlux, 1000.0)  # make sure the image is not blank
-
+            
             # divide by gain because Poisson stats apply to photons
             sigmaFlux = np.sqrt(0.5*totalFlux/cat.photParams.gain)
             self.assertLess(np.abs(hlrFlux-0.5*totalFlux), 4.0*sigmaFlux)
