@@ -394,6 +394,15 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         np.testing.assert_array_almost_equal(dm_y_test, dm_y_pix_list,
                                              decimal=10)
 
+        # test transformations made one at a time
+        for ii in range(len(cam_x_pix_list)):
+            dm_x, dm_y = camera_wrapper.dmPixFromCameraPix(cam_x_pix_list[ii],
+                                                           cam_y_pix_list[ii],
+                                                           chip_name_list[ii])
+
+            self.assertAlmostEqual(dm_x_pix_list[ii], dm_x, 10)
+            self.assertAlmostEqual(dm_y_pix_list[ii], dm_y, 10)
+
         del camera
         del camera_wrapper
         del lsst_camera._lsst_camera
