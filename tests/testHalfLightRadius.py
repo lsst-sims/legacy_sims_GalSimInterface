@@ -10,7 +10,7 @@ from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec, arcsecFromRadians
 from lsst.sims.utils import haversine
 from lsst.sims.catalogs.db import fileDBObject
-from lsst.sims.GalSimInterface import GalSimGalaxies
+from lsst.sims.GalSimInterface import GalSimGalaxies, GalSimRandomWalk
 from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 
