@@ -884,3 +884,46 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
                                           parallax=parallax_out, v_rad=v_rad,
                                           chipName=chipName, obs_metadata=obs_metadata,
                                           epoch=2000.0, includeDistortion=includeDistortion)
+
+    def dmPixFromCameraPix(self, cam_x_pix, cam_y_pix, chipName):
+        """
+        Convert pixel coordinates from the Camera Team system to the DM system
+
+        Parameters
+        ----------
+        cam_x_pix -- the x pixel coordinate in the Camera Team system
+        (can be either a float or a numpy array)
+
+        cam_y_pix -- the y pixel coordiantes in the Camera Team system
+        (can be either a float or a numpy array)
+
+        chipName -- the name of the chip(s) on which the pixel coordinates
+        are defined.  This can be a list (in which case there should be one chip name
+        for each (cam_xpix, cam_ypix) coordinate pair), or a single value (in which
+        case, all of the (cam_xpix, cam_ypi) points will be reckoned on that chip).
+
+        Returns
+        -------
+        dm_x_pix -- the x pixel coordinate(s) in the DM system (either
+        a float or a numpy array)
+
+        dm_y_pix -- the y pixel coordinate(s) in the DM system (either
+        a float or a numpy array)
+        """
+
+        dm_x_pix = cam_y_pix
+        if isinstance(chipName, list) or isinstance(chipName, np.ndarray):
+            center_pix_dict = {}
+            dm_y_pix = np.zeros(len(cam_x_pix))
+            for ix, (det_name, xx) in enumerate(zip(chipName, cam_x_pix)):
+                if det_name not in center_pix_dict:
+                    center_pix = self.getCenterPixel(det_name)
+                    center_pix_dict[det_name] = center_pix
+                else:
+                    center_pix = center_pix_dict[det_name]
+                dm_y_pix[ix] = 2.0*center_pix[0]-xx
+        else:
+            center_pix = self.getCenterPixel(chipName)
+            dm_y_pix = 2.0*center_pix[0] - cam_x_pix
+
+        return dm_x_pix, dm_y_pix

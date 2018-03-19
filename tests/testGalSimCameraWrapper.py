@@ -356,6 +356,47 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         del camera_wrapper
         del lsst_camera._lsst_camera
 
+    def test_dmPixFromCameraPix(self):
+        """
+        Test that the method to return DM pixel coordinates from
+        Camera Team pixel coordinates works.
+        """
+        camera = lsst_camera()
+        camera_wrapper = LSSTCameraWrapper()
+
+        npts = 100
+        rng = np.random.RandomState(1824)
+        dm_x_pix_list = rng.random_sample(npts)*4000.0
+        dm_y_pix_list = rng.random_sample(npts)*4000.0
+        name_list = []
+        for det in camera:
+            name_list.append(det.getName())
+        chip_name_list = rng.choice(name_list, size=npts)
+
+        (xPup_list,
+         yPup_list) = pupilCoordsFromPixelCoords(dm_x_pix_list,
+                                                 dm_y_pix_list,
+                                                 chipName=chip_name_list,
+                                                 camera=camera)
+
+        (cam_x_pix_list,
+         cam_y_pix_list) = camera_wrapper.pixelCoordsFromPupilCoords(xPup_list,
+                                                                     yPup_list,
+                                                                     chipName=chip_name_list)
+
+        (dm_x_test,
+         dm_y_test) = camera_wrapper.dmPixFromCameraPix(cam_x_pix_list,
+                                                        cam_y_pix_list,
+                                                        chip_name_list)
+
+        np.testing.assert_array_almost_equal(dm_x_test, dm_x_pix_list,
+                                             decimal=10)
+        np.testing.assert_array_almost_equal(dm_y_test, dm_y_pix_list,
+                                             decimal=10)
+
+        del camera
+        del camera_wrapper
+        del lsst_camera._lsst_camera
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
