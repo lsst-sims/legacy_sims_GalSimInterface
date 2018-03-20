@@ -351,7 +351,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                                                       epoch=self.db_obj.epoch)
 
         output = []
-        for (name, xp, yp, hlr, minor, major, pa, ss, sn, np, gam1, gam2, kap) in \
+        for (name, xp, yp, hlr, minor, major, pa, ss, sn, npo, gam1, gam2, kap) in \
             zip(objectNames, xPupil, yPupil, halfLight,
                  minorAxis, majorAxis, positionAngle, sedList, sindex, npoints,
                  gamma1, gamma2, kappa):
@@ -369,7 +369,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     gsObj = GalSimCelestialObject(self.galsim_type, xp, yp,
                                                   hlr, minor, major, pa, sn,
                                                   ss, self.bandpassDict, self.photParams,
-                                                  np, gam1, gam2, kap, uniqueId=name)
+                                                  npo, gam1, gam2, kap, uniqueId=name)
 
                     # actually draw the object
                     detectorsString = self.galSimInterpreter.drawObject(gsObj)
@@ -546,6 +546,7 @@ class GalSimRandomWalk(GalSimBase, AstrometryGalaxies, EBVmixin):
     default_columns = [('galacticAv', 0.1, float),
                        ('galacticRv', 3.1, float),
                        ('galSimType', 'RandomWalk', str, 10),
+                       ('sindex', 0.0, float),
                        ('gamma1', 0.0, float),
                        ('gamma2', 0.0, float),
                        ('kappa', 0.0, float)]

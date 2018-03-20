@@ -53,6 +53,7 @@ class paCat(GalSimGalaxies):
                        ('majorAxis', radiansFromArcsec(1.0), float),
                        ('minorAxis', radiansFromArcsec(0.5), float),
                        ('sindex', 4.0, float),
+                       ('npoints', 0, int),
                        ('gamma1', 0.0, float),
                        ('gamma2', 0.0, float),
                        ('kappa', 0.0, float),
