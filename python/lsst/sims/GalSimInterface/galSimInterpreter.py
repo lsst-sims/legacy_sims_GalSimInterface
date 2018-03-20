@@ -313,7 +313,8 @@ class GalSimInterpreter(object):
                                                                     m5=self.obs_metadata.m5[bandpassName],
                                                                     FWHMeff=
                                                                     self.obs_metadata.seeing[bandpassName],
-                                                                    photParams=detector.photParams)
+                                                                    photParams=detector.photParams,
+                                                                    chipName=detector.name)
 
         for bandpassName in self.bandpassDict:
 
