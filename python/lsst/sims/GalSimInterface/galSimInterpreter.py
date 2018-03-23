@@ -404,7 +404,7 @@ class GalSimInterpreter(object):
             rng=galsim.BaseDeviate(int(gsObject.uniqueId))
 
         # Create the RandomWalk profile
-        centeredObj = galsim.RandomWalk(npoints=int(gsObject.sindex),
+        centeredObj = galsim.RandomWalk(npoints=int(gsObject.npoints),
                                         half_light_radius=float(gsObject.halfLightRadiusArcsec),
                                         rng=rng)
 

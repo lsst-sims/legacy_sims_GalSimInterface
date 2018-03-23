@@ -15,7 +15,7 @@ class GalSimCelestialObject(object):
 
     def __init__(self, galSimType, xPupil, yPupil,
                  halfLightRadius, minorAxis, majorAxis, positionAngle,
-                 sindex, sed, bp_dict, photParams,
+                 sindex, sed, bp_dict, photParams, npoints,
                  gamma1=0, gamma2=0, kappa=0, uniqueId=None):
         """
         @param [in] galSimType is a string, either 'pointSource', 'sersic' or 'RandomWalk' denoting the shape of the object
@@ -49,6 +49,8 @@ class GalSimCelestialObject(object):
             a dict that maps bandpass name to electron counts for this
             celestial object.
 
+        @param [in] npoints is the number of point sources in a RandomWalk
+
         @param [in] gamma1 is the real part of the WL shear parameter
 
         @param [in] gamma2 is the imaginary part of the WL shear parameter
@@ -69,6 +71,7 @@ class GalSimCelestialObject(object):
         self._majorAxisRadians = majorAxis
         self._positionAngleRadians = positionAngle
         self._sindex = sindex
+        self._npoints = npoints
         # The galsim.lens(...) function wants to be passed reduced
         # shears and magnification, so convert the WL parameters as
         # defined in phosim instance catalogs to these values.  See
@@ -199,6 +202,16 @@ class GalSimCelestialObject(object):
     @sindex.setter
     def sindex(self, value):
         raise RuntimeError("You should not be setting sindex on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def npoints(self):
+        return self._npoints
+
+    @npoints.setter
+    def npoints(self, value):
+        raise RuntimeError("You should not be setting npoints on the fly; " \
         + "just instantiate a new GalSimCelestialObject")
 
     @property

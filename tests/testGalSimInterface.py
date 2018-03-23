@@ -316,13 +316,13 @@ class GalSimInterfaceTest(unittest.TestCase):
                 if line[0] != '#':
                     gg = line.split('; ')
                     sedName = gg[7]
-                    magNorm = float(gg[13])
-                    redshift = float(gg[14])
-                    internalAv = float(gg[15])
-                    internalRv = float(gg[16])
-                    galacticAv = float(gg[17])
-                    galacticRv = float(gg[18])
-                    listOfFileNames = gg[19].split('//')
+                    magNorm = float(gg[14])
+                    redshift = float(gg[15])
+                    internalAv = float(gg[16])
+                    internalRv = float(gg[17])
+                    galacticAv = float(gg[18])
+                    galacticRv = float(gg[19])
+                    listOfFileNames = gg[20].split('//')
                     alreadyWritten = []
 
                     for name in listOfFileNames:
