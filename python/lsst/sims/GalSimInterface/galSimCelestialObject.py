@@ -82,10 +82,9 @@ class GalSimCelestialObject(object):
         self._mu = 1./((1. - kappa)**2 - (gamma1**2 + gamma2**2)) # magnification
 
         self._fluxDict = {}
-        for bb in bp_dict:
-            adu = sed.calcADU(bp_dict[bb], photParams)
-            self._fluxDict[bb] = adu*photParams.gain
         self._sed = sed
+        self._bp_dict = bp_dict
+        self._photParams = photParams
 
     @property
     def sed(self):
@@ -254,7 +253,11 @@ class GalSimCelestialObject(object):
 
         @param [out] the ADU in that bandpass, as stored in self._fluxDict
         """
-        if band not in self._fluxDict:
+        if band not in self._bp_dict:
             raise RuntimeError("Asked GalSimCelestialObject for flux in %s; that band does not exist" % band)
+
+        if band not in self._fluxDict:
+            adu = self.sed.calcADU(self._bp_dict[band], self._photParams)
+            self._fluxDict[band] = adu*self._photParams.gain
 
         return self._fluxDict[band]
