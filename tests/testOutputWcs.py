@@ -8,6 +8,7 @@ import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
+import lsst.afw.geom.angle as afwAngle
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
 from lsst.sims.utils import haversine
@@ -132,7 +133,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
                     yyTestList.append(yy)
 
                     pt = afwGeom.Point2D(xx, yy)
-                    skyPt = wcs.pixelToSky(pt).getPosition()
+                    skyPt = wcs.pixelToSky(pt).getPosition(afwAngle.degrees)
                     raImage.append(skyPt.getX())
                     decImage.append(skyPt.getY())
 

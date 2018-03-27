@@ -31,7 +31,7 @@ import numpy as np
 import lsst.afw.image as afwImage
 import lsst.afw.table as afwTable
 import lsst.afw.geom as afwGeom
-import lsst.afw.coord as afwCoord
+import lsst.afw.geom.angle as afwAngle
 from lsst.meas.base import SingleFrameMeasurementTask
 from lsst.meas.astrom.sip import makeCreateWcsWithSip
 from lsst.sims.coordUtils import raDecFromPixelCoords
@@ -93,7 +93,7 @@ def approximateWcs(wcs, camera_wrapper=None, detector_name=None, obs_metadata=No
                                                           epoch=2000.0,
                                                           includeDistortion=True)
 
-            skyCoord = afwCoord.Coord(afwGeom.Point2D(ra[0], dec[0]))
+            skyCoord = afwGeom.SpherePoint(ra[0], dec[0], afwAngle.degrees)
 
             refObj = refCat.addNew()
             refObj.set(refCoordKey, skyCoord)
