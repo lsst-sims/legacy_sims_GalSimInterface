@@ -735,7 +735,7 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
 
         return np.degrees(_ra), np.degrees(_dec)
 
-    def camPixFromDMpix(self, dm_xPix, dm_yPix, chipName):
+    def cameraPixFromDMPix(self, dm_xPix, dm_yPix, chipName):
         """
         Convert DM pixel coordinates into camera pixel coordinates
 
@@ -838,7 +838,7 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
                                                                  epoch=epoch,
                                                                  includeDistortion=includeDistortion)
 
-        return self.camPixFromDMpix(dm_xPix, dm_yPix, chipName)
+        return self.cameraPixFromDMPix(dm_xPix, dm_yPix, chipName)
 
     def pixelCoordsFromRaDec(self, ra, dec, pm_ra=None, pm_dec=None, parallax=None, v_rad=None,
                              obs_metadata=None, chipName=None,
