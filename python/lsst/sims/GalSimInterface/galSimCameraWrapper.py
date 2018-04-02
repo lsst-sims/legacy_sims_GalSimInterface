@@ -735,6 +735,46 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
 
         return np.degrees(_ra), np.degrees(_dec)
 
+    def camPixFromDMpix(self, dm_xPix, dm_yPix, chipName):
+        """
+        Convert DM pixel coordinates into camera pixel coordinates
+
+        Parameters:
+        -----------
+        dm_xPix -- the x pixel coordinate in the DM system (either
+        a number or an array)
+
+        dm_yPix -- the y pixel coordinate in the DM system (either
+        a number or an array)
+
+        chipName designates the names of the chips on which the pixel
+        coordinates will be reckoned.  Can be either single value, an array, or None.
+        If an array, there must be as many chipNames as there are (RA, Dec) pairs.
+        If a single value, all of the pixel coordinates will be reckoned on the same
+        chip.  If None, this method will calculate which chip each(RA, Dec) pair actually
+        falls on, and return pixel coordinates for each (RA, Dec) pair on the appropriate
+        chip.  Default is None.
+
+        Returns
+        -------
+        a 2-D numpy array in which the first row is the x pixel coordinate
+        and the second row is the y pixel coordinate.  These pixel coordinates
+        are defined in the Camera team system, rather than the DM system.
+        """
+        cam_yPix = dm_xPix
+
+        if isinstance(chipName, list) or isinstance(chipName, np.ndarray):
+            cam_xPix = np.zeros(len(dm_xPix))
+            for ix, (det_name, yy) in enumerate(zip(chipName, dm_yPix)):
+                cam_center_pix = self.getCenterPixel(det_name)
+                cam_xPix[ix] = 2.0*cam_center_pix.getX() - dm_yPix
+        else:
+            cam_center_pix = self.getCenterPixel(chipName)
+            cam_xPix = 2.0*cam_center_pix.getX() - dm_yPix
+
+        return cam_xPix, cam_yPix
+
+
     def _pixelCoordsFromRaDec(self, ra, dec, pm_ra=None, pm_dec=None, parallax=None, v_rad=None,
                               obs_metadata=None,
                               chipName=None,
@@ -797,18 +837,8 @@ class LSSTCameraWrapper(GalSimCameraWrapper):
                                                                  chipName=chipName,
                                                                  epoch=epoch,
                                                                  includeDistortion=includeDistortion)
-        cam_yPix = dm_xPix
 
-        if isinstance(chipName, list) or isinstance(chipName, np.ndarray):
-            cam_xPix = np.zeros(len(dm_xPix))
-            for ix, (det_name, yy) in enumerate(zip(chipName, dm_yPix)):
-                cam_center_pix = self.getCenterPixel(det_name)
-                cam_xPix[ix] = 2.0*cam_center_pix.getX() - dm_yPix
-        else:
-            cam_center_pix = self.getCenterPixel(chipName)
-            cam_xPix = 2.0*cam_center_pix.getX() - dm_yPix
-
-        return cam_xPix, cam_yPix
+        return self.camPixFromDMpix(dm_xPix, dm_yPix, chipName)
 
     def pixelCoordsFromRaDec(self, ra, dec, pm_ra=None, pm_dec=None, parallax=None, v_rad=None,
                              obs_metadata=None, chipName=None,
