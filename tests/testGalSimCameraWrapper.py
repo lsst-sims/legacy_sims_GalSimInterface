@@ -431,6 +431,22 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         del camera_wrapper
         del lsst_camera._lsst_camera
 
+    def test_camPixFromDMpix(self):
+        """
+        test that camPixFromDMpix inverts dmPixFromCamPix
+        """
+        camera_wrapper = LSSTCameraWrapper()
+        rng = np.random.RandomState()
+        npts = 200
+        cam_x_in = rng.random_sample(npts)*4000.0
+        cam_y_in = rng.random_sample(npts)*4000.0
+        dm_x, dm_y = camera_wrapper.dmPixFromCameraPix(cam_x_in, cam_y_in, 'R:1,1 S:2,2')
+        cam_x, cam_y = camera_wrapper.cameraPixFromDMPix(dm_x, dm_y, 'R:1,1 S:2,2')
+        np.testing.assert_array_almost_equal(cam_x_in, cam_x, decimal=10)
+        np.testing.assert_array_almost_equal(cam_y_in, cam_y, decimal=10)
+        del camera_wrapper
+        del lsst_camera._lsst_camera
+
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
     pass
