@@ -356,6 +356,96 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         del camera_wrapper
         del lsst_camera._lsst_camera
 
+    def test_dmPixFromCameraPix(self):
+        """
+        Test that the method to return DM pixel coordinates from
+        Camera Team pixel coordinates works.
+        """
+        camera = lsst_camera()
+        camera_wrapper = LSSTCameraWrapper()
+
+        npts = 100
+        rng = np.random.RandomState(1824)
+        dm_x_pix_list = rng.random_sample(npts)*4000.0
+        dm_y_pix_list = rng.random_sample(npts)*4000.0
+        name_list = []
+        for det in camera:
+            name_list.append(det.getName())
+        chip_name_list = rng.choice(name_list, size=npts)
+
+        (xPup_list,
+         yPup_list) = pupilCoordsFromPixelCoords(dm_x_pix_list,
+                                                 dm_y_pix_list,
+                                                 chipName=chip_name_list,
+                                                 camera=camera)
+
+        (cam_x_pix_list,
+         cam_y_pix_list) = camera_wrapper.pixelCoordsFromPupilCoords(xPup_list,
+                                                                     yPup_list,
+                                                                     chipName=chip_name_list)
+
+        (dm_x_test,
+         dm_y_test) = camera_wrapper.dmPixFromCameraPix(cam_x_pix_list,
+                                                        cam_y_pix_list,
+                                                        chip_name_list)
+
+        np.testing.assert_array_almost_equal(dm_x_test, dm_x_pix_list,
+                                             decimal=10)
+        np.testing.assert_array_almost_equal(dm_y_test, dm_y_pix_list,
+                                             decimal=10)
+
+        # test transformations made one at a time
+        for ii in range(len(cam_x_pix_list)):
+            dm_x, dm_y = camera_wrapper.dmPixFromCameraPix(cam_x_pix_list[ii],
+                                                           cam_y_pix_list[ii],
+                                                           chip_name_list[ii])
+
+            self.assertAlmostEqual(dm_x_pix_list[ii], dm_x, 10)
+            self.assertAlmostEqual(dm_y_pix_list[ii], dm_y, 10)
+
+        # test case where an array of points is on a single chip
+        chip_name = chip_name_list[10]
+
+        (xPup_list,
+         yPup_list) = pupilCoordsFromPixelCoords(dm_x_pix_list,
+                                                 dm_y_pix_list,
+                                                 chipName=chip_name,
+                                                 camera=camera)
+
+        (cam_x_pix_list,
+         cam_y_pix_list) = camera_wrapper.pixelCoordsFromPupilCoords(xPup_list,
+                                                                     yPup_list,
+                                                                     chipName=chip_name)
+
+        (dm_x_test,
+         dm_y_test) = camera_wrapper.dmPixFromCameraPix(cam_x_pix_list,
+                                                        cam_y_pix_list,
+                                                        chip_name)
+
+        np.testing.assert_array_almost_equal(dm_x_test, dm_x_pix_list,
+                                             decimal=10)
+        np.testing.assert_array_almost_equal(dm_y_test, dm_y_pix_list,
+                                             decimal=10)
+
+        del camera
+        del camera_wrapper
+        del lsst_camera._lsst_camera
+
+    def test_camPixFromDMpix(self):
+        """
+        test that camPixFromDMpix inverts dmPixFromCamPix
+        """
+        camera_wrapper = LSSTCameraWrapper()
+        rng = np.random.RandomState()
+        npts = 200
+        cam_x_in = rng.random_sample(npts)*4000.0
+        cam_y_in = rng.random_sample(npts)*4000.0
+        dm_x, dm_y = camera_wrapper.dmPixFromCameraPix(cam_x_in, cam_y_in, 'R:1,1 S:2,2')
+        cam_x, cam_y = camera_wrapper.cameraPixFromDMPix(dm_x, dm_y, 'R:1,1 S:2,2')
+        np.testing.assert_array_almost_equal(cam_x_in, cam_x, decimal=10)
+        np.testing.assert_array_almost_equal(cam_y_in, cam_y, decimal=10)
+        del camera_wrapper
+        del lsst_camera._lsst_camera
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
