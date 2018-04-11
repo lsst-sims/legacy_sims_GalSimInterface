@@ -20,7 +20,16 @@ from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
 from lsst.sims.GalSimInterface import make_galsim_detector
 
-__all__ = ["GalSimInterpreter"]
+__all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpeter"]
+
+def make_gs_interpreter(obs_md, detectors, bandpassDict, noiseWrapper,
+                        epoch=None, seed=None, apply_sensor_model=False):
+    gs_interpreter \
+        = GalSimSiliconInterpeter if apply_sensor_model else GalSimInterpreter
+
+    return gs_interpreter(obs_metadata=obs_md, detectors=detectors,
+                          bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
+                          epoch=epoch, seed=seed)
 
 
 class GalSimInterpreter(object):
@@ -31,7 +40,7 @@ class GalSimInterpreter(object):
 
     def __init__(self, obs_metadata=None, detectors=None,
                  bandpassDict=None, noiseWrapper=None,
-                 epoch=None, seed=None, apply_sensor_model=False):
+                 epoch=None, seed=None):
 
         """
         @param [in] obs_metadata is an instantiation of the ObservationMetaData class which
@@ -49,8 +58,6 @@ class GalSimInterpreter(object):
         used when drawing images (if None, GalSim will automatically create a random number
         generator seeded with the system clock)
 
-        @param [in] apply_sensor_model is a flag to apply the GalSim sensor model to
-        the photons incident on the CCDs.
         """
 
         self.obs_metadata = obs_metadata
@@ -68,8 +75,6 @@ class GalSimInterpreter(object):
 
         self.detectors = detectors
 
-        self.apply_sensor_model = apply_sensor_model
-
         self.detectorImages = {}  # this dict will contain the FITS images (as GalSim images)
         self.bandpassDict = bandpassDict
         self.blankImageCache = {}  # this dict will cache blank images associated with specific detectors.
@@ -78,10 +83,6 @@ class GalSimInterpreter(object):
         self.checkpoint_file = None
         self.drawn_objects = set()
         self.nobj_checkpoint = 1000
-        self.sky_bg_per_pixel = 800   # a nominal value for r-band
-        # Save the default folding threshold for determining when to recompute
-        # the PSF for bright point sources.
-        self._ft_default = galsim.GSParams().folding_threshold
 
     def setPSF(self, PSF=None):
         """
@@ -309,8 +310,46 @@ class GalSimInterpreter(object):
             # there is nothing to draw
             return outputString
 
-        # go through the list of detector/bandpass combinations and initialize
-        # all of the FITS files we will need (if they have not already been initialized)
+        self._addNoiseAndBackground(detectorList)
+
+        for bandpassName in self.bandpassDict:
+
+            # create a new object if one has not already been created or if the PSF is wavelength
+            # dependent (in which case, each filter is going to need its own initialized object)
+            if centeredObj is None:
+                return outputString
+
+            for detector in detectorList:
+
+                name = self._getFileName(detector=detector, bandpassName=bandpassName)
+
+                xPix, yPix = detector.camera_wrapper.pixelCoordsFromPupilCoords(gsObject.xPupilRadians,
+                                                                                gsObject.yPupilRadians,
+                                                                                chipName=detector.name)
+
+                obj = centeredObj
+
+                # convolve the object's shape profile with the spectrum
+                obj = obj.withFlux(gsObject.flux(bandpassName))
+                offset = galsim.PositionD(xPix - detector.xCenterPix,
+                                          yPix - detector.yCenterPix)
+                self.detectorImages[name] = obj.drawImage(method='phot',
+                                                          gain=detector.photParams.gain,
+                                                          offset=offset,
+                                                          rng=self._rng,
+                                                          image=self.detectorImages[name],
+                                                          add_to_image=True)
+
+        self.drawn_objects.add(gsObject.uniqueId)
+        self.write_checkpoint()
+        return outputString
+
+    def _addNoiseAndBackground(self, detectorList):
+        """
+        Go through the list of detector/bandpass combinations and
+        initialize all of the FITS files we will need (if they have
+        not already been initialized)
+        """
         for detector in detectorList:
             for bandpassName in self.bandpassDict:
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
@@ -325,142 +364,22 @@ class GalSimInterpreter(object):
                                                                     FWHMeff=
                                                                     self.obs_metadata.seeing[bandpassName],
                                                                     photParams=detector.photParams,
-                                                                    detector=detector)
+                                                                    chipName=detector.name)
 
-        if self.apply_sensor_model:
-            fratio = 1.234  # From https://www.lsst.org/scientists/keynumbers
-            obscuration = 0.606  # (8.4**2 - 6.68**2)**0.5 / 8.4
-            angles = galsim.FRatioAngles(fratio, obscuration, self._rng)
 
-            gs_sed = galsim.SED(galsim.LookupTable(x=gsObject.sed.wavelen, f=gsObject.sed.flambda),
-                                wave_type='nm',
-                                flux_type='flambda',
-                                redshift=0. # I think this was already applied when loading the gsObject?
-                                )
-
-        for bandpassName in self.bandpassDict:
-
-            # create a new object if one has not already been created or if the PSF is wavelength
-            # dependent (in which case, each filter is going to need its own initialized object)
-            if centeredObj is None:
-                return outputString
-
-            if self.apply_sensor_model:
-                bandpass = self.bandpassDict[bandpassName]
-                index = np.where(bandpass.sb != 0)
-                gs_bandpass = galsim.Bandpass(galsim.LookupTable(x=bandpass.wavelen[index], f=bandpass.sb[index]),
-                                              wave_type='nm')
-                waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass, rng=self._rng)
-
-            flux = gsObject.flux(bandpassName)
-            if gsObject.galSimType == "PointSource":
-                # Need to pass the flux to .drawPointSource in
-                # order to determine the folding_threshold for the
-                # postage stamp size.
-                obj = self.drawPointSource(gsObject, flux)
-            else:
-                obj = centeredObj
-                # convolve the object's shape profile with the spectrum
-                obj = obj.withFlux(flux)
-
-            for detector in detectorList:
-
-                name = self._getFileName(detector=detector, bandpassName=bandpassName)
-
-                xPix, yPix = detector.camera_wrapper.pixelCoordsFromPupilCoords(gsObject.xPupilRadians,
-                                                                                gsObject.yPupilRadians,
-                                                                                chipName=detector.name)
-                if self.apply_sensor_model:
-                    sensor = galsim.SiliconSensor(rng=self._rng,
-                                                  treering_center=detector.tree_rings.center,
-                                                  treering_func=detector.tree_rings.func)
-                    surface_ops = [waves, angles]
-                else:
-                    sensor = None
-                    surface_ops = ()
-
-                # Desired position to draw the object.
-                image_pos = galsim.PositionD(xPix, yPix)
-
-                # Find a postage stamp region to draw onto.
-                my_image = self.detectorImages[name]
-                object_on_image = my_image.wcs.toImage(obj, image_pos=image_pos)
-                image_size = object_on_image.getGoodImageSize(1.0)
-                xmin = int(math.floor(image_pos.x) - image_size/2)
-                xmax = int(math.ceil(image_pos.x) + image_size/2)
-                ymin = int(math.floor(image_pos.y) - image_size/2)
-                ymax = int(math.ceil(image_pos.y) + image_size/2)
-
-                # Ensure the bounds of the postage stamp lie within the image.
-                bounds = galsim.BoundsI(xmin, xmax, ymin, ymax)
-                bounds = bounds & my_image.bounds
-
-                # offset is relative to the "true" center of the postage stamp.
-                offset = image_pos - bounds.true_center
-
-                # Only draw objects with folding thresholds less than or
-                # equal to the default.
-                if object_on_image.gsparams.folding_threshold <= self._ft_default:
-                    obj.drawImage(method='phot',
-                                  offset=offset,
-                                  rng=self._rng,
-                                  image=my_image[bounds],
-                                  sensor=sensor,
-                                  surface_ops=surface_ops,
-                                  add_to_image=True,
-                                  gain=detector.photParams.gain)
-                else:
-                    # There should be none of these, but add a warning just in case.
-                    warnings.warn('Object %s has folding_threshold %s. Skipped.'
-                                  % (gsObject.uniqueId, object_on_image.gsparams.folding_threshold))
-
-        self.drawn_objects.add(gsObject.uniqueId)
-        self.write_checkpoint()
-        return outputString
-
-    def drawPointSource(self, gsObject, flux=None):
+    def drawPointSource(self, gsObject):
         """
         Draw an image of a point source.
 
         @param [in] gsObject is an instantiation of the GalSimCelestialObject class
         carrying information about the object whose image is to be drawn
-
-        @param [in] flux [ADU]. If not None, then the flux is used
-        along with the sky background level to determine the
-        folding_threshold galsim parameter which is in turn used for
-        determining the postage stamp size for drawing.
         """
 
         if self.PSF is None:
             raise RuntimeError("Cannot draw a point source in GalSim without a PSF")
 
-        # Just return the cached PSF.
-        if flux is None:
-            return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
-                                     yPupil=gsObject.yPupilArcsec)
+        return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec)
 
-        # Compute the candidate folding_threshold based on the sky
-        # background per pixel and the point source flux.
-        folding_threshold = self.sky_bg_per_pixel/flux
-
-        if folding_threshold > self._ft_default:
-            # In this case, just return the PSF which has the default
-            # folding_threshold value.
-            return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
-                                     yPupil=gsObject.yPupilArcsec)
-        else:
-            # Build a PSF with a folding_threshold set to the
-            # sky_bg/flux ratio and convolve with a delta function.
-            gsparams = galsim.GSParams(folding_threshold=folding_threshold)
-
-            # Create a delta function with the desired flux for the star.
-            centeredObj = galsim.DeltaFunction(flux=flux, gsparams=gsparams)
-
-            # Apply the PSF and return.
-            return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
-                                     yPupil=gsObject.yPupilArcsec,
-                                     obj=centeredObj,
-                                     gsparams=gsparams)
 
     def drawSersic(self, gsObject):
         """
@@ -505,7 +424,7 @@ class GalSimInterpreter(object):
             rng=galsim.BaseDeviate(int(gsObject.uniqueId))
 
         # Create the RandomWalk profile
-        centeredObj = galsim.RandomWalk(npoints=int(gsObject.sindex),
+        centeredObj = galsim.RandomWalk(npoints=int(gsObject.npoints),
                                         half_light_radius=float(gsObject.halfLightRadiusArcsec),
                                         rng=rng)
 
@@ -638,3 +557,181 @@ class GalSimInterpreter(object):
                 self.detectorImages[key] += image_state['images'][key]
             self._rng = image_state['rng']
             self.drawn_objects = image_state['drawn_objects']
+
+
+class GalSimSiliconInterpeter(GalSimInterpreter):
+    """
+    This subclass of GalSimInterpreter applies the Silicon sensor
+    model to the drawn objects.
+    """
+    def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None,
+                 noiseWrapper=None, epoch=None, seed=None):
+        super(GalSimSiliconInterpeter, self)\
+            .__init__(obs_metadata=obs_metadata, detectors=detectors,
+                      bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
+                      epoch=epoch, seed=seed)
+
+        self.sky_bg_per_pixel = 800   # a nominal value for r-band
+
+        # Save the default folding threshold for determining when to recompute
+        # the PSF for bright point sources.
+        self._ft_default = galsim.GSParams().folding_threshold
+
+    def drawObject(self, gsObject):
+        """
+        Draw an astronomical object on all of the relevant FITS files.
+
+        @param [in] gsObject is an instantiation of the GalSimCelestialObject
+        class carrying all of the information for the object whose image
+        is to be drawn
+
+        @param [out] outputString is a string denoting which detectors the astronomical
+        object illumines, suitable for output in the GalSim InstanceCatalog
+        """
+
+        # find the detectors which the astronomical object illumines
+        outputString, \
+        detectorList, \
+        centeredObj = self.findAllDetectors(gsObject)
+
+        if len(detectorList) == 0:
+            # there is nothing to draw
+            return outputString
+
+        self._addNoiseAndBackground(detectorList)
+
+        # Create a surface operation to sample incident angles and a
+        # galsim.SED object for sampling the wavelengths of the
+        # incident photons.
+        fratio = 1.234  # From https://www.lsst.org/scientists/keynumbers
+        obscuration = 0.606  # (8.4**2 - 6.68**2)**0.5 / 8.4
+        angles = galsim.FRatioAngles(fratio, obscuration, self._rng)
+
+        sed_lut = galsim.LookupTable(x=gsObject.sed.wavelen,
+                                     f=gsObject.sed.flambda)
+        gs_sed = galsim.SED(sed_lut, wave_type='nm', flux_type='flambda',
+                            redshift=0.)
+
+        for bandpassName in self.bandpassDict:
+            # create a new object if one has not already been created
+            # or if the PSF is wavelength dependent (in which case,
+            # each filter is going to need its own initialized object)
+            if centeredObj is None:
+                return outputString
+
+            bandpass = self.bandpassDict[bandpassName]
+            index = np.where(bandpass.sb != 0)
+            bp_lut = galsim.LookupTable(x=bandpass.wavelen[index],
+                                        f=bandpass.sb[index])
+            gs_bandpass = galsim.Bandpass(bp_lut, wave_type='nm')
+            waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass,
+                                             rng=self._rng)
+
+            flux = gsObject.flux(bandpassName)
+            if gsObject.galSimType == "PointSource":
+                # Need to pass the flux to .drawPointSource in
+                # order to determine the folding_threshold for the
+                # postage stamp size.
+                obj = self.drawPointSource(gsObject, flux)
+            else:
+                obj = centeredObj
+                # convolve the object's shape profile with the spectrum
+                obj = obj.withFlux(flux)
+
+            for detector in detectorList:
+
+                name = self._getFileName(detector=detector,
+                                         bandpassName=bandpassName)
+
+                xPix, yPix = detector.camera_wrapper\
+                   .pixelCoordsFromPupilCoords(gsObject.xPupilRadians,
+                                               gsObject.yPupilRadians,
+                                               chipName=detector.name)
+                sensor = galsim.SiliconSensor(rng=self._rng,
+                                              treering_center=detector.tree_rings.center,
+                                              treering_func=detector.tree_rings.func)
+                surface_ops = [waves, angles]
+
+                # Desired position to draw the object.
+                image_pos = galsim.PositionD(xPix, yPix)
+
+                # Find a postage stamp region to draw onto.
+                my_image = self.detectorImages[name]
+                object_on_image = my_image.wcs.toImage(obj, image_pos=image_pos)
+                image_size = object_on_image.getGoodImageSize(1.0)
+                xmin = int(math.floor(image_pos.x) - image_size/2)
+                xmax = int(math.ceil(image_pos.x) + image_size/2)
+                ymin = int(math.floor(image_pos.y) - image_size/2)
+                ymax = int(math.ceil(image_pos.y) + image_size/2)
+
+                # Ensure the bounds of the postage stamp lie within the image.
+                bounds = galsim.BoundsI(xmin, xmax, ymin, ymax)
+                bounds = bounds & my_image.bounds
+
+                # offset is relative to the "true" center of the postage stamp.
+                offset = image_pos - bounds.true_center
+
+                # Only draw objects with folding thresholds less than or
+                # equal to the default.
+                if object_on_image.gsparams.folding_threshold <= self._ft_default:
+                    obj.drawImage(method='phot',
+                                  offset=offset,
+                                  rng=self._rng,
+                                  image=my_image[bounds],
+                                  sensor=sensor,
+                                  surface_ops=surface_ops,
+                                  add_to_image=True,
+                                  gain=detector.photParams.gain)
+                else:
+                    # There should be none of these, but add a warning
+                    # just in case.
+                    warnings.warn('Object %s has folding_threshold %s. Skipped.'
+                                  % (gsObject.uniqueId, object_on_image.gsparams.folding_threshold))
+
+        self.drawn_objects.add(gsObject.uniqueId)
+        self.write_checkpoint()
+        return outputString
+
+    def drawPointSource(self, gsObject, flux=None):
+        """
+        Draw an image of a point source.
+
+        @param [in] gsObject is an instantiation of the GalSimCelestialObject class
+        carrying information about the object whose image is to be drawn
+
+        @param [in] flux [ADU]. If not None, then the flux is used
+        along with the sky background level to determine the
+        folding_threshold galsim parameter which is in turn used for
+        determining the postage stamp size for drawing.
+        """
+
+        if self.PSF is None:
+            raise RuntimeError("Cannot draw a point source in GalSim without a PSF")
+
+        # Just return the cached PSF.
+        if flux is None:
+            return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
+                                     yPupil=gsObject.yPupilArcsec)
+
+        # Compute the candidate folding_threshold based on the sky
+        # background per pixel and the point source flux.
+        folding_threshold = self.sky_bg_per_pixel/flux
+
+        if folding_threshold > self._ft_default:
+            # In this case, just return the PSF which has the default
+            # folding_threshold value.
+            return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
+                                     yPupil=gsObject.yPupilArcsec)
+        else:
+            # Build a PSF with a folding_threshold set to the
+            # sky_bg/flux ratio and convolve with a delta function.
+            gsparams = galsim.GSParams(folding_threshold=folding_threshold)
+
+            # Create a delta function with the desired flux for the star.
+            centeredObj = galsim.DeltaFunction(flux=flux, gsparams=gsparams)
+
+            # Apply the PSF and return.
+            return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
+                                     yPupil=gsObject.yPupilArcsec,
+                                     obj=centeredObj,
+                                     gsparams=gsparams)
