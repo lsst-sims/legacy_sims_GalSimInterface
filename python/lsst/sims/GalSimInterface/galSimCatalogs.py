@@ -197,9 +197,6 @@ class GalSimBase(InstanceCatalog, CameraCoords):
     hasBeenInitialized = False
 
     galSimInterpreter = None  # the GalSimInterpreter instantiation for this catalog
-    # Disable galsim sensor model.  This is passed to the GalSimInterpreter when it
-    # is created in ._initializeGalSimInterpreter
-    apply_sensor_model = False
 
     totalDrawings = 0
     totalObjects = 0
@@ -491,8 +488,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                                                        detectors=detectors,
                                                        bandpassDict=self.bandpassDict,
                                                        noiseWrapper=self.noise_and_background,
-                                                       seed=self.seed,
-                                                       apply_sensor_model=self.apply_sensor_model)
+                                                       seed=self.seed)
 
             self.galSimInterpreter.setPSF(PSF=self.PSF)
 
