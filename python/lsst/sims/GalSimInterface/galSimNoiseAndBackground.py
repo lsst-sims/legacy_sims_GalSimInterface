@@ -96,9 +96,8 @@ class NoiseAndBackgroundBase(object):
         PhotometricParameters class that carries details about the
         photometric response of the telescope.  Defaults to None.
 
-        @param [in] A GalSimDetector object for subclass
-        re-implementations that would make use of detetor info such as
-        sensor properties.  Defaults to None.
+        @param [in] chipName is the name of the detector, e.g., "R:2,2 S:1,1".
+        Defaults to None.
 
         @param [out] the input image with the background and noise model added to it.
         """
