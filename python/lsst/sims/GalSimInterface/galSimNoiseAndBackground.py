@@ -76,7 +76,7 @@ class NoiseAndBackgroundBase(object):
     def addNoiseAndBackground(self, image, bandpass=None, m5=None,
                               FWHMeff=None,
                               photParams=None,
-                              detector=None):
+                              chipName=None):
         """
         This method actually adds the sky background and noise to an image.
 
