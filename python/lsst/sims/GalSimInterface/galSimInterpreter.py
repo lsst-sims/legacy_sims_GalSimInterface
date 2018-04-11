@@ -57,7 +57,6 @@ class GalSimInterpreter(object):
         @param [in] seed is an integer that will use to seed the random number generator
         used when drawing images (if None, GalSim will automatically create a random number
         generator seeded with the system clock)
-
         """
 
         self.obs_metadata = obs_metadata
@@ -331,11 +330,11 @@ class GalSimInterpreter(object):
 
                 # convolve the object's shape profile with the spectrum
                 obj = obj.withFlux(gsObject.flux(bandpassName))
-                offset = galsim.PositionD(xPix - detector.xCenterPix,
-                                          yPix - detector.yCenterPix)
+
                 self.detectorImages[name] = obj.drawImage(method='phot',
                                                           gain=detector.photParams.gain,
-                                                          offset=offset,
+                                                          offset=galsim.PositionD(xPix-detector.xCenterPix,
+                                                                                  yPix-detector.yCenterPix),
                                                           rng=self._rng,
                                                           image=self.detectorImages[name],
                                                           add_to_image=True)
@@ -379,7 +378,6 @@ class GalSimInterpreter(object):
             raise RuntimeError("Cannot draw a point source in GalSim without a PSF")
 
         return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec)
-
 
     def drawSersic(self, gsObject):
         """
