@@ -626,7 +626,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                              rng=self._rng)
 
             flux = gsObject.flux(bandpassName)
-            if gsObject.galSimType == "PointSource":
+            if gsObject.galSimType.lower() == "pointsource":
                 # Need to pass the flux to .drawPointSource in
                 # order to determine the folding_threshold for the
                 # postage stamp size.
