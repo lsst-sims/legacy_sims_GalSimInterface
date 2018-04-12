@@ -569,7 +569,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                       bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
                       epoch=epoch, seed=seed)
 
-        self.sky_bg_per_pixel = 800   # a nominal value for r-band
+        self.sky_bg_per_pixel = None
 
         # Save the default folding threshold for determining when to recompute
         # the PSF for bright point sources.
