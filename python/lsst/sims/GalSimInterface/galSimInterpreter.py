@@ -632,9 +632,11 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                 # postage stamp size.
                 obj = self.drawPointSource(gsObject, flux)
             else:
+                # Use the existing, non-pointlike object.
                 obj = centeredObj
-                # convolve the object's shape profile with the spectrum
-                obj = obj.withFlux(flux)
+
+            # Set the object flux.
+            obj = obj.withFlux(flux)
 
             for detector in detectorList:
 
@@ -715,7 +717,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         # background per pixel and the point source flux.
         folding_threshold = self.sky_bg_per_pixel/flux
 
-        if folding_threshold > self._ft_default:
+        if folding_threshold >= self._ft_default:
             # In this case, just return the PSF which has the default
             # folding_threshold value.
             return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
@@ -725,8 +727,8 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             # sky_bg/flux ratio and convolve with a delta function.
             gsparams = galsim.GSParams(folding_threshold=folding_threshold)
 
-            # Create a delta function with the desired flux for the star.
-            centeredObj = galsim.DeltaFunction(flux=flux, gsparams=gsparams)
+            # Create a delta function for the star.
+            centeredObj = galsim.DeltaFunction(flux=1, gsparams=gsparams)
 
             # Apply the PSF and return.
             return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
