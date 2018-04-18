@@ -363,8 +363,7 @@ class GalSimInterpreter(object):
                                                                     FWHMeff=
                                                                     self.obs_metadata.seeing[bandpassName],
                                                                     photParams=detector.photParams,
-                                                                    detector=detector,
-                                                                    chipName=detector.name)
+                                                                    detector=detector)
 
 
     def drawPointSource(self, gsObject):
