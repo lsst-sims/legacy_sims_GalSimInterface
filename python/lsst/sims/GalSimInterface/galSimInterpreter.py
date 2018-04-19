@@ -649,7 +649,8 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                                chipName=detector.name)
                 sensor = galsim.SiliconSensor(rng=self._rng,
                                               treering_center=detector.tree_rings.center,
-                                              treering_func=detector.tree_rings.func)
+                                              treering_func=detector.tree_rings.func,
+                                              transpose=True)
                 surface_ops = [waves, angles]
 
                 # Desired position to draw the object.
