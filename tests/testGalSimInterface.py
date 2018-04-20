@@ -956,8 +956,8 @@ class GalSimInterfaceTest(unittest.TestCase):
 
         psf = SNRdocumentPSF(fwhm=fwhm)
         image = psf._cached_psf.drawImage(scale=scale)
-        xCenter = (image.getXMax() + image.getXMin())/2
-        yCenter = (image.getYMax() + image.getYMin())/2
+        xCenter = (image.xmax + image.xmin)/2
+        yCenter = (image.ymax + image.ymin)/2
 
         maxValue = image(xCenter, yCenter)  # because the default is to center GSObjects
         halfDex = int(np.round(0.5*fwhm/scale))  # the distance from the center corresponding to FWHM

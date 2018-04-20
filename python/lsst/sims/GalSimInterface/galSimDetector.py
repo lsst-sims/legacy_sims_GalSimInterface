@@ -1,6 +1,7 @@
 from builtins import zip
 from builtins import object
 import re
+from collections import namedtuple
 import galsim
 import numpy as np
 import lsst.afw.geom as afwGeom
@@ -90,8 +91,9 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.crval2 = self.fitsHeader.get("CRVAL2")
 
         self.origin = galsim.PositionD(x=self.crpix1, y=self.crpix2)
+        self._color = None
 
-    def _radec(self, x, y, color):
+    def _radec(self, x, y, color=None):
         """
         This is a method required by the GalSim WCS API
 
@@ -164,6 +166,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         return header
 
+TreeRingInfo = namedtuple('TreeRingInfo', ['center', 'func'])
 
 class GalSimDetector(object):
     """
@@ -204,6 +207,9 @@ class GalSimDetector(object):
         self._obs_metadata = obs_metadata
         self._epoch = epoch
         self._detector_type = self._cameraWrapper.camera[self._name].getType()
+
+        # Default Tree Ring properties, i.e., no tree rings:
+        self._tree_rings = TreeRingInfo(galsim.PositionD(0, 0), None)
 
         # We are transposing the coordinates because of the difference
         # between how DM defines pixel coordinates and how the
@@ -563,6 +569,14 @@ class GalSimDetector(object):
     def wcs(self, value):
         raise RuntimeError("You should not be setting wcs on the fly; "
                            "just instantiate a new GalSimDetector")
+
+    @property
+    def tree_rings(self):
+        return self._tree_rings
+
+    @tree_rings.setter
+    def tree_rings(self, center_func_tuple):
+        self._tree_rings = TreeRingInfo(*center_func_tuple)
 
 
 def make_galsim_detector(camera_wrapper, detname, phot_params,
