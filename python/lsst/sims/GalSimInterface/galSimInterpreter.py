@@ -336,6 +336,7 @@ class GalSimInterpreter(object):
                                                           offset=galsim.PositionD(xPix-detector.xCenterPix,
                                                                                   yPix-detector.yCenterPix),
                                                           rng=self._rng,
+                                                          maxN=int(1e6),
                                                           image=self.detectorImages[name],
                                                           add_to_image=True)
 
@@ -678,6 +679,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                     obj.drawImage(method='phot',
                                   offset=offset,
                                   rng=self._rng,
+                                  maxN=int(1e6),
                                   image=my_image[bounds],
                                   sensor=sensor,
                                   surface_ops=surface_ops,
