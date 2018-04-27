@@ -16,12 +16,7 @@ import os
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 from lsst.sims.utils.CodeUtilities import sims_clean_up
-from lsst.sims.utils import ObservationMetaData, arcsecFromRadians, haversine
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
-from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import _pixelCoordsFromRaDecLSST
-from lsst.sims.coordUtils import _raDecFromPixelCoordsLSST
-from lsst.sims.photUtils import Sed, Bandpass, BandpassDict
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from lsst.sims.GalSimInterface import LSSTCameraWrapper
@@ -109,7 +104,6 @@ class GalSimPlacementTest(unittest.TestCase):
             shutil.rmtree(scratchDir)
         os.mkdir(scratchDir)
 
-        bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
         detector = lsst_camera()['R:0,3 S:2,2']
         det_name = 'R03_S22'
 
