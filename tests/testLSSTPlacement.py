@@ -38,7 +38,7 @@ def setup_module(module):
     lsst.utils.tests.init()
 
 
-class placementFileDBObj(fileDBObject):
+class LSSTPlacementFileDBObj(fileDBObject):
     idColKey = 'test_id'
     objectTypeId = 88
     tableid = 'test'
@@ -50,7 +50,7 @@ class placementFileDBObj(fileDBObject):
                ('magNorm', 'mag_norm', np.float)]
 
 
-class placementCatalog(GalSimStars):
+class LSSTPlacementCatalog(GalSimStars):
 
     def get_galacticAv(self):
         ra = self.column_by_name('raJ2000')
@@ -160,8 +160,8 @@ class GalSimPlacementTest(unittest.TestCase):
                                     np.array([d_ra]), np.array([d_dec]),
                                     mag_norm=[magNorm])
 
-                db = placementFileDBObj(dbFileName, runtable='test')
-                cat = placementCatalog(db, obs_metadata=obs)
+                db = LSSTPlacementFileDBObj(dbFileName, runtable='test')
+                cat = LSSTPlacementCatalog(db, obs_metadata=obs)
                 cat.camera_wrapper = LSSTCameraWrapper()
                 psf = SNRdocumentPSF(fwhm=fwhm)
                 cat.setPSF(psf)
