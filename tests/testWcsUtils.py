@@ -14,11 +14,9 @@ from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.GalSimInterface import LSSTCameraWrapper
 from lsst.sims.coordUtils import lsst_camera
 
-try:
-    from lsst.obs.lsstSim import LsstSimMapper
-    _USE_LSST_CAMERA = True
-except:
-    _USE_LSST_CAMERA = False
+from lsst.sims.coordUtils import chipNameFromPupilCoordsLSST
+from lsst.sims.coordUtils import focalPlaneCoordsFromPupilCoordsLSST
+from lsst.sims.coordUtils import pupilCoordsFromFocalPlaneCoordsLSST
 
 
 def setup_module(module):
@@ -30,13 +28,8 @@ class WcsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
-        if _USE_LSST_CAMERA:
-            cls.camera_wrapper = LSSTCameraWrapper()
-            cls.detector = cls.camera_wrapper.camera['R:1,1 S:2,2']
-        else:
-            baseDir = os.path.join(getPackageDir('sims_GalSimInterface'), 'tests', 'cameraData')
-            cls.camera_wrapper = GalSimCameraWrapper(ReturnCamera(baseDir))
-            cls.detector = cls.camera_wrapper.camera[0]
+        cls.camera_wrapper = LSSTCameraWrapper()
+        cls.detector = cls.camera_wrapper.camera['R:1,1 S:2,2']
 
         cls.obs = ObservationMetaData(pointingRA=25.0, pointingDec=-10.0,
                                       boundType='circle', boundLength=1.0,
@@ -48,7 +41,14 @@ class WcsTest(unittest.TestCase):
         sims_clean_up()
         del cls.detector
         del cls.camera_wrapper
-        if _USE_LSST_CAMERA:
+
+        if hasattr(chipNameFromPupilCoordsLSST, '_detector_arr'):
+            del chipNameFromPupilCoordsLSST._detector_arr
+        if hasattr(focalPlaneCoordsFromPupilCoordsLSST, '_z_fitter'):
+            del focalPlaneCoordsFromPupilCoordsLSST._z_fitter
+        if hasattr(pupilCoordsFromFocalPlaneCoordsLSST, '_z_fitter'):
+            del pupilCoordsFromFocalPlaneCoordsLSST._z_fitter
+        if hasattr(lsst_camera, '_lsst_camera'):
             del lsst_camera._lsst_camera
 
     def testTanSipWcs(self):

@@ -19,6 +19,14 @@ import lsst.afw.cameraGeom.testUtils as camTestUtils
 from lsst.afw.cameraGeom import FOCAL_PLANE
 from lsst.afw.cameraGeom import TAN_PIXELS, FIELD_ANGLE, PIXELS
 
+from lsst.sims.coordUtils import chipNameFromPupilCoordsLSST
+from lsst.sims.coordUtils import focalPlaneCoordsFromPupilCoordsLSST
+from lsst.sims.coordUtils import pupilCoordsFromFocalPlaneCoordsLSST
+from lsst.sims.coordUtils import pupilCoordsFromPixelCoordsLSST
+from lsst.sims.coordUtils import pixelCoordsFromPupilCoordsLSST
+from lsst.sims.coordUtils import raDecFromPixelCoordsLSST
+from lsst.sims.coordUtils import lsst_camera
+
 def setup_module(module):
     lsst.utils.tests.init()
 
@@ -26,6 +34,17 @@ def setup_module(module):
 class Camera_Wrapper_Test_Class(unittest.TestCase):
 
     longMessage = True
+
+    @classmethod
+    def tearDownClass(cls):
+        if hasattr(chipNameFromPupilCoordsLSST, '_detector_arr'):
+            del chipNameFromPupilCoordsLSST._detector_arr
+        if hasattr(focalPlaneCoordsFromPupilCoordsLSST, '_z_fitter'):
+            del focalPlaneCoordsFromPupilCoordsLSST._z_fitter
+        if hasattr(pupilCoordsFromFocalPlaneCoordsLSST, '_z_fitter'):
+            del pupilCoordsFromFocalPlaneCoordsLSST._z_fitter
+        if hasattr(lsst_camera, '_lsst_camera'):
+            del lsst_camera._lsst_camera
 
     def test_generic_camera_wrapper(self):
         """
@@ -274,8 +293,7 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             # is as expected
             x_pup = rng.random_sample(10)*0.005-0.01
             y_pup = rng.random_sample(10)*0.005-0.01
-            x_pix, y_pix = pixelCoordsFromPupilCoords(x_pup, y_pup, chipName=name,
-                                                      camera=camera)
+            x_pix, y_pix = pixelCoordsFromPupilCoordsLSST(x_pup, y_pup, chipName=name)
 
             (x_pix_wrapper,
              y_pix_wrapper) = camera_wrapper.pixelCoordsFromPupilCoords(x_pup, y_pup,
@@ -308,8 +326,7 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             x_pix = bbox.getMinX() + rng.random_sample(10)*(bbox.getMaxX()-bbox.getMinX())
             y_pix = bbox.getMinY() + rng.random_sample(10)*(bbox.getMaxY()-bbox.getMinY())
 
-            ra, dec = raDecFromPixelCoords(x_pix, y_pix, name, camera=camera,
-                                           obs_metadata=obs)
+            ra, dec = raDecFromPixelCoordsLSST(x_pix, y_pix, name, obs_metadata=obs)
 
             (ra_wrapper,
              dec_wrapper) = camera_wrapper.raDecFromPixelCoords(2.0*center_pix.getY()-y_pix,
@@ -337,8 +354,8 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
                                                               chipName=name,
                                                               obs_metadata=obs)
 
-            np.testing.assert_allclose(y_pix_inv, x_pix, atol=1.0e-5, rtol=0.0)
-            np.testing.assert_allclose(x_pix_inv, 2.0*center_pix.getY()-y_pix, atol=1.0e-5, rtol=0.0)
+            np.testing.assert_allclose(y_pix_inv, x_pix, atol=1.0e-4, rtol=0.0)
+            np.testing.assert_allclose(x_pix_inv, 2.0*center_pix.getY()-y_pix, atol=1.0e-4, rtol=0.0)
 
             ra = np.radians(ra_wrapper)
             dec = np.radians(dec_wrapper)
@@ -374,10 +391,9 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         chip_name_list = rng.choice(name_list, size=npts)
 
         (xPup_list,
-         yPup_list) = pupilCoordsFromPixelCoords(dm_x_pix_list,
-                                                 dm_y_pix_list,
-                                                 chipName=chip_name_list,
-                                                 camera=camera)
+         yPup_list) = pupilCoordsFromPixelCoordsLSST(dm_x_pix_list,
+                                                     dm_y_pix_list,
+                                                     chipName=chip_name_list)
 
         (cam_x_pix_list,
          cam_y_pix_list) = camera_wrapper.pixelCoordsFromPupilCoords(xPup_list,
@@ -390,9 +406,9 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
                                                         chip_name_list)
 
         np.testing.assert_array_almost_equal(dm_x_test, dm_x_pix_list,
-                                             decimal=10)
+                                             decimal=4)
         np.testing.assert_array_almost_equal(dm_y_test, dm_y_pix_list,
-                                             decimal=10)
+                                             decimal=4)
 
         # test transformations made one at a time
         for ii in range(len(cam_x_pix_list)):
@@ -400,17 +416,16 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
                                                            cam_y_pix_list[ii],
                                                            chip_name_list[ii])
 
-            self.assertAlmostEqual(dm_x_pix_list[ii], dm_x, 10)
-            self.assertAlmostEqual(dm_y_pix_list[ii], dm_y, 10)
+            self.assertAlmostEqual(dm_x_pix_list[ii], dm_x, 4)
+            self.assertAlmostEqual(dm_y_pix_list[ii], dm_y, 4)
 
         # test case where an array of points is on a single chip
         chip_name = chip_name_list[10]
 
         (xPup_list,
-         yPup_list) = pupilCoordsFromPixelCoords(dm_x_pix_list,
-                                                 dm_y_pix_list,
-                                                 chipName=chip_name,
-                                                 camera=camera)
+         yPup_list) = pupilCoordsFromPixelCoordsLSST(dm_x_pix_list,
+                                                     dm_y_pix_list,
+                                                     chipName=chip_name)
 
         (cam_x_pix_list,
          cam_y_pix_list) = camera_wrapper.pixelCoordsFromPupilCoords(xPup_list,
@@ -423,9 +438,9 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
                                                         chip_name)
 
         np.testing.assert_array_almost_equal(dm_x_test, dm_x_pix_list,
-                                             decimal=10)
+                                             decimal=4)
         np.testing.assert_array_almost_equal(dm_y_test, dm_y_pix_list,
-                                             decimal=10)
+                                             decimal=4)
 
         del camera
         del camera_wrapper

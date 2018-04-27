@@ -528,10 +528,10 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
         and the second row is the y pixel coordinate.  These pixel coordinates
         are defined in the Camera team system, rather than the DM system.
         """
-        dm_x_pix, dm_y_pix = coordUtils.pixelCoordsFromPupilCoords(xPupil, yPupil,
-                                                                   chipName=chipName,
-                                                                   camera=self._camera,
-                                                                   includeDistortion=includeDistortion)
+        (dm_x_pix,
+         dm_y_pix) = coordUtils.pixelCoordsFromPupilCoordsLSST(xPupil, yPupil,
+                                                               chipName=chipName,
+                                                               includeDistortion=includeDistortion)
 
         cam_y_pix = dm_x_pix
         if isinstance(chipName, list) or isinstance(chipName, np.ndarray):
@@ -589,9 +589,8 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
         else:
             cam_center_pix = self.getCenterPixel(chipName)
             dm_yPix = 2.0*cam_center_pix.getX()-xPix
-        return coordUtils.pupilCoordsFromPixelCoords(dm_xPix, dm_yPix, chipName,
-                                                     camera=coordUtils.lsst_camera(),
-                                                     includeDistortion=includeDistortion)
+        return coordUtils.pupilCoordsFromPixelCoordsLSST(dm_xPix, dm_yPix, chipName,
+                                                         includeDistortion=includeDistortion)
 
     def _raDecFromPixelCoords(self, xPix, yPix, chipName, obs_metadata,
                               epoch=2000.0, includeDistortion=True):
@@ -646,11 +645,10 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
             cam_center_pix = self.getCenterPixel(chipName)
             dm_yPix = 2.0*cam_center_pix.getX() - xPix
 
-        return coordUtils._raDecFromPixelCoords(dm_xPix, dm_yPix, chipName,
-                                                camera=self._camera,
-                                                obs_metadata=obs_metadata,
-                                                epoch=epoch,
-                                                includeDistortion=includeDistortion)
+        return coordUtils._raDecFromPixelCoordsLSST(dm_xPix, dm_yPix, chipName,
+                                                    obs_metadata=obs_metadata,
+                                                    epoch=epoch,
+                                                    includeDistortion=includeDistortion)
 
     def raDecFromPixelCoords(self, xPix, yPix, chipName, obs_metadata,
                              epoch=2000.0, includeDistortion=True):
