@@ -324,7 +324,8 @@ class GalSimInterpreter(object):
 
                 xPix, yPix = detector.camera_wrapper.pixelCoordsFromPupilCoords(gsObject.xPupilRadians,
                                                                                 gsObject.yPupilRadians,
-                                                                                chipName=detector.name)
+                                                                                detector.name,
+                                                                                self.obs_metadata)
 
                 obj = centeredObj
 

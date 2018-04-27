@@ -183,7 +183,7 @@ class GalSimCameraWrapper(object):
 
         return self._tan_pixel_bounds_cache[detector_name]
 
-    def pixelCoordsFromPupilCoords(self, xPupil, yPupil, chipName=None,
+    def pixelCoordsFromPupilCoords(self, xPupil, yPupil, chipName, obs_metadata,
                                    includeDistortion=True):
         """
         Get the pixel positions (or nan if not on a chip) for objects based
@@ -203,7 +203,10 @@ class GalSimCameraWrapper(object):
         If a single value, all of the pixel coordinates will be reckoned on the same
         chip.  If None, this method will calculate which chip each(RA, Dec) pair actually
         falls on, and return pixel coordinates for each (RA, Dec) pair on the appropriate
-        chip.  Default is None.
+        chip.
+
+        obs_metadata is an ObservationMetaData characterizing the telescope
+        pointing.
 
         includeDistortion is a boolean.  If True (default), then this method will
         return the true pixel coordinates with optical distortion included.  If False, this
@@ -216,11 +219,16 @@ class GalSimCameraWrapper(object):
         a 2-D numpy array in which the first row is the x pixel coordinate
         and the second row is the y pixel coordinate
         """
+        if obs_metadata is None:
+            raise RuntimeError("Must pass obs_metdata to "
+                               "cameraWrapper.pixelCoordsFromPupilCoords")
+
         return coordUtils.pixelCoordsFromPupilCoords(xPupil, yPupil, chipName=chipName,
                                                      camera=self._camera,
                                                      includeDistortion=includeDistortion)
 
-    def pupilCoordsFromPixelCoords(self, xPix, yPix, chipName, includeDistortion=True):
+    def pupilCoordsFromPixelCoords(self, xPix, yPix, chipName, obs_metadata,
+                                   includeDistortion=True):
 
         """
         Convert pixel coordinates into pupil coordinates
@@ -238,6 +246,9 @@ class GalSimCameraWrapper(object):
         for each (xPix, yPix) coordinate pair), or a single value (in which case, all
         of the (xPix, yPix) points will be reckoned on that chip).
 
+        obs_metadata is an ObservationMetaData characterizing the telescope
+        pointing.
+
         includeDistortion is a boolean.  If True (default), then this method will
         expect the true pixel coordinates with optical distortion included.  If False, this
         method will expect TAN_PIXEL coordinates, which are the pixel coordinates with
@@ -249,6 +260,7 @@ class GalSimCameraWrapper(object):
         a 2-D numpy array in which the first row is the x pupil coordinate
         and the second row is the y pupil coordinate (both in radians)
         """
+
         return coordUtils.pupilCoordsFromPixelCoords(xPix, yPix, chipName,
                                                      camera=self._camera,
                                                      includeDistortion=includeDistortion)
@@ -494,7 +506,7 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
 
         return self._tan_pixel_bounds_cache[detector_name]
 
-    def pixelCoordsFromPupilCoords(self, xPupil, yPupil, chipName=None,
+    def pixelCoordsFromPupilCoords(self, xPupil, yPupil, chipName, obs_metadata,
                                    includeDistortion=True):
         """
         Get the pixel positions (or nan if not on a chip) for objects based
@@ -514,7 +526,10 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
         If a single value, all of the pixel coordinates will be reckoned on the same
         chip.  If None, this method will calculate which chip each(RA, Dec) pair actually
         falls on, and return pixel coordinates for each (RA, Dec) pair on the appropriate
-        chip.  Default is None.
+        chip.
+
+        obs_metadata is an ObservationMetaData characterizing the telescope
+        pointing.
 
         includeDistortion is a boolean.  If True (default), then this method will
         return the true pixel coordinates with optical distortion included.  If False, this
@@ -531,6 +546,7 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
         (dm_x_pix,
          dm_y_pix) = coordUtils.pixelCoordsFromPupilCoordsLSST(xPupil, yPupil,
                                                                chipName=chipName,
+                                                               band=obs_metadata.bandpass,
                                                                includeDistortion=includeDistortion)
 
         cam_y_pix = dm_x_pix
@@ -550,7 +566,8 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
 
         return cam_x_pix, cam_y_pix
 
-    def pupilCoordsFromPixelCoords(self, xPix, yPix, chipName, includeDistortion=True):
+    def pupilCoordsFromPixelCoords(self, xPix, yPix, chipName, obs_metadata,
+                                   includeDistortion=True):
         """
         Convert pixel coordinates into pupil coordinates
 
@@ -568,6 +585,9 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
         are defined.  This can be a list (in which case there should be one chip name
         for each (xPix, yPix) coordinate pair), or a single value (in which case, all
         of the (xPix, yPix) points will be reckoned on that chip).
+
+        obs_metadata is an ObservationMetaData characterizing the telescope
+        pointing.
 
         includeDistortion is a boolean.  If True (default), then this method will
         expect the true pixel coordinates with optical distortion included.  If False, this
@@ -590,6 +610,7 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
             cam_center_pix = self.getCenterPixel(chipName)
             dm_yPix = 2.0*cam_center_pix.getX()-xPix
         return coordUtils.pupilCoordsFromPixelCoordsLSST(dm_xPix, dm_yPix, chipName,
+                                                         band=obs_metadata.bandpass,
                                                          includeDistortion=includeDistortion)
 
     def _raDecFromPixelCoords(self, xPix, yPix, chipName, obs_metadata,
@@ -647,6 +668,7 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
 
         return coordUtils._raDecFromPixelCoordsLSST(dm_xPix, dm_yPix, chipName,
                                                     obs_metadata=obs_metadata,
+                                                    band=obs_metadata.bandpass,
                                                     epoch=epoch,
                                                     includeDistortion=includeDistortion)
 
@@ -758,6 +780,7 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
                                                                  parallax=parallax, v_rad=v_rad,
                                                                  obs_metadata=obs_metadata,
                                                                  chipName=chipName,
+                                                                 band=obs_metadata.bandpass,
                                                                  epoch=epoch,
                                                                  includeDistortion=includeDistortion)
 

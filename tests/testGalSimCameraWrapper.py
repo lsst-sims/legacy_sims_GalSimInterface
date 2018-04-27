@@ -128,7 +128,7 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
 
             (x_pix_wrapper,
              y_pix_wrapper) = camera_wrapper.pixelCoordsFromPupilCoords(x_pup, y_pup,
-                                                                        chipName=name)
+                                                                        name, obs)
 
             nan_x = np.where(np.isnan(x_pix))
             self.assertEqual(len(nan_x[0]), 0)
@@ -141,7 +141,8 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
                                                       camera=camera)
 
             (x_pup_wrapper,
-             y_pup_wrapper) = camera_wrapper.pupilCoordsFromPixelCoords(x_pix, y_pix, chipName=name)
+             y_pup_wrapper) = camera_wrapper.pupilCoordsFromPixelCoords(x_pix, y_pix, name,
+                                                                        obs)
 
             nan_x = np.where(np.isnan(x_pup))
             self.assertEqual(len(nan_x[0]), 0)
@@ -220,7 +221,8 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         ra, dec = raDecFromAltAz(35.0, 112.0, obs_mjd)
         obs = ObservationMetaData(pointingRA=ra, pointingDec=dec,
                                   mjd=obs_mjd.mjd,
-                                  rotSkyPos=22.4)
+                                  rotSkyPos=22.4,
+                                  bandpassName='u')
 
         rng = np.random.RandomState(8124)
 
@@ -293,11 +295,12 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             # is as expected
             x_pup = rng.random_sample(10)*0.005-0.01
             y_pup = rng.random_sample(10)*0.005-0.01
-            x_pix, y_pix = pixelCoordsFromPupilCoordsLSST(x_pup, y_pup, chipName=name)
+            x_pix, y_pix = pixelCoordsFromPupilCoordsLSST(x_pup, y_pup, chipName=name,
+                                                          band=obs.bandpass)
 
             (x_pix_wrapper,
              y_pix_wrapper) = camera_wrapper.pixelCoordsFromPupilCoords(x_pup, y_pup,
-                                                                        chipName=name)
+                                                                        name, obs)
 
             nan_x = np.where(np.isnan(x_pix))
             self.assertEqual(len(nan_x[0]), 0)
@@ -314,7 +317,7 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             (x_pup_wrapper,
              y_pup_wrapper) = camera_wrapper.pupilCoordsFromPixelCoords(x_pix_wrapper,
                                                                         y_pix_wrapper,
-                                                                        chipName=name)
+                                                                        name, obs)
             msg = 'worst error %e' % np.abs(x_pup-x_pup_wrapper).max()
             np.testing.assert_allclose(x_pup, x_pup_wrapper, atol=1.0e-10, rtol=0.0, err_msg=msg)
             msg = 'worst error %e' % np.abs(y_pup-y_pup_wrapper).max()
@@ -326,7 +329,8 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             x_pix = bbox.getMinX() + rng.random_sample(10)*(bbox.getMaxX()-bbox.getMinX())
             y_pix = bbox.getMinY() + rng.random_sample(10)*(bbox.getMaxY()-bbox.getMinY())
 
-            ra, dec = raDecFromPixelCoordsLSST(x_pix, y_pix, name, obs_metadata=obs)
+            ra, dec = raDecFromPixelCoordsLSST(x_pix, y_pix, name, obs_metadata=obs,
+                                               band=obs.bandpass)
 
             (ra_wrapper,
              dec_wrapper) = camera_wrapper.raDecFromPixelCoords(2.0*center_pix.getY()-y_pix,
@@ -380,6 +384,7 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         """
         camera = lsst_camera()
         camera_wrapper = LSSTCameraWrapper()
+        obs = ObservationMetaData(bandpassName='u')
 
         npts = 100
         rng = np.random.RandomState(1824)
@@ -393,12 +398,14 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         (xPup_list,
          yPup_list) = pupilCoordsFromPixelCoordsLSST(dm_x_pix_list,
                                                      dm_y_pix_list,
-                                                     chipName=chip_name_list)
+                                                     chipName=chip_name_list,
+                                                     band=obs.bandpass)
 
         (cam_x_pix_list,
          cam_y_pix_list) = camera_wrapper.pixelCoordsFromPupilCoords(xPup_list,
                                                                      yPup_list,
-                                                                     chipName=chip_name_list)
+                                                                     chip_name_list,
+                                                                     obs)
 
         (dm_x_test,
          dm_y_test) = camera_wrapper.dmPixFromCameraPix(cam_x_pix_list,
@@ -425,12 +432,14 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         (xPup_list,
          yPup_list) = pupilCoordsFromPixelCoordsLSST(dm_x_pix_list,
                                                      dm_y_pix_list,
-                                                     chipName=chip_name)
+                                                     chipName=chip_name,
+                                                     band=obs.bandpass)
 
         (cam_x_pix_list,
          cam_y_pix_list) = camera_wrapper.pixelCoordsFromPupilCoords(xPup_list,
                                                                      yPup_list,
-                                                                     chipName=chip_name)
+                                                                     chip_name,
+                                                                     obs)
 
         (dm_x_test,
          dm_y_test) = camera_wrapper.dmPixFromCameraPix(cam_x_pix_list,

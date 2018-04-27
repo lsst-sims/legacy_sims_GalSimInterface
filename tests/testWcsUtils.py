@@ -33,7 +33,8 @@ class WcsTest(unittest.TestCase):
 
         cls.obs = ObservationMetaData(pointingRA=25.0, pointingDec=-10.0,
                                       boundType='circle', boundLength=1.0,
-                                      mjd=49250.0, rotSkyPos=0.0)
+                                      mjd=49250.0, rotSkyPos=0.0,
+                                      bandpassName='g')
         cls.epoch = 2000.0
 
     @classmethod
