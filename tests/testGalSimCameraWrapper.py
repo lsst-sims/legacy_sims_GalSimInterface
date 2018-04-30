@@ -27,6 +27,8 @@ from lsst.sims.coordUtils import pixelCoordsFromPupilCoordsLSST
 from lsst.sims.coordUtils import raDecFromPixelCoordsLSST
 from lsst.sims.coordUtils import lsst_camera
 
+from lsst.sims.coordUtils import clean_up_lsst_camera
+
 def setup_module(module):
     lsst.utils.tests.init()
 
@@ -37,14 +39,7 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if hasattr(chipNameFromPupilCoordsLSST, '_detector_arr'):
-            del chipNameFromPupilCoordsLSST._detector_arr
-        if hasattr(focalPlaneCoordsFromPupilCoordsLSST, '_z_fitter'):
-            del focalPlaneCoordsFromPupilCoordsLSST._z_fitter
-        if hasattr(pupilCoordsFromFocalPlaneCoordsLSST, '_z_fitter'):
-            del pupilCoordsFromFocalPlaneCoordsLSST._z_fitter
-        if hasattr(lsst_camera, '_lsst_camera'):
-            del lsst_camera._lsst_camera
+        clean_up_lsst_camera()
 
     def test_generic_camera_wrapper(self):
         """

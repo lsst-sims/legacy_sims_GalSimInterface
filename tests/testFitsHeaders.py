@@ -23,6 +23,8 @@ from lsst.sims.coordUtils import pupilCoordsFromFocalPlaneCoordsLSST
 
 from testUtils import create_text_catalog
 
+from lsst.sims.coordUtils import clean_up_lsst_camera
+
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -65,14 +67,7 @@ class FitsHeaderTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         sims_clean_up()
-        if hasattr(chipNameFromPupilCoordsLSST, '_detector_arr'):
-            del chipNameFromPupilCoordsLSST._detector_arr
-        if hasattr(focalPlaneCoordsFromPupilCoordsLSST, '_z_fitter'):
-            del focalPlaneCoordsFromPupilCoordsLSST._z_fitter
-        if hasattr(pupilCoordsFromFocalPlaneCoordsLSST, '_z_fitter'):
-            del pupilCoordsFromFocalPlaneCoordsLSST._z_fitter
-        if hasattr(lsst_camera, '_lsst_camera'):
-            del lsst_camera._lsst_camera
+        clean_up_lsst_camera()
 
     def testFitsHeader(self):
         """
