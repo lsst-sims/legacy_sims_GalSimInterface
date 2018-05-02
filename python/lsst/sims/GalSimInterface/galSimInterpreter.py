@@ -648,7 +648,9 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                 xPix, yPix = detector.camera_wrapper\
                    .pixelCoordsFromPupilCoords(gsObject.xPupilRadians,
                                                gsObject.yPupilRadians,
-                                               chipName=detector.name)
+                                               chipName=detector.name,
+                                               obs_metadata=self.obs_metadata)
+
                 sensor = galsim.SiliconSensor(rng=self._rng,
                                               treering_center=detector.tree_rings.center,
                                               treering_func=detector.tree_rings.func,
