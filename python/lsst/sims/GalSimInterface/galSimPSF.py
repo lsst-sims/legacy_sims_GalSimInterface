@@ -205,5 +205,5 @@ class Kolmogorov_and_Gaussian_PSF(PSFbase):
 
         self._cached_psf = psf
 
-    def _getPSF(self, xPupil=None, yPupil=None):
+    def _getPSF(self, xPupil=None, yPupil=None, **kwargs):
         return self._cached_psf
