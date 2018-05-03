@@ -626,18 +626,9 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass,
                                              rng=self._rng)
 
-            flux = gsObject.flux(bandpassName)
-            if gsObject.galSimType.lower() == "pointsource":
-                # Need to pass the flux to .drawPointSource in
-                # order to determine the folding_threshold for the
-                # postage stamp size.
-                obj = self.drawPointSource(gsObject, flux)
-            else:
-                # Use the existing, non-pointlike object.
-                obj = centeredObj
-
             # Set the object flux.
-            obj = obj.withFlux(flux)
+            flux = gsObject.flux(bandpassName)
+            obj = centeredObj.withFlux(flux)
 
             for detector in detectorList:
 
@@ -658,9 +649,10 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                 image_pos = galsim.PositionD(xPix, yPix)
 
                 # Find a postage stamp region to draw onto.
-                my_image = self.detectorImages[name]
-                object_on_image = my_image.wcs.toImage(obj, image_pos=image_pos)
-                image_size = object_on_image.getGoodImageSize(1.0)
+                # Use (sky noise)/3. as the minimum surface brightness for
+                # rendering the object.
+                keep_sb_level = np.sqrt(self.sky_bg_per_pixel)/3.
+                image_size = getGoodPhotImageSize(obj, keep_sb_level)
                 xmin = int(math.floor(image_pos.x) - image_size/2)
                 xmax = int(math.ceil(image_pos.x) + image_size/2)
                 ymin = int(math.floor(image_pos.y) - image_size/2)
@@ -668,28 +660,21 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
 
                 # Ensure the bounds of the postage stamp lie within the image.
                 bounds = galsim.BoundsI(xmin, xmax, ymin, ymax)
-                bounds = bounds & my_image.bounds
+                bounds = bounds & self.detectorImages[name].bounds
 
                 # offset is relative to the "true" center of the postage stamp.
                 offset = image_pos - bounds.true_center
 
-                # Only draw objects with folding thresholds less than or
-                # equal to the default.
-                if object_on_image.gsparams.folding_threshold <= self._ft_default:
+                if bounds.area() > 0:
                     obj.drawImage(method='phot',
                                   offset=offset,
                                   rng=self._rng,
                                   maxN=int(1e6),
-                                  image=my_image[bounds],
+                                  image=self.detectorImages[name][bounds],
                                   sensor=sensor,
                                   surface_ops=surface_ops,
                                   add_to_image=True,
                                   gain=detector.photParams.gain)
-                else:
-                    # There should be none of these, but add a warning
-                    # just in case.
-                    warnings.warn('Object %s has folding_threshold %s. Skipped.'
-                                  % (gsObject.uniqueId, object_on_image.gsparams.folding_threshold))
 
         self.drawn_objects.add(gsObject.uniqueId)
         self.write_checkpoint()
@@ -738,3 +723,75 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                      yPupil=gsObject.yPupilArcsec,
                                      obj=centeredObj,
                                      gsparams=gsparams)
+
+
+def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
+    """
+    Get a postage stamp size (appropriate for photon-shooting) given a
+    minimum surface brightness in photons/pixel out to which to
+    extend the stamp region.
+
+    Parameters
+    ----------
+    obj: galsim.GSObject
+        The GalSim object for which we will call .drawImage.
+    keep_sb_level: float
+        The minimum surface brightness (photons/pixel) out to which to
+        extend the postage stamp, e.g., a value of
+        sqrt(sky_bg_per_pixel)/3 would be 1/3 the Poisson noise
+        per pixel from the sky background.
+    pixel_scale: float [0.2]
+        The CCD pixel scale in arcsec.
+
+    Returns
+    -------
+    int: The length N of the desired NxN postage stamp.
+
+    Notes
+    -----
+    Use of this function should be avoided with PSF implementations that
+    are costly to evaluate.  A roughly equivalent DoubleGaussian
+    could be used as a proxy.
+
+    This function was originally written by Mike Jarvis.
+    """
+    # The factor by which to adjust N in each step.
+    factor = 1.1
+
+    # Start with the normal image size from GalSim
+    N = obj.getGoodImageSize(pixel_scale)
+    #print('N = ',N)
+
+    # This can be too small for bright stars, so increase it in steps until the edges are
+    # all below the requested sb level.
+    # (Don't go bigger than 4096)
+    while N < 4096:
+        # Check the edges and corners of the current square
+        h = N / 2 * pixel_scale
+        xvalues = [ obj.xValue(h,0), obj.xValue(-h,0),
+                    obj.xValue(0,h), obj.xValue(0,-h),
+                    obj.xValue(h,h), obj.xValue(h,-h),
+                    obj.xValue(-h,h), obj.xValue(-h,-h) ]
+        maxval = np.max(xvalues)
+        #print(N, maxval)
+        if maxval < keep_sb_level:
+            break
+        N *= factor
+
+    # This can be quite huge for Devauc profiles, but we don't actually have much
+    # surface brightness way out in the wings.  So cut it back some.
+    # (Don't go below 64 though.)
+    while N >= 64 * factor:
+        # Check the edges and corners of a square smaller by a factor of N.
+        h = N / (2 * factor) * pixel_scale
+        xvalues = [ obj.xValue(h,0), obj.xValue(-h,0),
+                    obj.xValue(0,h), obj.xValue(0,-h),
+                    obj.xValue(h,h), obj.xValue(h,-h),
+                    obj.xValue(-h,h), obj.xValue(-h,-h) ]
+        maxval = np.max(xvalues)
+        #print(N, maxval)
+        if maxval > keep_sb_level:
+            break
+        N /= factor
+
+    return int(N)
