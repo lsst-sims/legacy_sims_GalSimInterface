@@ -649,17 +649,13 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                 image_pos = galsim.PositionD(xPix, yPix)
 
                 # Find a postage stamp region to draw onto.
-                # Use (sky noise)/3. as the minimum surface brightness for
-                # rendering the object.
+                # Use (sky noise)/3. as the nominal minimum surface
+                # brightness for rendering the object.
                 keep_sb_level = np.sqrt(self.sky_bg_per_pixel)/3.
-                image_size = getGoodPhotImageSize(obj, keep_sb_level)
-                xmin = int(math.floor(image_pos.x) - image_size/2)
-                xmax = int(math.ceil(image_pos.x) + image_size/2)
-                ymin = int(math.floor(image_pos.y) - image_size/2)
-                ymax = int(math.ceil(image_pos.y) + image_size/2)
+                bounds = getStampBounds(obj, image_pos, keep_sb_level,
+                                        3*keep_sb_level)
 
                 # Ensure the bounds of the postage stamp lie within the image.
-                bounds = galsim.BoundsI(xmin, xmax, ymin, ymax)
                 bounds = bounds & self.detectorImages[name].bounds
 
                 # offset is relative to the "true" center of the postage stamp.
@@ -723,6 +719,51 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                      yPupil=gsObject.yPupilArcsec,
                                      obj=centeredObj,
                                      gsparams=gsparams)
+
+
+def getStampBounds(obj, image_pos, keep_sb_level, large_object_sb_level,
+                   Nmax=1400, pixel_scale=0.2):
+    """
+    Get the postage stamp bounds for drawing an object within the stamp
+    to include the specified minimum surface brightness.  If the initial
+    stamp is too large (> Nmax**2 ~ 1GB of RSS memory for a 72 vertex/pixel
+    sensor model), use the relaxed surface brightness level for large
+    objects.
+
+    Parameters
+    ----------
+    obj: galsim.GSObject
+        The GalSim object for which we will call .drawImage.
+    keep_sb_level: float
+        The minimum surface brightness (photons/pixel) out to which to
+        extend the postage stamp, e.g., a value of
+        sqrt(sky_bg_per_pixel)/3 would be 1/3 the Poisson noise
+        per pixel from the sky background.
+    large_object_sb_level: float
+        Surface brightness level to use for large/bright objects that
+        would otherwise yield stamps with more than Nmax**2 pixels.
+    Nmax: int [1400]
+        The largest stamp size to consider at the nominal keep_sb_level.
+        1400**2*72*8/1024**3 = 1GB.
+    pixel_scale: float [0.2]
+        The CCD pixel scale in arcsec.
+
+    Returns
+    -------
+    galsim.BoundsI: The postage stamp bounds.
+    """
+    image_size = getGoodPhotImageSize(obj, keep_sb_level,
+                                      pixel_scale=pixel_scale)
+    if image_size > Nmax:
+        image_size = getGoodPhotImageSize(obj, large_object_sb_level,
+                                          pixel_scale=pixel_scale)
+        image_size = max(image_size, Nmax)
+    xmin = int(math.floor(image_pos.x) - image_size/2)
+    xmax = int(math.ceil(image_pos.x) + image_size/2)
+    ymin = int(math.floor(image_pos.y) - image_size/2)
+    ymax = int(math.ceil(image_pos.y) + image_size/2)
+
+    return galsim.BoundsI(xmin, xmax, ymin, ymax)
 
 
 def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
