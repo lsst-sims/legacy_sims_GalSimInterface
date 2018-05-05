@@ -83,6 +83,10 @@ class GalSimInterpreter(object):
         self.drawn_objects = set()
         self.nobj_checkpoint = 1000
 
+        self.centroid_base_name = None
+        self.centroid_handles = {}  # This dict will contain the file handles for each
+                                    # centroid file where sources are found.
+
     def setPSF(self, PSF=None):
         """
         Set the PSF wrapper for this GalSimInterpreter
@@ -341,6 +345,20 @@ class GalSimInterpreter(object):
                                                           image=self.detectorImages[name],
                                                           add_to_image=True)
 
+                # If we are writing centroid files, make an entry in the approriate file.
+                if self.centroid_base_name is not None:
+
+                    centroid_name = detector.fileName + '_' + bandpassName
+                    # If we haven't seen this sensor before open a centroid file for it.
+                    if centroid_name not in self.centroid_handles:
+                        self.open_centroid_file(centroid_name)
+
+                    # Write the object to the file
+                    self.centroid_handles[centroid_name].write('{:<15d} {:15.5f} {:10.2f} {:10.2f}\n'.
+                                                     format(gsObject.uniqueId,
+                                                            gsObject.flux(bandpassName),
+                                                            xPix, yPix))
+
         self.drawn_objects.add(gsObject.uniqueId)
         self.write_checkpoint()
         return outputString
@@ -508,6 +526,29 @@ class GalSimInterpreter(object):
             namesWritten.append(fileName)
 
         return namesWritten
+
+    def open_centroid_file(self, detector_name):
+        """
+        Open a centroid file.  This file will have one line per-object and the
+        it will be labeled with the objectID and then followed by the average X
+        Y position of the photons from the object. Either the true photon
+        position or the average of the pixelated electrons collected on a finite
+        sensor can be chosen.
+        """
+
+        visitID = self.obs_metadata.OpsimMetaData['obshistID']
+        file_name = self.centroid_base_name + str(visitID) + '_' + detector_name + '.txt'
+
+        self.centroid_handles[detector_name] = open(file_name, 'w')
+        self.centroid_handles[detector_name].write('{:15} {:>15} {:>10} {:>10}\n'.
+                                          format('SourceID', 'Photons', 'xpos', 'ypos'))
+
+    def close_centroid_files(self):
+        """
+        Close the centroid file.
+        """
+        for name in self.centroid_handles:
+            self.centroid_handles[name].close()
 
     def write_checkpoint(self, force=False):
         """
