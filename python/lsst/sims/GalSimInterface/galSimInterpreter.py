@@ -149,8 +149,33 @@ class GalSimInterpreter(object):
         else:
             return False
 
-    def findAllDetectors(self, gsObject):
+    def _writeObjectToCentroidFile(gsObject, detector, bandpassName):
+        """
+        Write the flux and the the object position on the sensor for this object
+        into a centroid file.  First check if a centroid file exists for this
+        detector and, if it doesn't create it.
 
+        @param [in] gsObject is an instantiation of the GalSimCelestialObject class
+        carrying information about the object whose image is to be drawnself.
+
+        @param [in] detector is an instantation of a detector object (a sensor).
+
+        @param [in] bandpassName is the name of the filter used in this exposure.
+        """
+
+        centroid_name = detector.fileName + '_' + bandpassName
+
+        # If we haven't seen this sensor before open a centroid file for it.
+        if centroid_name not in self.centroid_handles:
+            self.open_centroid_file(centroid_name)
+
+        # Write the object to the file
+        self.centroid_handles[centroid_name].write('{:<15d} {:15.5f} {:10.2f} {:10.2f}\n'.
+                                                   format(gsObject.uniqueId,
+                                                          gsObject.flux(bandpassName),
+                                                          xPix, yPix))
+
+    def findAllDetectors(self, gsObject):
         """
         Find all of the detectors on which a given astronomical object casts light.
 
