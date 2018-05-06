@@ -556,7 +556,7 @@ class GalSimInterpreter(object):
 
         self.centroid_handles[detector_name] = open(file_name, 'w')
         self.centroid_handles[detector_name].write('{:15} {:>15} {:>10} {:>10}\n'.
-                                          format('SourceID', 'Photons', 'xpos', 'ypos'))
+                                          format('SourceID', 'Flux', 'xPix', 'yPix'))
 
     def close_centroid_files(self):
         """
