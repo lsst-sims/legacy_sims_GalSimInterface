@@ -757,6 +757,18 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                   add_to_image=True,
                                   gain=detector.photParams.gain)
 
+                    # If we are writing centroid files, make an entry in the
+                    # approriate file.
+                    if self.centroid_base_name is not None:
+                        self._writeObjectToCentroidFile(gsObject, detector,
+                                                        bandpassName, xPix, yPix)
+
+                else:
+                    # There should be none of these, but add a warning
+                    # just in case.
+                    warnings.warn('Object %s has folding_threshold %s. Skipped.'
+                                  % (gsObject.uniqueId, object_on_image.gsparams.folding_threshold))
+
         self.drawn_objects.add(gsObject.uniqueId)
         self.write_checkpoint()
         return outputString
