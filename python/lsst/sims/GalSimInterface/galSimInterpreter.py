@@ -372,17 +372,7 @@ class GalSimInterpreter(object):
 
                 # If we are writing centroid files, make an entry in the approriate file.
                 if self.centroid_base_name is not None:
-
-                    centroid_name = detector.fileName + '_' + bandpassName
-                    # If we haven't seen this sensor before open a centroid file for it.
-                    if centroid_name not in self.centroid_handles:
-                        self.open_centroid_file(centroid_name)
-
-                    # Write the object to the file
-                    self.centroid_handles[centroid_name].write('{:<15d} {:15.5f} {:10.2f} {:10.2f}\n'.
-                                                     format(gsObject.uniqueId,
-                                                            gsObject.flux(bandpassName),
-                                                            xPix, yPix))
+                    self._writeObjectToCentroidFile(gsObject, detector, bandpassName, xPix, yPix)
 
         self.drawn_objects.add(gsObject.uniqueId)
         self.write_checkpoint()
