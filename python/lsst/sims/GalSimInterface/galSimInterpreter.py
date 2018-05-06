@@ -16,11 +16,11 @@ import pickle
 import numpy as np
 import galsim
 from lsst.sims.utils import radiansFromArcsec
-from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
 from lsst.sims.GalSimInterface import make_galsim_detector, SNRdocumentPSF, \
     Kolmogorov_and_Gaussian_PSF
 
 __all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpeter"]
+
 
 def make_gs_interpreter(obs_md, detectors, bandpassDict, noiseWrapper,
                         epoch=None, seed=None, apply_sensor_model=False):
@@ -149,7 +149,7 @@ class GalSimInterpreter(object):
         else:
             return False
 
-    def _writeObjectToCentroidFile(gsObject, detector, bandpassName):
+    def _writeObjectToCentroidFile(self, gsObject, detector, bandpassName, xPix, yPix):
         """
         Write the flux and the the object position on the sensor for this object
         into a centroid file.  First check if a centroid file exists for this
@@ -474,9 +474,9 @@ class GalSimInterpreter(object):
             psf = self.PSF
         # Seeds the random walk with the object id if available
         if gsObject.uniqueId is None:
-            rng=None
+            rng = None
         else:
-            rng=galsim.BaseDeviate(int(gsObject.uniqueId))
+            rng = galsim.BaseDeviate(int(gsObject.uniqueId))
 
         # Create the RandomWalk profile
         centeredObj = galsim.RandomWalk(npoints=int(gsObject.npoints),
