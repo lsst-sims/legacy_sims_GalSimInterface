@@ -666,20 +666,12 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                 # Desired position to draw the object.
                 image_pos = galsim.PositionD(xPix, yPix)
 
-                # Find a postage stamp region to draw onto.
-                # Use (sky noise)/3. as the nominal minimum surface
-                # brightness for rendering the object.
+                # Find a postage stamp region to draw onto.  Use (sky
+                # noise)/3. as the nominal minimum surface brightness
+                # for rendering an extended object.
                 keep_sb_level = np.sqrt(self.sky_bg_per_pixel)/3.
-
-                # Recreate the object to draw, but convolved with the
-                # faster DoubleGaussian PSF to use in the postage
-                # stamp size calculation.
-                fast_obj \
-                    = self.createCenteredObject(gsObject,
-                                                psf=self._double_gaussian_psf)
-                fast_obj = fast_obj.withFlux(flux)
-                bounds = getStampBounds(fast_obj, image_pos, keep_sb_level,
-                                        3*keep_sb_level)
+                bounds = self.getStampBounds(gsObject, flux, image_pos,
+                                             keep_sb_level, 3*keep_sb_level)
 
                 # Ensure the bounds of the postage stamp lie within the image.
                 bounds = bounds & self.detectorImages[name].bounds
@@ -737,65 +729,84 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             # folding_threshold value.
             return psf.applyPSF(xPupil=gsObject.xPupilArcsec,
                                 yPupil=gsObject.yPupilArcsec)
+
+        # Build a PSF with a folding_threshold set to the
+        # sky_bg/flux ratio and convolve with a delta function.
+        gsparams = galsim.GSParams(folding_threshold=folding_threshold)
+
+        # Create a delta function for the star.
+        centeredObj = galsim.DeltaFunction(flux=1, gsparams=gsparams)
+
+        # Apply the PSF and return.
+        return psf.applyPSF(xPupil=gsObject.xPupilArcsec,
+                            yPupil=gsObject.yPupilArcsec,
+                            obj=centeredObj,
+                            gsparams=gsparams)
+
+
+    def getStampBounds(self, gsObject, flux, image_pos, keep_sb_level,
+                       large_object_sb_level, Nmax=1400, pixel_scale=0.2):
+        """
+        Get the postage stamp bounds for drawing an object within the stamp
+        to include the specified minimum surface brightness.  Use the
+        folding_threshold criterion for point source objects.  For
+        extended objects, use the getGoodPhotImageSize function, where
+        if the initial stamp is too large (> Nmax**2 ~ 1GB of RSS
+        memory for a 72 vertex/pixel sensor model), use the relaxed
+        surface brightness level for large objects.
+
+        Parameters
+        ----------
+        gsObject: GalSimCelestialObject
+            This contains the information needed to construct a
+            galsim.GSObject convolved with the desired PSF.
+        flux: float
+            The flux of the object in e-.
+        keep_sb_level: float
+            The minimum surface brightness (photons/pixel) out to which to
+            extend the postage stamp, e.g., a value of
+            sqrt(sky_bg_per_pixel)/3 would be 1/3 the Poisson noise
+            per pixel from the sky background.
+        large_object_sb_level: float
+            Surface brightness level to use for large/bright objects that
+            would otherwise yield stamps with more than Nmax**2 pixels.
+        Nmax: int [1400]
+            The largest stamp size to consider at the nominal keep_sb_level.
+            1400**2*72*8/1024**3 = 1GB.
+        pixel_scale: float [0.2]
+            The CCD pixel scale in arcsec.
+
+        Returns
+        -------
+        galsim.BoundsI: The postage stamp bounds.
+
+        """
+        if gsObject.galSimType.lower() == "pointsource":
+            # Need to pass the flux to .drawPointSource in
+            # order to determine the folding_threshold for the
+            # postage stamp size.
+            obj = self.drawPointSource(gsObject, flux=flux)
+            image_size = obj.getGoodImageSize(pixel_scale)
         else:
-            # Build a PSF with a folding_threshold set to the
-            # sky_bg/flux ratio and convolve with a delta function.
-            gsparams = galsim.GSParams(folding_threshold=folding_threshold)
+            # For extended objects, recreate the object to draw, but
+            # convolved with the faster DoubleGaussian PSF.
+            obj = self.createCenteredObject(gsObject,
+                                            psf=self._double_gaussian_psf)
+            obj = obj.withFlux(flux)
+            image_size = getGoodPhotImageSize(obj, keep_sb_level,
+                                              pixel_scale=pixel_scale)
+            if image_size > Nmax:
+                image_size = getGoodPhotImageSize(obj, large_object_sb_level,
+                                                  pixel_scale=pixel_scale)
+                image_size = max(image_size, Nmax)
 
-            # Create a delta function for the star.
-            centeredObj = galsim.DeltaFunction(flux=1, gsparams=gsparams)
+        # Create the bounds object centered on the desired location.
+        xmin = int(math.floor(image_pos.x) - image_size/2)
+        xmax = int(math.ceil(image_pos.x) + image_size/2)
+        ymin = int(math.floor(image_pos.y) - image_size/2)
+        ymax = int(math.ceil(image_pos.y) + image_size/2)
 
-            # Apply the PSF and return.
-            return psf.applyPSF(xPupil=gsObject.xPupilArcsec,
-                                yPupil=gsObject.yPupilArcsec,
-                                obj=centeredObj,
-                                gsparams=gsparams)
-
-
-def getStampBounds(obj, image_pos, keep_sb_level, large_object_sb_level,
-                   Nmax=1400, pixel_scale=0.2):
-    """
-    Get the postage stamp bounds for drawing an object within the stamp
-    to include the specified minimum surface brightness.  If the initial
-    stamp is too large (> Nmax**2 ~ 1GB of RSS memory for a 72 vertex/pixel
-    sensor model), use the relaxed surface brightness level for large
-    objects.
-
-    Parameters
-    ----------
-    obj: galsim.GSObject
-        The GalSim object for which we will call .drawImage.
-    keep_sb_level: float
-        The minimum surface brightness (photons/pixel) out to which to
-        extend the postage stamp, e.g., a value of
-        sqrt(sky_bg_per_pixel)/3 would be 1/3 the Poisson noise
-        per pixel from the sky background.
-    large_object_sb_level: float
-        Surface brightness level to use for large/bright objects that
-        would otherwise yield stamps with more than Nmax**2 pixels.
-    Nmax: int [1400]
-        The largest stamp size to consider at the nominal keep_sb_level.
-        1400**2*72*8/1024**3 = 1GB.
-    pixel_scale: float [0.2]
-        The CCD pixel scale in arcsec.
-
-    Returns
-    -------
-    galsim.BoundsI: The postage stamp bounds.
-    """
-    image_size = getGoodPhotImageSize(obj, keep_sb_level,
-                                      pixel_scale=pixel_scale)
-    if image_size > Nmax:
-        image_size = getGoodPhotImageSize(obj, large_object_sb_level,
-                                          pixel_scale=pixel_scale)
-        image_size = max(image_size, Nmax)
-    xmin = int(math.floor(image_pos.x) - image_size/2)
-    xmax = int(math.ceil(image_pos.x) + image_size/2)
-    ymin = int(math.floor(image_pos.y) - image_size/2)
-    ymax = int(math.ceil(image_pos.y) + image_size/2)
-
-    return galsim.BoundsI(xmin, xmax, ymin, ymax)
-
+        return galsim.BoundsI(xmin, xmax, ymin, ymax)
 
 def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
     """
