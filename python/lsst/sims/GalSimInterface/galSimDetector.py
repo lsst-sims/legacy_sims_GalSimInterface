@@ -313,7 +313,7 @@ class GalSimDetector(object):
             xp = np.array([xPupil])
             yp = np.array([yPupil])
 
-        xPix, yPix = self._cameraWrapper.pixelCoordsFromPupilCoords(xp, yp, chipName=nameList)
+        xPix, yPix = self._cameraWrapper.pixelCoordsFromPupilCoords(xp, yp, nameList, self.obs_metadata)
 
         return xPix, yPix
 
@@ -613,7 +613,8 @@ def make_galsim_detector(camera_wrapper, detname, phot_params,
 
     translationPupil = camera_wrapper.pupilCoordsFromPixelCoords(centerPixel.getX()+1,
                                                                  centerPixel.getY()+1,
-                                                                 detname)
+                                                                 detname,
+                                                                 obs_metadata)
 
     plateScale = np.sqrt(np.power(translationPupil[0]-centerPupil.getX(), 2) +
                          np.power(translationPupil[1]-centerPupil.getY(), 2))/np.sqrt(2.0)
