@@ -13,12 +13,12 @@ import math
 from builtins import object
 import os
 import pickle
-import warnings
 import numpy as np
 import galsim
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
-from lsst.sims.GalSimInterface import make_galsim_detector, SNRdocumentPSF
+from lsst.sims.GalSimInterface import make_galsim_detector, SNRdocumentPSF, \
+    Kolmogorov_and_Gaussian_PSF
 
 __all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpeter"]
 
@@ -586,9 +586,17 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         self.sky_bg_per_pixel = None
 
         # Create a PSF that's fast to evaluate for the postage stamp
-        # size calculation in getStampBounds.
+        # size calculation for extended objects in .getStampBounds.
         FWHMgeom = obs_metadata.OpsimMetaData['FWHMgeom']
         self._double_gaussian_psf = SNRdocumentPSF(FWHMgeom)
+
+        # Save the parameters needed to create a Kolmogorov PSF for a
+        # custom value of gsparams.folding_threshold.  That PSF will
+        # to be used in the .getStampBounds function for bright stars.
+        altRad = np.radians(obs_metadata.OpsimMetaData['altitude'])
+        self._airmass = 1.0/np.sqrt(1.0-0.96*(np.sin(0.5*np.pi-altRad))**2)
+        self._rawSeeing = obs_metadata.OpsimMetaData['rawSeeing']
+        self._band = obs_metadata.bandpass
 
         # Save the default folding threshold for determining when to recompute
         # the PSF for bright point sources.
@@ -694,55 +702,6 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         self.write_checkpoint()
         return outputString
 
-    def drawPointSource(self, gsObject, flux=None, psf=None):
-        """
-        Draw an image of a point source.
-
-        @param [in] gsObject is an instantiation of the GalSimCelestialObject class
-        carrying information about the object whose image is to be drawn
-
-        @param [in] flux [ADU]. If not None, then the flux is used
-        along with the sky background level to determine the
-        folding_threshold galsim parameter which is in turn used for
-        determining the postage stamp size for drawing.
-
-        @param [in] psf PSF to use for the convolution.  If None, then use
-        self.PSF.
-        """
-
-        if psf is None:
-            if self.PSF is None:
-                raise RuntimeError("Cannot draw a point source in GalSim without a PSF")
-            psf = self.PSF
-
-        # Just return the cached PSF.
-        if flux is None:
-            return psf.applyPSF(xPupil=gsObject.xPupilArcsec,
-                                yPupil=gsObject.yPupilArcsec)
-
-        # Compute the candidate folding_threshold based on the sky
-        # background per pixel and the point source flux.
-        folding_threshold = self.sky_bg_per_pixel/flux
-
-        if folding_threshold >= self._ft_default:
-            # In this case, just return the PSF which has the default
-            # folding_threshold value.
-            return psf.applyPSF(xPupil=gsObject.xPupilArcsec,
-                                yPupil=gsObject.yPupilArcsec)
-
-        # Build a PSF with a folding_threshold set to the
-        # sky_bg/flux ratio and convolve with a delta function.
-        gsparams = galsim.GSParams(folding_threshold=folding_threshold)
-
-        # Create a delta function for the star.
-        centeredObj = galsim.DeltaFunction(flux=1, gsparams=gsparams)
-
-        # Apply the PSF and return.
-        return psf.applyPSF(xPupil=gsObject.xPupilArcsec,
-                            yPupil=gsObject.yPupilArcsec,
-                            obj=centeredObj,
-                            gsparams=gsparams)
-
 
     def getStampBounds(self, gsObject, flux, image_pos, keep_sb_level,
                        large_object_sb_level, Nmax=1400, pixel_scale=0.2):
@@ -782,10 +741,20 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
 
         """
         if gsObject.galSimType.lower() == "pointsource":
-            # Need to pass the flux to .drawPointSource in
-            # order to determine the folding_threshold for the
-            # postage stamp size.
-            obj = self.drawPointSource(gsObject, flux=flux)
+            # For bright stars, set the folding threshold for the
+            # stamp size calculation.  Use a
+            # Kolmogorov_and_Gaussian_PSF since it is faster to
+            # evaluate than an AtmosphericPSF.
+            folding_threshold = self.sky_bg_per_pixel/flux
+            if folding_threshold >= self._ft_default:
+                gsparams = None
+            else:
+                gsparams = galsim.GSParams(folding_threshold=folding_threshold)
+            psf = Kolmogorov_and_Gaussian_PSF(airmass=self._airmass,
+                                              rawSeeing=self._rawSeeing,
+                                              band=self._band,
+                                              gsparams=gsparams)
+            obj = self.drawPointSource(gsObject, psf=psf)
             image_size = obj.getGoodImageSize(pixel_scale)
         else:
             # For extended objects, recreate the object to draw, but
