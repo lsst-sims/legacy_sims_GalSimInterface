@@ -22,8 +22,12 @@ from lsst.sims.catUtils.utils import makePhoSimTestDB
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.GalSimInterface import (GalSimGalaxies, GalSimStars, GalSimAgn,
                                        SNRdocumentPSF, ExampleCCDNoise,
+                                       Kolmogorov_and_Gaussian_PSF,
                                        GalSimInterpreter, GalSimCameraWrapper,
-                                       make_galsim_detector)
+                                       make_galsim_detector,
+                                       make_gs_interpreter,
+                                       GalSimCelestialObject)
+from lsst.sims.GalSimInterface.galSimInterpreter import getGoodPhotImageSize
 from lsst.sims.catUtils.utils import (calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj,
                                       testGalaxyAgnDBObj, testStarsDBObj)
 import lsst.afw.image as afwImage
@@ -1105,6 +1109,112 @@ class CheckPointingTestCase(unittest.TestCase):
             for name in new_img.wcs.fitsHeader.names():
                 self.assertEqual(new_img.wcs.fitsHeader.get(name),
                                  gs_img.wcs.fitsHeader.get(name))
+
+
+class GetStampBoundsTestCase(unittest.TestCase):
+    """
+    TestCase class for the GalSimInterpreter.getStampBounds
+    function.
+    """
+    def setUp(self):
+        self.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix='GetStampBounds')
+        self.db_name = os.path.join(self.scratch_dir, 'galsim_test_db')
+
+    def tearDown(self):
+        try:
+            os.remove(self.db_name)
+        except OSError:
+            pass
+        try:
+            os.rmdir(self.scratch_dir)
+        except OSError:
+            pass
+
+    def test_getStampBounds(self):
+        """Test the getStampBounds function."""
+        seeing = 0.5059960
+        altitude = 52.54
+        FWHMgeom = 0.7343
+        band = 'r'
+        obs_md = makePhoSimTestDB(filename=self.db_name, size=1,
+                                  deltaRA=np.array([72/3600]),
+                                  deltaDec=np.array([0]),
+                                  bandpass=band, m5=16, seeing=seeing,
+                                  seedVal=100)
+        obs_md.OpsimMetaData['FWHMgeom'] = FWHMgeom
+        obs_md.OpsimMetaData['FWHMeff'] = (FWHMgeom - 0.052)/0.822
+        obs_md.OpsimMetaData['altitude'] = altitude
+        obs_md.OpsimMetaData['rawSeeing'] = seeing
+        gs_interpreter = make_gs_interpreter(obs_md, ['R:2,2 S:1,1'], None,
+                                             None, apply_sensor_model=True)
+
+        gsobject = GalSimCelestialObject('pointSource', 0, 0, 1e-7, 1e-7, 0, 1,
+                                         'none', dict(), None, 0, 0)
+
+        # Make a reference psf that should be the same as used in
+        # .getStampBounds.
+        psf = Kolmogorov_and_Gaussian_PSF(airmass=gs_interpreter._airmass,
+                                          rawSeeing=seeing,
+                                          band=band)
+
+        # Make a reference GSObject with default folding_threshold.
+        ref_obj = gs_interpreter.drawPointSource(gsobject, psf=psf)
+
+        # Set object flux and sky level so that the default folding threshold
+        # is used inside .getStampBounds.
+        flux = 1e6
+        gs_interpreter.sky_bg_per_pixel = 0.006*flux
+        image_pos = galsim.PositionD(2000, 2000)
+        keep_sb_level = 9   # not used for pointSources
+        pixel_scale = 0.2
+        test_bounds = gs_interpreter.getStampBounds(gsobject, flux, image_pos,
+                                                    keep_sb_level,
+                                                    3*keep_sb_level)
+
+        self.assertEqual(ref_obj.getGoodImageSize(pixel_scale),
+                         test_bounds.xmax - test_bounds.xmin)
+
+        # Set a sky level that will produce a larger stamp size.
+        gs_interpreter.sky_bg_per_pixel = 0.001*flux
+        test_bounds = gs_interpreter.getStampBounds(gsobject, flux, image_pos,
+                                                    keep_sb_level,
+                                                    3*keep_sb_level)
+
+        self.assertLess(ref_obj.getGoodImageSize(pixel_scale),
+                        test_bounds.xmax - test_bounds.xmin)
+
+
+class GetGoodImageSizeTestCase(unittest.TestCase):
+    """TestCase class for getGoodPhotImageSize function."""
+
+    def test_getGoodPhotImageSize(self):
+        """
+        Test the function that computes postage stamp sizes based
+        on a minimum surface brightness to enclose.
+        """
+        # Make a broad, bright object to test the expected image sizes
+        # at different surface brightness levels.
+        flux = 1e7
+        obj = galsim.Gaussian(sigma=100)
+        obj = obj.withFlux(flux)
+
+        # Test that various keep_sb_levels are bracketed as expected.
+        pixel_scale = 0.2
+        factor = 1.1   # growth factor used to find image sizes.
+        sb_values = np.linspace(10, 150, 5)
+        for keep_sb_level in sb_values:
+            N = getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=pixel_scale)
+            self.assertLess(obj.xValue(N/2*pixel_scale, 0), keep_sb_level)
+            self.assertLess(keep_sb_level, obj.xValue(N/2*pixel_scale/factor, 0))
+
+        # Test that the min and max limits are applied.
+        Nmin = 64      # minimum image size
+        N = getGoodPhotImageSize(obj, obj.xValue(0, 0), pixel_scale=pixel_scale)
+        self.assertLess(Nmin, N)
+
+        Nmax = 4096    # maximum image size
+        N = getGoodPhotImageSize(obj, 0, pixel_scale=pixel_scale)
+        self.assertLessEqual(N, Nmax)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):

@@ -702,7 +702,6 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         self.write_checkpoint()
         return outputString
 
-
     def getStampBounds(self, gsObject, flux, image_pos, keep_sb_level,
                        large_object_sb_level, Nmax=1400, pixel_scale=0.2):
         """
@@ -777,6 +776,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
 
         return galsim.BoundsI(xmin, xmax, ymin, ymax)
 
+
 def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
     """
     Get a postage stamp size (appropriate for photon-shooting) given a
@@ -817,7 +817,8 @@ def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
     # This can be too small for bright stars, so increase it in steps until the edges are
     # all below the requested sb level.
     # (Don't go bigger than 4096)
-    while N < 4096:
+    Nmax = 4096
+    while N < Nmax:
         # Check the edges and corners of the current square
         h = N / 2 * pixel_scale
         xvalues = [ obj.xValue(h,0), obj.xValue(-h,0),
@@ -829,6 +830,8 @@ def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
         if maxval < keep_sb_level:
             break
         N *= factor
+
+    N = min(N, Nmax)
 
     # This can be quite huge for Devauc profiles, but we don't actually have much
     # surface brightness way out in the wings.  So cut it back some.
