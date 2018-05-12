@@ -17,7 +17,13 @@ from lsst.sims.GalSimInterface import LSSTCameraWrapper
 from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.sims.coordUtils import lsst_camera
 
+from lsst.sims.coordUtils import chipNameFromPupilCoordsLSST
+from lsst.sims.coordUtils import focalPlaneCoordsFromPupilCoordsLSST
+from lsst.sims.coordUtils import pupilCoordsFromFocalPlaneCoordsLSST
+
 from testUtils import create_text_catalog
+
+from lsst.sims.coordUtils import clean_up_lsst_camera
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
@@ -61,7 +67,7 @@ class FitsHeaderTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         sims_clean_up()
-        del lsst_camera._lsst_camera
+        clean_up_lsst_camera()
 
     def testFitsHeader(self):
         """
