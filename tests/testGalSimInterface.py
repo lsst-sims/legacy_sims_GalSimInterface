@@ -1022,18 +1022,15 @@ class CheckPointingTestCase(unittest.TestCase):
     def setUp(self):
         self.output_dir = os.path.join(getPackageDir('sims_GalSimInterface'),
                                        'tests', 'checkpoint_dir')
-        try:
+        if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
-        except OSError:
-            pass
         self.cp_file = os.path.join(self.output_dir, 'checkpoint_test.pkl')
 
     def tearDown(self):
-        try:
+        if os.path.exists(self.cp_file):
             os.remove(self.cp_file)
+        if os.path.exists(self.output_dir):
             os.rmdir(self.output_dir)
-        except OSError:
-            pass
 
     def test_checkpointing(self):
         "Test checkpointing of .detectorImages data."
@@ -1121,14 +1118,10 @@ class GetStampBoundsTestCase(unittest.TestCase):
         self.db_name = os.path.join(self.scratch_dir, 'galsim_test_db')
 
     def tearDown(self):
-        try:
+        if os.path.exists(self.db_name):
             os.remove(self.db_name)
-        except OSError:
-            pass
-        try:
+        if os.path.exists(self.scratch_dir):
             os.rmdir(self.scratch_dir)
-        except OSError:
-            pass
 
     def test_getStampBounds(self):
         """Test the getStampBounds function."""
