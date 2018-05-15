@@ -140,7 +140,7 @@ class SNRdocumentPSF(DoubleGaussianPSF):
     www.astro.washington.edu/users/ivezic/Astr511/LSST_SNRdoc.pdf
     """
 
-    def __init__(self, fwhm=0.6, pixel_scale=0.2):
+    def __init__(self, fwhm=0.6, pixel_scale=0.2, gsparams=None):
         """
         @param [in] fwhm is the Full Width at Half Max of the total PSF.  This is given in
         arcseconds.  The default value of 0.6 comes from a FWHM of 3 pixels with a pixel scale
@@ -159,10 +159,10 @@ class SNRdocumentPSF(DoubleGaussianPSF):
         eff_pixel_sigma_sq = pixel_scale*pixel_scale/12.0
 
         sigma = numpy.sqrt(alpha*alpha - eff_pixel_sigma_sq)
-        gaussian1 = galsim.Gaussian(sigma=sigma)
+        gaussian1 = galsim.Gaussian(sigma=sigma, gsparams=gsparams)
 
         sigma = numpy.sqrt(4.0*alpha*alpha - eff_pixel_sigma_sq)
-        gaussian2 = galsim.Gaussian(sigma=sigma)
+        gaussian2 = galsim.Gaussian(sigma=sigma, gsparams=gsparams)
 
         self._cached_psf = 0.909*(gaussian1 + 0.1*gaussian2)
 
@@ -177,7 +177,7 @@ class Kolmogorov_and_Gaussian_PSF(PSFbase):
     (you will need a SLAC Confluence account to access that link)
     """
 
-    def __init__(self, airmass=1.2, rawSeeing=0.7, band='r'):
+    def __init__(self, airmass=1.2, rawSeeing=0.7, band='r', gsparams=None):
         """
         Parameters
         ----------
@@ -199,11 +199,11 @@ class Kolmogorov_and_Gaussian_PSF(PSFbase):
         FWHMsys = numpy.sqrt(0.25**2 + 0.3**2 + 0.08**2) * airmass ** 0.6
         # From LSST-20160 eqn (4.2)
 
-        atm = galsim.Kolmogorov(fwhm=FWHMatm)
-        sys = galsim.Gaussian(fwhm=FWHMsys)
+        atm = galsim.Kolmogorov(fwhm=FWHMatm, gsparams=gsparams)
+        sys = galsim.Gaussian(fwhm=FWHMsys, gsparams=gsparams)
         psf = galsim.Convolve((atm, sys))
 
         self._cached_psf = psf
 
-    def _getPSF(self, xPupil=None, yPupil=None):
+    def _getPSF(self, xPupil=None, yPupil=None, **kwargs):
         return self._cached_psf

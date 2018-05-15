@@ -13,12 +13,12 @@ import math
 from builtins import object
 import os
 import pickle
-import warnings
 import numpy as np
 import galsim
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
-from lsst.sims.GalSimInterface import make_galsim_detector
+from lsst.sims.GalSimInterface import make_galsim_detector, SNRdocumentPSF, \
+    Kolmogorov_and_Gaussian_PSF
 
 __all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpeter"]
 
@@ -368,26 +368,34 @@ class GalSimInterpreter(object):
                                                                     detector=detector)
 
 
-    def drawPointSource(self, gsObject):
+    def drawPointSource(self, gsObject, psf=None):
         """
         Draw an image of a point source.
 
         @param [in] gsObject is an instantiation of the GalSimCelestialObject class
         carrying information about the object whose image is to be drawn
+
+        @param [in] psf PSF to use for the convolution.  If None, then use self.PSF.
         """
+        if psf is None:
+            if self.PSF is None:
+                raise RuntimeError("Cannot draw a point source in GalSim without a PSF")
+            psf = self.PSF
 
-        if self.PSF is None:
-            raise RuntimeError("Cannot draw a point source in GalSim without a PSF")
+        return psf.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec)
 
-        return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec)
-
-    def drawSersic(self, gsObject):
+    def drawSersic(self, gsObject, psf=None):
         """
         Draw the image of a Sersic profile.
 
         @param [in] gsObject is an instantiation of the GalSimCelestialObject class
         carrying information about the object whose image is to be drawn
+
+        @param [in] psf PSF to use for the convolution.  If None, then use self.PSF.
         """
+
+        if psf is None:
+            psf = self.PSF
 
         # create a Sersic profile
         centeredObj = galsim.Sersic(n=float(gsObject.sindex),
@@ -401,14 +409,14 @@ class GalSimInterpreter(object):
         centeredObj = centeredObj.lens(gsObject.g1, gsObject.g2, gsObject.mu)
 
         # Apply the PSF.
-        if self.PSF is not None:
-            centeredObj = self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
-                                            yPupil=gsObject.yPupilArcsec,
-                                            obj=centeredObj)
+        if psf is not None:
+            centeredObj = psf.applyPSF(xPupil=gsObject.xPupilArcsec,
+                                       yPupil=gsObject.yPupilArcsec,
+                                       obj=centeredObj)
 
         return centeredObj
 
-    def drawRandomWalk(self, gsObject):
+    def drawRandomWalk(self, gsObject, psf=None):
         """
         Draw the image of a RandomWalk light profile. In orider to allow for
         reproducibility, the specific realisation of the random walk is seeded
@@ -416,7 +424,11 @@ class GalSimInterpreter(object):
 
         @param [in] gsObject is an instantiation of the GalSimCelestialObject class
         carrying information about the object whose image is to be drawn
+
+        @param [in] psf PSF to use for the convolution.  If None, then use self.PSF.
         """
+        if psf is None:
+            psf = self.PSF
         # Seeds the random walk with the object id if available
         if gsObject.uniqueId is None:
             rng=None
@@ -436,14 +448,14 @@ class GalSimInterpreter(object):
         centeredObj = centeredObj.lens(gsObject.g1, gsObject.g2, gsObject.mu)
 
         # Apply the PSF.
-        if self.PSF is not None:
-            centeredObj = self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
-                                            yPupil=gsObject.yPupilArcsec,
-                                            obj=centeredObj)
+        if psf is not None:
+            centeredObj = psf.applyPSF(xPupil=gsObject.xPupilArcsec,
+                                       yPupil=gsObject.yPupilArcsec,
+                                       obj=centeredObj)
 
         return centeredObj
 
-    def createCenteredObject(self, gsObject):
+    def createCenteredObject(self, gsObject, psf=None):
         """
         Create a centered GalSim Object (i.e. if we were just to draw this object as an image,
         the object would be centered on the frame)
@@ -456,13 +468,14 @@ class GalSimInterpreter(object):
         """
 
         if gsObject.galSimType == 'sersic':
-            centeredObj = self.drawSersic(gsObject)
+            centeredObj = self.drawSersic(gsObject, psf=psf)
 
         elif gsObject.galSimType == 'pointSource':
-            centeredObj = self.drawPointSource(gsObject)
+            centeredObj = self.drawPointSource(gsObject, psf=psf)
 
         elif gsObject.galSimType == 'RandomWalk':
-            centeredObj = self.drawRandomWalk(gsObject)
+            centeredObj = self.drawRandomWalk(gsObject, psf=psf)
+
         else:
             print("Apologies: the GalSimInterpreter does not yet have a method to draw ")
             print(gsObject.galSimType)
@@ -573,6 +586,19 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
 
         self.sky_bg_per_pixel = None
 
+        # Create a PSF that's fast to evaluate for the postage stamp
+        # size calculation for extended objects in .getStampBounds.
+        FWHMgeom = obs_metadata.OpsimMetaData['FWHMgeom']
+        self._double_gaussian_psf = SNRdocumentPSF(FWHMgeom)
+
+        # Save the parameters needed to create a Kolmogorov PSF for a
+        # custom value of gsparams.folding_threshold.  That PSF will
+        # to be used in the .getStampBounds function for bright stars.
+        altRad = np.radians(obs_metadata.OpsimMetaData['altitude'])
+        self._airmass = 1.0/np.sqrt(1.0-0.96*(np.sin(0.5*np.pi-altRad))**2)
+        self._rawSeeing = obs_metadata.OpsimMetaData['rawSeeing']
+        self._band = obs_metadata.bandpass
+
         # Save the default folding threshold for determining when to recompute
         # the PSF for bright point sources.
         self._ft_default = galsim.GSParams().folding_threshold
@@ -627,18 +653,9 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass,
                                              rng=self._rng)
 
-            flux = gsObject.flux(bandpassName)
-            if gsObject.galSimType.lower() == "pointsource":
-                # Need to pass the flux to .drawPointSource in
-                # order to determine the folding_threshold for the
-                # postage stamp size.
-                obj = self.drawPointSource(gsObject, flux)
-            else:
-                # Use the existing, non-pointlike object.
-                obj = centeredObj
-
             # Set the object flux.
-            obj = obj.withFlux(flux)
+            flux = gsObject.flux(bandpassName)
+            obj = centeredObj.withFlux(flux)
 
             for detector in detectorList:
 
@@ -660,84 +677,179 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                 # Desired position to draw the object.
                 image_pos = galsim.PositionD(xPix, yPix)
 
-                # Find a postage stamp region to draw onto.
-                my_image = self.detectorImages[name]
-                object_on_image = my_image.wcs.toImage(obj, image_pos=image_pos)
-                image_size = object_on_image.getGoodImageSize(1.0)
-                xmin = int(math.floor(image_pos.x) - image_size/2)
-                xmax = int(math.ceil(image_pos.x) + image_size/2)
-                ymin = int(math.floor(image_pos.y) - image_size/2)
-                ymax = int(math.ceil(image_pos.y) + image_size/2)
+                # Find a postage stamp region to draw onto.  Use (sky
+                # noise)/3. as the nominal minimum surface brightness
+                # for rendering an extended object.
+                keep_sb_level = np.sqrt(self.sky_bg_per_pixel)/3.
+                bounds = self.getStampBounds(gsObject, flux, image_pos,
+                                             keep_sb_level, 3*keep_sb_level)
 
                 # Ensure the bounds of the postage stamp lie within the image.
-                bounds = galsim.BoundsI(xmin, xmax, ymin, ymax)
-                bounds = bounds & my_image.bounds
+                bounds = bounds & self.detectorImages[name].bounds
 
                 # offset is relative to the "true" center of the postage stamp.
                 offset = image_pos - bounds.true_center
 
-                # Only draw objects with folding thresholds less than or
-                # equal to the default.
-                if object_on_image.gsparams.folding_threshold <= self._ft_default:
+                if bounds.area() > 0:
                     obj.drawImage(method='phot',
                                   offset=offset,
                                   rng=self._rng,
                                   maxN=int(1e6),
-                                  image=my_image[bounds],
+                                  image=self.detectorImages[name][bounds],
                                   sensor=sensor,
                                   surface_ops=surface_ops,
                                   add_to_image=True,
                                   gain=detector.photParams.gain)
-                else:
-                    # There should be none of these, but add a warning
-                    # just in case.
-                    warnings.warn('Object %s has folding_threshold %s. Skipped.'
-                                  % (gsObject.uniqueId, object_on_image.gsparams.folding_threshold))
 
         self.drawn_objects.add(gsObject.uniqueId)
         self.write_checkpoint()
         return outputString
 
-    def drawPointSource(self, gsObject, flux=None):
+    def getStampBounds(self, gsObject, flux, image_pos, keep_sb_level,
+                       large_object_sb_level, Nmax=1400, pixel_scale=0.2):
         """
-        Draw an image of a point source.
+        Get the postage stamp bounds for drawing an object within the stamp
+        to include the specified minimum surface brightness.  Use the
+        folding_threshold criterion for point source objects.  For
+        extended objects, use the getGoodPhotImageSize function, where
+        if the initial stamp is too large (> Nmax**2 ~ 1GB of RSS
+        memory for a 72 vertex/pixel sensor model), use the relaxed
+        surface brightness level for large objects.
 
-        @param [in] gsObject is an instantiation of the GalSimCelestialObject class
-        carrying information about the object whose image is to be drawn
+        Parameters
+        ----------
+        gsObject: GalSimCelestialObject
+            This contains the information needed to construct a
+            galsim.GSObject convolved with the desired PSF.
+        flux: float
+            The flux of the object in e-.
+        keep_sb_level: float
+            The minimum surface brightness (photons/pixel) out to which to
+            extend the postage stamp, e.g., a value of
+            sqrt(sky_bg_per_pixel)/3 would be 1/3 the Poisson noise
+            per pixel from the sky background.
+        large_object_sb_level: float
+            Surface brightness level to use for large/bright objects that
+            would otherwise yield stamps with more than Nmax**2 pixels.
+        Nmax: int [1400]
+            The largest stamp size to consider at the nominal keep_sb_level.
+            1400**2*72*8/1024**3 = 1GB.
+        pixel_scale: float [0.2]
+            The CCD pixel scale in arcsec.
 
-        @param [in] flux [ADU]. If not None, then the flux is used
-        along with the sky background level to determine the
-        folding_threshold galsim parameter which is in turn used for
-        determining the postage stamp size for drawing.
+        Returns
+        -------
+        galsim.BoundsI: The postage stamp bounds.
+
         """
-
-        if self.PSF is None:
-            raise RuntimeError("Cannot draw a point source in GalSim without a PSF")
-
-        # Just return the cached PSF.
-        if flux is None:
-            return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
-                                     yPupil=gsObject.yPupilArcsec)
-
-        # Compute the candidate folding_threshold based on the sky
-        # background per pixel and the point source flux.
-        folding_threshold = self.sky_bg_per_pixel/flux
-
-        if folding_threshold >= self._ft_default:
-            # In this case, just return the PSF which has the default
-            # folding_threshold value.
-            return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
-                                     yPupil=gsObject.yPupilArcsec)
+        if gsObject.galSimType.lower() == "pointsource":
+            # For bright stars, set the folding threshold for the
+            # stamp size calculation.  Use a
+            # Kolmogorov_and_Gaussian_PSF since it is faster to
+            # evaluate than an AtmosphericPSF.
+            folding_threshold = self.sky_bg_per_pixel/flux
+            if folding_threshold >= self._ft_default:
+                gsparams = None
+            else:
+                gsparams = galsim.GSParams(folding_threshold=folding_threshold)
+            psf = Kolmogorov_and_Gaussian_PSF(airmass=self._airmass,
+                                              rawSeeing=self._rawSeeing,
+                                              band=self._band,
+                                              gsparams=gsparams)
+            obj = self.drawPointSource(gsObject, psf=psf)
+            image_size = obj.getGoodImageSize(pixel_scale)
         else:
-            # Build a PSF with a folding_threshold set to the
-            # sky_bg/flux ratio and convolve with a delta function.
-            gsparams = galsim.GSParams(folding_threshold=folding_threshold)
+            # For extended objects, recreate the object to draw, but
+            # convolved with the faster DoubleGaussian PSF.
+            obj = self.createCenteredObject(gsObject,
+                                            psf=self._double_gaussian_psf)
+            obj = obj.withFlux(flux)
+            image_size = getGoodPhotImageSize(obj, keep_sb_level,
+                                              pixel_scale=pixel_scale)
+            if image_size > Nmax:
+                image_size = getGoodPhotImageSize(obj, large_object_sb_level,
+                                                  pixel_scale=pixel_scale)
+                image_size = max(image_size, Nmax)
 
-            # Create a delta function for the star.
-            centeredObj = galsim.DeltaFunction(flux=1, gsparams=gsparams)
+        # Create the bounds object centered on the desired location.
+        xmin = int(math.floor(image_pos.x) - image_size/2)
+        xmax = int(math.ceil(image_pos.x) + image_size/2)
+        ymin = int(math.floor(image_pos.y) - image_size/2)
+        ymax = int(math.ceil(image_pos.y) + image_size/2)
 
-            # Apply the PSF and return.
-            return self.PSF.applyPSF(xPupil=gsObject.xPupilArcsec,
-                                     yPupil=gsObject.yPupilArcsec,
-                                     obj=centeredObj,
-                                     gsparams=gsparams)
+        return galsim.BoundsI(xmin, xmax, ymin, ymax)
+
+
+def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
+    """
+    Get a postage stamp size (appropriate for photon-shooting) given a
+    minimum surface brightness in photons/pixel out to which to
+    extend the stamp region.
+
+    Parameters
+    ----------
+    obj: galsim.GSObject
+        The GalSim object for which we will call .drawImage.
+    keep_sb_level: float
+        The minimum surface brightness (photons/pixel) out to which to
+        extend the postage stamp, e.g., a value of
+        sqrt(sky_bg_per_pixel)/3 would be 1/3 the Poisson noise
+        per pixel from the sky background.
+    pixel_scale: float [0.2]
+        The CCD pixel scale in arcsec.
+
+    Returns
+    -------
+    int: The length N of the desired NxN postage stamp.
+
+    Notes
+    -----
+    Use of this function should be avoided with PSF implementations that
+    are costly to evaluate.  A roughly equivalent DoubleGaussian
+    could be used as a proxy.
+
+    This function was originally written by Mike Jarvis.
+    """
+    # The factor by which to adjust N in each step.
+    factor = 1.1
+
+    # Start with the normal image size from GalSim
+    N = obj.getGoodImageSize(pixel_scale)
+    #print('N = ',N)
+
+    # This can be too small for bright stars, so increase it in steps until the edges are
+    # all below the requested sb level.
+    # (Don't go bigger than 4096)
+    Nmax = 4096
+    while N < Nmax:
+        # Check the edges and corners of the current square
+        h = N / 2 * pixel_scale
+        xvalues = [ obj.xValue(h,0), obj.xValue(-h,0),
+                    obj.xValue(0,h), obj.xValue(0,-h),
+                    obj.xValue(h,h), obj.xValue(h,-h),
+                    obj.xValue(-h,h), obj.xValue(-h,-h) ]
+        maxval = np.max(xvalues)
+        #print(N, maxval)
+        if maxval < keep_sb_level:
+            break
+        N *= factor
+
+    N = min(N, Nmax)
+
+    # This can be quite huge for Devauc profiles, but we don't actually have much
+    # surface brightness way out in the wings.  So cut it back some.
+    # (Don't go below 64 though.)
+    while N >= 64 * factor:
+        # Check the edges and corners of a square smaller by a factor of N.
+        h = N / (2 * factor) * pixel_scale
+        xvalues = [ obj.xValue(h,0), obj.xValue(-h,0),
+                    obj.xValue(0,h), obj.xValue(0,-h),
+                    obj.xValue(h,h), obj.xValue(h,-h),
+                    obj.xValue(-h,h), obj.xValue(-h,-h) ]
+        maxval = np.max(xvalues)
+        #print(N, maxval)
+        if maxval > keep_sb_level:
+            break
+        N /= factor
+
+    return int(N)
