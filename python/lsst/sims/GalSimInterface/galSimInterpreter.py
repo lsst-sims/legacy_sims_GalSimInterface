@@ -15,7 +15,9 @@ import os
 import pickle
 import tempfile
 import numpy as np
+import astropy
 import galsim
+from lsst.obs.lsstSim import LsstSimMapper
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.GalSimInterface import make_galsim_detector, SNRdocumentPSF, \
     Kolmogorov_and_Gaussian_PSF
@@ -83,6 +85,7 @@ class GalSimInterpreter(object):
         self.checkpoint_file = None
         self.drawn_objects = set()
         self.nobj_checkpoint = 1000
+        self._observatory = None
 
         self.centroid_base_name = None
         self.centroid_handles = {}  # This dict will contain the file handles for each
@@ -647,6 +650,41 @@ class GalSimInterpreter(object):
             self._rng = image_state['rng']
             self.drawn_objects = image_state['drawn_objects']
             self.centroid_list = image_state['centroid_objects']
+
+    def getHourAngle(self, mjd, ra):
+        """
+        Compute the local hour angle of an object for the specified
+        MJD and RA.
+
+        Parameters
+        ----------
+        mjd: float
+            Modified Julian Date of the observation.
+        ra: float
+            Right Ascension (in degrees) of the object.
+
+        Returns
+        -------
+        float: hour angle in degrees
+        """
+        obs_location = astropy.coordinates.EarthLocation.from_geodetic(
+            self.observatory.getLongitude().asDegrees(),
+            self.observatory.getLatitude().asDegrees(),
+            self.observatory.getElevation())
+        time = astropy.time.Time(mjd, format='mjd', location=obs_location)
+        ra_val = ra if ra > 0 else 360. + ra
+        # Get the local apparent sidereal time.
+        last = time.sidereal_time('apparent').degree
+        last = last if last > 0 else 360. + last
+        ha =  last - ra_val
+        return ha if ha > 0 else 360 + ha
+
+    @property
+    def observatory(self):
+        if self._observatory is None:
+            self._observatory \
+                = LsstSimMapper().MakeRawVisitInfoClass().observatory
+        return self._observatory
 
 
 class GalSimSiliconInterpeter(GalSimInterpreter):
