@@ -18,7 +18,7 @@ import numpy as np
 import astropy
 import galsim
 from lsst.obs.lsstSim import LsstSimMapper
-from lsst.sims.utils import radiansFromArcsec
+from lsst.sims.utils import radiansFromArcsec, observedFromPupilCoords
 from lsst.sims.GalSimInterface import make_galsim_detector, SNRdocumentPSF, \
     Kolmogorov_and_Gaussian_PSF
 
@@ -753,6 +753,15 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         gs_sed = galsim.SED(sed_lut, wave_type='nm', flux_type='flambda',
                             redshift=0.)
 
+        local_hour_angle \
+            = self.getHourAngle(self.obs_metadata.mjd.TAI,
+                                self.obs_metadata.pointingRA)/galsim.degrees
+        obs_latitude = self.observatory.getLatitude().asDegrees()/galsim.degrees
+        ra_obs, dec_obs = observedFromPupilCoords(gsObject.xPupilRadians,
+                                                  gsObject.yPupilRadians,
+                                                  obs_metadata=self.obs_metadata)
+        obj_coord = galsim.CelestialCoord(ra_obs/galsim.degrees,
+                                          dec_obs/galsim.degrees)
         for bandpassName in self.bandpassDict:
             # create a new object if one has not already been created
             # or if the PSF is wavelength dependent (in which case,
@@ -767,6 +776,10 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             gs_bandpass = galsim.Bandpass(bp_lut, wave_type='nm')
             waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass,
                                              rng=self._rng)
+            dcr = galsim.PhotonDCR(base_wavelength=gs_bandpass.effective_wavelength,
+                                   HA=local_hour_angle,
+                                   latitude=obs_latitude,
+                                   obj_coord=obj_coord)
 
             # Set the object flux.
             flux = gsObject.flux(bandpassName)
@@ -787,7 +800,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                               treering_center=detector.tree_rings.center,
                                               treering_func=detector.tree_rings.func,
                                               transpose=True)
-                surface_ops = [waves, angles]
+                surface_ops = [waves, dcr, angles]
 
                 # Desired position to draw the object.
                 image_pos = galsim.PositionD(xPix, yPix)
