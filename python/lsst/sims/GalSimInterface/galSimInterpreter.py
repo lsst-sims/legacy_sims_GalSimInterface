@@ -348,7 +348,8 @@ class GalSimInterpreter(object):
 
                 # If we are writing centroid files, store the entry.
                 if self.centroid_base_name is not None:
-                    centroid_tuple = (gsObject, detector, bandpassName, xPix, yPix)
+                    centroid_tuple = (detector.fileName, bandpassName, gsObject.uniqueId,
+                                      gsObject.flux(bandpassName), xPix, yPix)
                     self.centroid_list.append(centroid_tuple)
 
         self.drawn_objects.add(gsObject.uniqueId)
@@ -535,21 +536,22 @@ class GalSimInterpreter(object):
         self.centroid_handles[detector_name].write('{:15} {:>15} {:>10} {:>10}\n'.
                                                    format('SourceID', 'Flux', 'xPix', 'yPix'))
 
-    def _writeObjectToCentroidFile(self, gsObject, detector, bandpassName, xPix, yPix):
+    def _writeObjectToCentroidFile(self, detector_name, bandpass_name, uniqueId, flux, xPix, yPix):
         """
         Write the flux and the the object position on the sensor for this object
         into a centroid file.  First check if a centroid file exists for this
         detector and, if it doesn't create it.
 
-        @param [in] gsObject is an instantiation of the GalSimCelestialObject class
-        carrying information about the object whose image is to be drawnself.
-
-        @param [in] detector is an instantation of a detector object (a sensor).
+        @param [in] detectorName is the name of the sensor the gsObject falls on.
 
         @param [in] bandpassName is the name of the filter used in this exposure.
+
+        @param [in] UniqueID is the Unique ID of the gsObject.
+
+        @param [in] flux is the calculated flux for the gsObject in the given bandPass.
         """
 
-        centroid_name = detector.fileName + '_' + bandpassName
+        centroid_name = detector_name + '_' + bandpass_name
 
         # If we haven't seen this sensor before open a centroid file for it.
         if centroid_name not in self.centroid_handles:
@@ -557,9 +559,7 @@ class GalSimInterpreter(object):
 
         # Write the object to the file
         self.centroid_handles[centroid_name].write('{:<15d} {:15.5f} {:10.2f} {:10.2f}\n'.
-                                                   format(gsObject.uniqueId,
-                                                          gsObject.flux(bandpassName),
-                                                          xPix, yPix))
+                                                   format(uniqueId, flux, xPix, yPix))
 
     def write_centroid_files(self):
         """
@@ -571,8 +571,8 @@ class GalSimInterpreter(object):
         """
         # Loop over entries
         for centroid_tuple in self.centroid_list:
-            (gsObject, detector, bandpassName, xPix, yPix) = centroid_tuple
-            self._writeObjectToCentroidFile(gsObject, detector, bandpassName, xPix, yPix)
+            (detector_name, bandpass_name, uniqueId, flux, xPix, yPix) = centroid_tuple
+            self._writeObjectToCentroidFile(detector_name, bandpass_name, uniqueId, flux, xPix, yPix)
 
     def close_centroid_files(self):
         """
@@ -643,7 +643,7 @@ class GalSimInterpreter(object):
                 self.detectorImages[key] += image_state['images'][key]
             self._rng = image_state['rng']
             self.drawn_objects = image_state['drawn_objects']
-            self.centroid_list = image_state['centroid_list']
+            self.centroid_list = image_state['centroid_objects']
 
 
 class GalSimSiliconInterpeter(GalSimInterpreter):
@@ -777,7 +777,8 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
 
                     # If we are writing centroid files,store the entry.
                     if self.centroid_base_name is not None:
-                        centroid_tuple = (gsObject, detector, bandpassName, xPix, yPix)
+                        centroid_tuple = (detector.fileName, bandpassName, gsObject.uniqueId,
+                                          gsObject.flux(bandpassName), xPix, yPix)
                         self.centroid_list.append(centroid_tuple)
 
                 else:
