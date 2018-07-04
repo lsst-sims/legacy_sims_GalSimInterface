@@ -569,12 +569,6 @@ class GalSimInterpreter(object):
         then sends them each to be writen to a file. The
         _writeObjectToCentroidFile will decide how to put them in files.
         """
-        import sys
-
-        # How much memory is this taking?
-        print('Centroid List takes', sys.getsizeof(self.centroid_list)/1024, 'Mbs,'
-              , "and is", len(self.centroid_list), "elements long.")
-
         # Loop over entries
         for centroid_tuple in self.centroid_list:
             (gsObject, detector, bandpassName, xPix, yPix) = centroid_tuple
@@ -604,7 +598,8 @@ class GalSimInterpreter(object):
                       in self.detectorImages.items()}
             image_state = dict(images=images,
                                rng=self._rng,
-                               drawn_objects=self.drawn_objects)
+                               drawn_objects=self.drawn_objects,
+                               centroid_objects=self.centroid_list)
             with open(self.checkpoint_file, 'wb') as output:
                 pickle.dump(image_state, output)
 
@@ -648,6 +643,7 @@ class GalSimInterpreter(object):
                 self.detectorImages[key] += image_state['images'][key]
             self._rng = image_state['rng']
             self.drawn_objects = image_state['drawn_objects']
+            self.centroid_list = image_state['centroid_list']
 
 
 class GalSimSiliconInterpeter(GalSimInterpreter):
