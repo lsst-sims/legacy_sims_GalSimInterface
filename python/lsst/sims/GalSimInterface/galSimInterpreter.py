@@ -781,12 +781,6 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                           gsObject.flux(bandpassName), xPix, yPix)
                         self.centroid_list.append(centroid_tuple)
 
-                else:
-                    # There should be none of these, but add a warning
-                    # just in case.
-                    warnings.warn('Object %s has folding_threshold %s. Skipped.'
-                                  % (gsObject.uniqueId, object_on_image.gsparams.folding_threshold))
-
         self.drawn_objects.add(gsObject.uniqueId)
         self.write_checkpoint()
         return outputString
