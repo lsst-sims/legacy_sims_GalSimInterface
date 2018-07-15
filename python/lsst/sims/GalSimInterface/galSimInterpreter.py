@@ -16,11 +16,11 @@ import pickle
 import numpy as np
 import galsim
 from lsst.sims.utils import radiansFromArcsec
-from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
 from lsst.sims.GalSimInterface import make_galsim_detector, SNRdocumentPSF, \
     Kolmogorov_and_Gaussian_PSF
 
 __all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpeter"]
+
 
 def make_gs_interpreter(obs_md, detectors, bandpassDict, noiseWrapper,
                         epoch=None, seed=None, apply_sensor_model=False):
@@ -82,6 +82,12 @@ class GalSimInterpreter(object):
         self.checkpoint_file = None
         self.drawn_objects = set()
         self.nobj_checkpoint = 1000
+
+        self.centroid_base_name = None
+        self.centroid_handles = {}  # This dict will contain the file handles for each
+                                    # centroid file where sources are found.
+        self.centroid_list = []  # This is a list of the centroid objects which
+                                 # will be written to the file.
 
     def setPSF(self, PSF=None):
         """
@@ -146,7 +152,6 @@ class GalSimInterpreter(object):
             return False
 
     def findAllDetectors(self, gsObject):
-
         """
         Find all of the detectors on which a given astronomical object casts light.
 
@@ -341,6 +346,12 @@ class GalSimInterpreter(object):
                                                           image=self.detectorImages[name],
                                                           add_to_image=True)
 
+                # If we are writing centroid files, store the entry.
+                if self.centroid_base_name is not None:
+                    centroid_tuple = (detector.fileName, bandpassName, gsObject.uniqueId,
+                                      gsObject.flux(bandpassName), xPix, yPix)
+                    self.centroid_list.append(centroid_tuple)
+
         self.drawn_objects.add(gsObject.uniqueId)
         self.write_checkpoint()
         return outputString
@@ -362,8 +373,8 @@ class GalSimInterpreter(object):
                             self.noiseWrapper.addNoiseAndBackground(self.detectorImages[name],
                                                                     bandpass=self.bandpassDict[bandpassName],
                                                                     m5=self.obs_metadata.m5[bandpassName],
-                                                                    FWHMeff=
-                                                                    self.obs_metadata.seeing[bandpassName],
+                                                                    FWHMeff=self.
+                                                                    obs_metadata.seeing[bandpassName],
                                                                     photParams=detector.photParams,
                                                                     detector=detector)
 
@@ -431,9 +442,9 @@ class GalSimInterpreter(object):
             psf = self.PSF
         # Seeds the random walk with the object id if available
         if gsObject.uniqueId is None:
-            rng=None
+            rng = None
         else:
-            rng=galsim.BaseDeviate(int(gsObject.uniqueId))
+            rng = galsim.BaseDeviate(int(gsObject.uniqueId))
 
         # Create the RandomWalk profile
         centeredObj = galsim.RandomWalk(npoints=int(gsObject.npoints),
@@ -509,6 +520,65 @@ class GalSimInterpreter(object):
 
         return namesWritten
 
+    def open_centroid_file(self, centroid_name):
+        """
+        Open a centroid file.  This file will have one line per-object and the
+        it will be labeled with the objectID and then followed by the average X
+        Y position of the photons from the object. Either the true photon
+        position or the average of the pixelated electrons collected on a finite
+        sensor can be chosen.
+        """
+
+        visitID = self.obs_metadata.OpsimMetaData['obshistID']
+        file_name = self.centroid_base_name + str(visitID) + '_' + centroid_name + '.txt'
+
+        self.centroid_handles[centroid_name] = open(file_name, 'w')
+        self.centroid_handles[centroid_name].write('{:15} {:>15} {:>10} {:>10}\n'.
+                                                   format('SourceID', 'Flux', 'xPix', 'yPix'))
+
+    def _writeObjectToCentroidFile(self, detector_name, bandpass_name, uniqueId, flux, xPix, yPix):
+        """
+        Write the flux and the the object position on the sensor for this object
+        into a centroid file.  First check if a centroid file exists for this
+        detector and, if it doesn't create it.
+
+        @param [in] detectorName is the name of the sensor the gsObject falls on.
+
+        @param [in] bandpassName is the name of the filter used in this exposure.
+
+        @param [in] UniqueID is the Unique ID of the gsObject.
+
+        @param [in] flux is the calculated flux for the gsObject in the given bandPass.
+        """
+
+        centroid_name = detector_name + '_' + bandpass_name
+
+        # If we haven't seen this sensor before open a centroid file for it.
+        if centroid_name not in self.centroid_handles:
+            self.open_centroid_file(centroid_name)
+
+        # Write the object to the file
+        self.centroid_handles[centroid_name].write('{:<15d} {:15.5f} {:10.2f} {:10.2f}\n'.
+                                                   format(uniqueId, flux, xPix, yPix))
+
+    def write_centroid_files(self):
+        """
+        Write the centroid data structure out to the files.
+
+        This function loops over the entries in the centroid list and
+        then sends them each to be writen to a file. The
+        _writeObjectToCentroidFile will decide how to put them in files.
+
+        After writing the files are closed.
+        """
+        # Loop over entries
+        for centroid_tuple in self.centroid_list:
+            self._writeObjectToCentroidFile(*centroid_tuple)
+
+        # Now close the centroid files.
+        for name in self.centroid_handles:
+            self.centroid_handles[name].close()
+
     def write_checkpoint(self, force=False):
         """
         Write a pickle file of detector images packaged with the
@@ -526,7 +596,8 @@ class GalSimInterpreter(object):
                       in self.detectorImages.items()}
             image_state = dict(images=images,
                                rng=self._rng,
-                               drawn_objects=self.drawn_objects)
+                               drawn_objects=self.drawn_objects,
+                               centroid_objects=self.centroid_list)
             with open(self.checkpoint_file, 'wb') as output:
                 pickle.dump(image_state, output)
 
@@ -570,6 +641,7 @@ class GalSimInterpreter(object):
                 self.detectorImages[key] += image_state['images'][key]
             self._rng = image_state['rng']
             self.drawn_objects = image_state['drawn_objects']
+            self.centroid_list = image_state['centroid_objects']
 
 
 class GalSimSiliconInterpeter(GalSimInterpreter):
@@ -700,6 +772,12 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                   surface_ops=surface_ops,
                                   add_to_image=True,
                                   gain=detector.photParams.gain)
+
+                    # If we are writing centroid files,store the entry.
+                    if self.centroid_base_name is not None:
+                        centroid_tuple = (detector.fileName, bandpassName, gsObject.uniqueId,
+                                          gsObject.flux(bandpassName), xPix, yPix)
+                        self.centroid_list.append(centroid_tuple)
 
         self.drawn_objects.add(gsObject.uniqueId)
         self.write_checkpoint()
