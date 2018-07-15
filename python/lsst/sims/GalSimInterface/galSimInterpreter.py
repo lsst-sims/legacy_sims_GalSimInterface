@@ -565,19 +565,18 @@ class GalSimInterpreter(object):
         """
         Write the centroid data structure out to the files.
 
-        This funnction loops over the entries in the centroid list and
+        This function loops over the entries in the centroid list and
         then sends them each to be writen to a file. The
         _writeObjectToCentroidFile will decide how to put them in files.
+
+        After writing the files are closed.
         """
         # Loop over entries
         for centroid_tuple in self.centroid_list:
             (detector_name, bandpass_name, uniqueId, flux, xPix, yPix) = centroid_tuple
             self._writeObjectToCentroidFile(detector_name, bandpass_name, uniqueId, flux, xPix, yPix)
 
-    def close_centroid_files(self):
-        """
-        Close the centroid file.
-        """
+        # Now close the centroid files.
         for name in self.centroid_handles:
             self.centroid_handles[name].close()
 
