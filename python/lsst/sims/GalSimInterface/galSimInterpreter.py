@@ -520,7 +520,7 @@ class GalSimInterpreter(object):
 
         return namesWritten
 
-    def open_centroid_file(self, detector_name):
+    def open_centroid_file(self, centroid_name):
         """
         Open a centroid file.  This file will have one line per-object and the
         it will be labeled with the objectID and then followed by the average X
@@ -530,10 +530,10 @@ class GalSimInterpreter(object):
         """
 
         visitID = self.obs_metadata.OpsimMetaData['obshistID']
-        file_name = self.centroid_base_name + str(visitID) + '_' + detector_name + '.txt'
+        file_name = self.centroid_base_name + str(visitID) + '_' + centroid_name + '.txt'
 
-        self.centroid_handles[detector_name] = open(file_name, 'w')
-        self.centroid_handles[detector_name].write('{:15} {:>15} {:>10} {:>10}\n'.
+        self.centroid_handles[centroid_name] = open(file_name, 'w')
+        self.centroid_handles[centroid_name].write('{:15} {:>15} {:>10} {:>10}\n'.
                                                    format('SourceID', 'Flux', 'xPix', 'yPix'))
 
     def _writeObjectToCentroidFile(self, detector_name, bandpass_name, uniqueId, flux, xPix, yPix):
