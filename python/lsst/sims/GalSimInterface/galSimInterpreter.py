@@ -573,8 +573,7 @@ class GalSimInterpreter(object):
         """
         # Loop over entries
         for centroid_tuple in self.centroid_list:
-            (detector_name, bandpass_name, uniqueId, flux, xPix, yPix) = centroid_tuple
-            self._writeObjectToCentroidFile(detector_name, bandpass_name, uniqueId, flux, xPix, yPix)
+            self._writeObjectToCentroidFile(*centroid_tuple)
 
         # Now close the centroid files.
         for name in self.centroid_handles:
