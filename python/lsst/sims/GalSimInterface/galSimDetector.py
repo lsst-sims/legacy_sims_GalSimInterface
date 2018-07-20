@@ -81,6 +81,14 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         if self.photParams is not None:
             self.fitsHeader.set("EXPTIME", self.photParams.nexp*self.photParams.exptime)
 
+        # Add pointing information to FITS header.
+        if self.obs_metadata.pointingRA is not None:
+            self.fitsHeader.set('RATEL', obs_metadata.pointingRA)
+        if self.obs_metadata.pointingDec is not None:
+            self.fitsHeader.set('DECTEL', obs_metadata.pointingDec)
+        if self.obs_metadata.rotSkyPos is not None:
+            self.fitsHeader.set('ROTANGLE', obs_metadata.rotSkyPos)
+
         self.crpix1 = self.fitsHeader.get("CRPIX1")
         self.crpix2 = self.fitsHeader.get("CRPIX2")
 
