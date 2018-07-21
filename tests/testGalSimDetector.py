@@ -140,6 +140,27 @@ class GalSimDetectorTest(unittest.TestCase):
         for c, t in zip(correctAnswer, testAnswer):
             self.assertIs(c, t)
 
+    def testFitsHeaderKeywords(self):
+        """
+        Test that the FITS header keywords with the observing information
+        are set correctly.
+        """
+        photParams = PhotometricParameters()
+        gsdet = GalSimDetector(self.camera[0].getName(),
+                               GalSimCameraWrapper(self.camera),
+                               self.obs, self.epoch,
+                               photParams=photParams)
+        self.assertEqual(gsdet.wcs.fitsHeader.getScalar('MJD-OBS'),
+                         self.obs.mjd.TAI)
+        self.assertEqual(gsdet.wcs.fitsHeader.getScalar('EXPTIME'),
+                         photParams.nexp*photParams.exptime)
+        self.assertEqual(gsdet.wcs.fitsHeader.getScalar('RATEL'),
+                         self.obs.pointingRA)
+        self.assertEqual(gsdet.wcs.fitsHeader.getScalar('DECTEL'),
+                         self.obs.pointingDec)
+        self.assertEqual(gsdet.wcs.fitsHeader.getScalar('ROTANGLE'),
+                         self.obs.rotSkyPos)
+
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
     pass
