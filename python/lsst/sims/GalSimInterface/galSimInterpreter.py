@@ -13,6 +13,7 @@ import math
 from builtins import object
 import os
 import pickle
+import tempfile
 import numpy as np
 import galsim
 from lsst.sims.utils import radiansFromArcsec
@@ -598,8 +599,12 @@ class GalSimInterpreter(object):
                                rng=self._rng,
                                drawn_objects=self.drawn_objects,
                                centroid_objects=self.centroid_list)
-            with open(self.checkpoint_file, 'wb') as output:
-                pickle.dump(image_state, output)
+            with tempfile.NamedTemporaryFile(mode='wb', delete=False,
+                                             dir='.') as tmp:
+                pickle.dump(image_state, tmp)
+                tmp.flush()
+                os.fsync(tmp.fileno())
+            os.rename(tmp.name, self.checkpoint_file)
 
     def restore_checkpoint(self, camera_wrapper, phot_params, obs_metadata,
                            epoch=2000.0):
