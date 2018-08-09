@@ -602,6 +602,7 @@ class GalSimInterpreter(object):
             with tempfile.NamedTemporaryFile(mode='wb', delete=False,
                                              dir='.') as tmp:
                 pickle.dump(image_state, tmp)
+                tmp.flush()
                 os.fsync(tmp.fileno())
             os.rename(tmp.name, self.checkpoint_file)
 
