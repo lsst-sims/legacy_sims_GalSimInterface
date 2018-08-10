@@ -1256,11 +1256,9 @@ class HourAngleTestCase(unittest.TestCase):
 
         # Pick a MJD such that GAST = -observatory geodetic longitude,
         # so that local hour angle = 360 - ra.
-        # CWW: Should we remove this?
-        # mjd = 58265.3194197049\
-        #      - gs_interpreter.observatory.getLongitude().asDegrees()/360.
-        # self.assertAlmostEqual(360 - ra, gs_interpreter.getHourAngle(mjd, ra),
-        #                       places=6)
+        mjd = 58265.3194197049 - gs_interpreter.observatory.getLongitude().asDegrees()/360.
+        self.assertAlmostEqual(-ra, gs_interpreter.getHourAngle(mjd, ra),
+                               places=4)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
