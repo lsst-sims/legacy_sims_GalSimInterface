@@ -3,6 +3,7 @@ from builtins import zip
 from builtins import range
 import os
 import copy
+import math
 import numpy as np
 import unittest
 import pickle
@@ -1208,6 +1209,56 @@ class GetGoodImageSizeTestCase(unittest.TestCase):
         Nmax = 4096    # maximum image size
         N = getGoodPhotImageSize(obj, 0, pixel_scale=pixel_scale)
         self.assertLessEqual(N, Nmax)
+
+
+class HourAngleTestCase(unittest.TestCase):
+    """
+    Test the hour angle calculation given the MJD and pointing
+    direction of the observation.
+    """
+    def setUp(self):
+        self.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix='HourAngle')
+        self.db_name = os.path.join(self.scratch_dir, 'galsim_test_db')
+
+    def tearDown(self):
+        if os.path.exists(self.db_name):
+            os.remove(self.db_name)
+        if os.path.exists(self.scratch_dir):
+            os.rmdir(self.scratch_dir)
+
+    def test_hour_angle(self):
+        """Test the hour angle calculation for LSST."""
+        seeing = 0.5059960
+        altitude = 52.54
+        FWHMgeom = 0.7343
+        band = 'r'
+        obs_md = makePhoSimTestDB(filename=self.db_name, size=1,
+                                  deltaRA=np.array([72/3600]),
+                                  deltaDec=np.array([0]),
+                                  bandpass=band, m5=16, seeing=seeing,
+                                  seedVal=100)
+        obs_md.OpsimMetaData['FWHMgeom'] = FWHMgeom
+        obs_md.OpsimMetaData['FWHMeff'] = (FWHMgeom - 0.052)/0.822
+        obs_md.OpsimMetaData['altitude'] = altitude
+        obs_md.OpsimMetaData['rawSeeing'] = seeing
+        gs_interpreter = make_gs_interpreter(obs_md, ['R:2,2 S:1,1'], None,
+                                             None, apply_sensor_model=True)
+
+        mjd = 59877.15107861111027887
+        ra = 55.52107440528638449
+        self.assertAlmostEqual(math.cos(math.radians(321.62974517903774)),
+                               math.cos(math.radians(gs_interpreter.getHourAngle(mjd, ra))),
+                               places=4)
+
+        self.assertAlmostEqual(math.sin(math.radians(321.62974517903774)),
+                               math.sin(math.radians(gs_interpreter.getHourAngle(mjd, ra))),
+                               places=4)
+
+        # Pick a MJD such that GAST = -observatory geodetic longitude,
+        # so that local hour angle = 360 - ra.
+        mjd = 58265.3194197049 - gs_interpreter.observatory.getLongitude().asDegrees()/360.
+        self.assertAlmostEqual(-ra, gs_interpreter.getHourAngle(mjd, ra),
+                               places=4)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
