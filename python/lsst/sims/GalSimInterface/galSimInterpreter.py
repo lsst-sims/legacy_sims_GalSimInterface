@@ -665,7 +665,7 @@ class GalSimInterpreter(object):
 
         Returns
         -------
-        float: hour angle in angle (in galsim.degrees units)
+        float: hour angle in degrees
         """
 
         obs_location = astropy.coordinates.EarthLocation.from_geodetic(
@@ -674,8 +674,8 @@ class GalSimInterpreter(object):
             self.observatory.getElevation())
         time = astropy.time.Time(mjd, format='mjd', location=obs_location)
         # Get the local apparent sidereal time.
-        last = time.sidereal_time('apparent').degree * galsim.degrees
-        ra = ra * galsim.degrees
+        last = time.sidereal_time('apparent').degree
+        ra = ra
         ha = last - ra
         return ha
 
@@ -755,7 +755,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
 
         local_hour_angle \
             = self.getHourAngle(self.obs_metadata.mjd.TAI,
-                                self.obs_metadata.pointingRA)
+                                self.obs_metadata.pointingRA)*galsim.degrees
         obs_latitude = self.observatory.getLatitude().asDegrees()*galsim.degrees
         ra_obs, dec_obs = observedFromPupilCoords(gsObject.xPupilRadians,
                                                   gsObject.yPupilRadians,
