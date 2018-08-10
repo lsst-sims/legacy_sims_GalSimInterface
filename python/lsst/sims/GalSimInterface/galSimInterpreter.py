@@ -755,13 +755,13 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
 
         local_hour_angle \
             = self.getHourAngle(self.obs_metadata.mjd.TAI,
-                                self.obs_metadata.pointingRA)/galsim.degrees
-        obs_latitude = self.observatory.getLatitude().asDegrees()/galsim.degrees
+                                self.obs_metadata.pointingRA)*galsim.degrees
+        obs_latitude = self.observatory.getLatitude().asDegrees()*galsim.degrees
         ra_obs, dec_obs = observedFromPupilCoords(gsObject.xPupilRadians,
                                                   gsObject.yPupilRadians,
                                                   obs_metadata=self.obs_metadata)
-        obj_coord = galsim.CelestialCoord(ra_obs/galsim.degrees,
-                                          dec_obs/galsim.degrees)
+        obj_coord = galsim.CelestialCoord(ra_obs*galsim.degrees,
+                                          dec_obs*galsim.degrees)
         for bandpassName in self.bandpassDict:
             # create a new object if one has not already been created
             # or if the PSF is wavelength dependent (in which case,
