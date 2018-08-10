@@ -1247,10 +1247,12 @@ class HourAngleTestCase(unittest.TestCase):
         mjd = 59877.15107861111027887
         ra = 55.52107440528638449
         self.assertAlmostEqual(math.cos(math.radians(321.62974517903774)),
-                               math.cos(math.radians(gs_interpreter.getHourAngle(mjd, ra))))
+                               math.cos(math.radians(gs_interpreter.getHourAngle(mjd, ra))),
+                               places=4)
 
         self.assertAlmostEqual(math.sin(math.radians(321.62974517903774)),
-                               math.sin(math.radians(gs_interpreter.getHourAngle(mjd, ra))))
+                               math.sin(math.radians(gs_interpreter.getHourAngle(mjd, ra))),
+                               places=4)
 
         # Pick a MJD such that GAST = -observatory geodetic longitude,
         # so that local hour angle = 360 - ra.
