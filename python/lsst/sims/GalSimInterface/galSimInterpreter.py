@@ -675,7 +675,6 @@ class GalSimInterpreter(object):
         time = astropy.time.Time(mjd, format='mjd', location=obs_location)
         # Get the local apparent sidereal time.
         last = time.sidereal_time('apparent').degree
-        ra = ra
         ha = last - ra
         return ha
 
