@@ -1142,8 +1142,9 @@ class GetStampBoundsTestCase(unittest.TestCase):
         gs_interpreter = make_gs_interpreter(obs_md, ['R:2,2 S:1,1'], None,
                                              None, apply_sensor_model=True)
 
-        gsobject = GalSimCelestialObject('pointSource', 0, 0, 1e-7, 1e-7, 0, 1,
-                                         'none', dict(), None, 0, 0)
+        gsobject = GalSimCelestialObject('pointSource', 0, 0, 1e-7, 1e-7, 1e-7,
+                                         0, 1, 'none', dict(), None, 0, '',
+                                         0.01, 0)
 
         # Make a reference psf that should be the same as used in
         # .getStampBounds.
