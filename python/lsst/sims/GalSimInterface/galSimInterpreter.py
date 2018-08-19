@@ -93,6 +93,8 @@ class GalSimInterpreter(object):
         self.centroid_list = []  # This is a list of the centroid objects which
                                  # will be written to the file.
 
+        self.bf_strength = 1.0  # A scaling factor of the applied B/F strength
+
     def setPSF(self, PSF=None):
         """
         Set the PSF wrapper for this GalSimInterpreter
@@ -796,6 +798,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                                obs_metadata=self.obs_metadata)
 
                 sensor = galsim.SiliconSensor(rng=self._rng,
+                                              strength=self.bf_strength,
                                               treering_center=detector.tree_rings.center,
                                               treering_func=detector.tree_rings.func,
                                               transpose=True)
