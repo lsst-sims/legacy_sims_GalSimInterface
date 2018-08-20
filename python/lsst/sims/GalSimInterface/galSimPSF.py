@@ -76,6 +76,14 @@ class PSFbase(object):
             #if there is no object (i.e. if this is a point source), just return the PSF
             return psf
 
+    def __eq__(self, rhs):
+        """
+        Compare types and underlying galsim ._cached_psf attributes for
+        equality test.
+        """
+        return (type(self) == type(rhs)
+                and self._cached_psf == rhs._cached_psf)
+
 class DoubleGaussianPSF(PSFbase):
     """
     This is an example implementation of a wavelength- and position-independent
