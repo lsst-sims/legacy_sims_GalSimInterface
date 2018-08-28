@@ -16,9 +16,11 @@ class GalSimCelestialObject(object):
     def __init__(self, galSimType, xPupil, yPupil,
                  halfLightRadius, minorAxis, majorAxis, positionAngle,
                  sindex, sed, bp_dict, photParams, npoints,
+                 fits_image_file, pixel_scale, rotation_angle,
                  gamma1=0, gamma2=0, kappa=0, uniqueId=None):
         """
-        @param [in] galSimType is a string, either 'pointSource', 'sersic' or 'RandomWalk' denoting the shape of the object
+        @param [in] galSimType is a string, either 'pointSource', 'sersic',
+        'RandomWalk', or 'FitsImage' denoting the shape of the object
 
         @param [in] xPupil is the x pupil coordinate of the object in radians
 
@@ -51,6 +53,13 @@ class GalSimCelestialObject(object):
 
         @param [in] npoints is the number of point sources in a RandomWalk
 
+        @param [in] fits_image_file is the filename for the FitsImage
+
+        @param [in] pixel_scale is the pixel size in arcsec of the FitsImage
+
+        @param [in] rotation_angle is the rotation angle in degrees for
+        the FitsImage
+
         @param [in] gamma1 is the real part of the WL shear parameter
 
         @param [in] gamma2 is the imaginary part of the WL shear parameter
@@ -72,6 +81,9 @@ class GalSimCelestialObject(object):
         self._positionAngleRadians = positionAngle
         self._sindex = sindex
         self._npoints = npoints
+        self._fits_image_file = fits_image_file
+        self._pixel_scale = pixel_scale
+        self._rotation_angle = rotation_angle
         # The galsim.lens(...) function wants to be passed reduced
         # shears and magnification, so convert the WL parameters as
         # defined in phosim instance catalogs to these values.  See
@@ -216,6 +228,33 @@ class GalSimCelestialObject(object):
     def npoints(self, value):
         raise RuntimeError("You should not be setting npoints on the fly; " \
         + "just instantiate a new GalSimCelestialObject")
+
+    @property
+    def fits_image_file(self):
+        return self._fits_image_file
+
+    @fits_image_file.setter
+    def fits_image_file(self, value):
+        raise RuntimeError("You should not be setting fits_image_file on the fly; "
+                           "just instantiate a new GalSimCelestialObject")
+
+    @property
+    def pixel_scale(self):
+        return self._pixel_scale
+
+    @pixel_scale.setter
+    def pixel_scale(self, value):
+        raise RuntimeError("You should not be setting pixel_scale on the fly; "
+                           "just instantiate a new GalSimCelestialObject")
+
+    @property
+    def rotation_angle(self):
+        return self._rotation_angle
+
+    @rotation_angle.setter
+    def rotation_angle(self, value):
+        raise RuntimeError("You should not be setting rotation_angle on the fly; "
+                           "just instantiate a new GalSimCelestialObject")
 
     @property
     def g1(self):

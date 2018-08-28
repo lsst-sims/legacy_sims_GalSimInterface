@@ -369,7 +369,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
                     gsObj = GalSimCelestialObject(self.galsim_type, xp, yp,
                                                   hlr, minor, major, pa, sn,
                                                   ss, self.bandpassDict, self.photParams,
-                                                  npo, gam1, gam2, kap, uniqueId=name)
+                                                  npo, None, None, None,
+                                                  gam1, gam2, kap, uniqueId=name)
 
                     # actually draw the object
                     detectorsString = self.galSimInterpreter.drawObject(gsObj)

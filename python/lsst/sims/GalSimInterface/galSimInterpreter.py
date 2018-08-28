@@ -472,6 +472,35 @@ class GalSimInterpreter(object):
 
         return centeredObj
 
+    def drawFitsImage(self, gsObject, psf=None):
+        """
+        Draw the image of a FitsImage light profile.
+
+        @param [in] gsObject is an instantiation of the GalSimCelestialObject class
+        carrying information about the object whose image is to be drawn
+
+        @param [in] psf PSF to use for the convolution.  If None, then use self.PSF.
+        """
+        if psf is None:
+            psf = self.PSF
+
+        # Create the galsim.InterpolatedImage profile from the FITS image.
+        centeredObj = galsim.InterpolatedImage(gsObject.fits_image_file,
+                                               scale=gsObject.pixel_scale)
+        if gsObject.rotation_angle != 0:
+            centeredObj = centeredObj.rotate(gsObject.rotation_angle*galsim.degrees)
+
+        # Apply weak lensing distortion.
+        centerObject = centeredObj.lens(gsObject.g1, gsObject.g2, gsObject.mu)
+
+        # Apply the PSF
+        if psf is not None:
+            centeredObj = psf.applyPSF(xPupil=gsObject.xPupilArcsec,
+                                       yPupil=gsObject.yPupilArcsec,
+                                       obj=centeredObj)
+
+        return centeredObj
+
     def createCenteredObject(self, gsObject, psf=None):
         """
         Create a centered GalSim Object (i.e. if we were just to draw this object as an image,
@@ -492,6 +521,9 @@ class GalSimInterpreter(object):
 
         elif gsObject.galSimType == 'RandomWalk':
             centeredObj = self.drawRandomWalk(gsObject, psf=psf)
+
+        elif gsObject.galSimType == 'FitsImage':
+            centeredObj = self.drawFitsImage(gsObject, psf=psf)
 
         else:
             print("Apologies: the GalSimInterpreter does not yet have a method to draw ")
