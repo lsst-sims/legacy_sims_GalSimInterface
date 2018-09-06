@@ -14,6 +14,7 @@ from builtins import object
 import os
 import pickle
 import tempfile
+import gzip
 import numpy as np
 import astropy
 import galsim
@@ -568,9 +569,12 @@ class GalSimInterpreter(object):
         """
 
         visitID = self.obs_metadata.OpsimMetaData['obshistID']
-        file_name = self.centroid_base_name + str(visitID) + '_' + centroid_name + '.txt'
+        file_name = self.centroid_base_name + str(visitID) + '_' + centroid_name + '.txt.gz'
 
-        self.centroid_handles[centroid_name] = open(file_name, 'w')
+        # Open the centroid file for this sensor with the gzip module to write
+        # the centroid files in gzipped format.  Note the 'wt' which writes in
+        # text mode which you must explicitly specify with gzip.
+        self.centroid_handles[centroid_name] = gzip.open(file_name, 'wt')
         self.centroid_handles[centroid_name].write('{:15} {:>15} {:>10} {:>10}\n'.
                                                    format('SourceID', 'Flux', 'xPix', 'yPix'))
 
