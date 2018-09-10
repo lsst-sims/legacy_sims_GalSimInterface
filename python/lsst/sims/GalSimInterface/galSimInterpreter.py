@@ -28,7 +28,7 @@ __all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpeter"
 
 def make_gs_interpreter(obs_md, detectors, bandpassDict, noiseWrapper,
                         epoch=None, seed=None, apply_sensor_model=False,
-                        bf_strength=None):
+                        bf_strength=1):
     if apply_sensor_model:
         return GalSimSiliconInterpeter(obs_metadata=obs_md, detectors=detectors,
                                        bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
@@ -730,7 +730,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
     model to the drawn objects.
     """
     def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None,
-                 noiseWrapper=None, epoch=None, seed=None, bf_strength=None):
+                 noiseWrapper=None, epoch=None, seed=None, bf_strength=1):
         super(GalSimSiliconInterpeter, self)\
             .__init__(obs_metadata=obs_metadata, detectors=detectors,
                       bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
