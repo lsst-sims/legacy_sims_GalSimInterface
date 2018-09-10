@@ -920,7 +920,9 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         galsim.BoundsI: The postage stamp bounds.
 
         """
-        if gsObject.galSimType.lower() == "pointsource":
+        if flux < 10:
+            image_size = 32
+        elif gsObject.galSimType.lower() == "pointsource":
             # For bright stars, set the folding threshold for the
             # stamp size calculation.  Use a
             # Kolmogorov_and_Gaussian_PSF since it is faster to
