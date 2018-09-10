@@ -27,14 +27,16 @@ __all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpeter"
 
 
 def make_gs_interpreter(obs_md, detectors, bandpassDict, noiseWrapper,
-                        epoch=None, seed=None, apply_sensor_model=False):
-    gs_interpreter \
-        = GalSimSiliconInterpeter if apply_sensor_model else GalSimInterpreter
+                        epoch=None, seed=None, apply_sensor_model=False,
+                        bf_strength=None):
+    if apply_sensor_model:
+        return GalSimSiliconInterpeter(obs_metadata=obs_md, detectors=detectors,
+                                       bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
+                                       epoch=epoch, seed=seed, bf_strength=bf_strength)
 
-    return gs_interpreter(obs_metadata=obs_md, detectors=detectors,
-                          bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
-                          epoch=epoch, seed=seed)
-
+    return GalSimInterpreter(obs_metadata=obs_md, detectors=detectors,
+                             bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
+                             epoch=epoch, seed=seed)
 
 class GalSimInterpreter(object):
     """
@@ -93,8 +95,6 @@ class GalSimInterpreter(object):
                                     # centroid file where sources are found.
         self.centroid_list = []  # This is a list of the centroid objects which
                                  # will be written to the file.
-
-        self.bf_strength = 1.0  # A scaling factor of the applied B/F strength
 
     def setPSF(self, PSF=None):
         """
@@ -730,7 +730,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
     model to the drawn objects.
     """
     def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None,
-                 noiseWrapper=None, epoch=None, seed=None):
+                 noiseWrapper=None, epoch=None, seed=None, bf_strength=None):
         super(GalSimSiliconInterpeter, self)\
             .__init__(obs_metadata=obs_metadata, detectors=detectors,
                       bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
@@ -754,6 +754,15 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         # Save the default folding threshold for determining when to recompute
         # the PSF for bright point sources.
         self._ft_default = galsim.GSParams().folding_threshold
+
+        # Create SiliconSensor objects for each detector.
+        self.sensor = dict()
+        for det in detectors:
+            self.sensor[det.name] \
+                = galsim.SiliconSensor(strength=bf_strength,
+                                       treering_center=det.tree_rings.center,
+                                       treering_func=det.tree_rings.func,
+                                       transpose=True)
 
     def drawObject(self, gsObject):
         """
@@ -833,11 +842,8 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                                chipName=detector.name,
                                                obs_metadata=self.obs_metadata)
 
-                sensor = galsim.SiliconSensor(rng=self._rng,
-                                              strength=self.bf_strength,
-                                              treering_center=detector.tree_rings.center,
-                                              treering_func=detector.tree_rings.func,
-                                              transpose=True)
+                # Ensure the rng used by the sensor object is set to the desired state.
+                self.sensor[detector.name].rng.reset(self._rng)
                 surface_ops = [waves, dcr, angles]
 
                 # Desired position to draw the object.
@@ -862,7 +868,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                   rng=self._rng,
                                   maxN=int(1e6),
                                   image=self.detectorImages[name][bounds],
-                                  sensor=sensor,
+                                  sensor=self.sensor[detector.name],
                                   surface_ops=surface_ops,
                                   add_to_image=True,
                                   gain=detector.photParams.gain)
