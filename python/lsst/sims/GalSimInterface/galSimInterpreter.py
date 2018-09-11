@@ -27,14 +27,16 @@ __all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpeter"
 
 
 def make_gs_interpreter(obs_md, detectors, bandpassDict, noiseWrapper,
-                        epoch=None, seed=None, apply_sensor_model=False):
-    gs_interpreter \
-        = GalSimSiliconInterpeter if apply_sensor_model else GalSimInterpreter
+                        epoch=None, seed=None, apply_sensor_model=False,
+                        bf_strength=1):
+    if apply_sensor_model:
+        return GalSimSiliconInterpeter(obs_metadata=obs_md, detectors=detectors,
+                                       bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
+                                       epoch=epoch, seed=seed, bf_strength=bf_strength)
 
-    return gs_interpreter(obs_metadata=obs_md, detectors=detectors,
-                          bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
-                          epoch=epoch, seed=seed)
-
+    return GalSimInterpreter(obs_metadata=obs_md, detectors=detectors,
+                             bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
+                             epoch=epoch, seed=seed)
 
 class GalSimInterpreter(object):
     """
@@ -93,8 +95,6 @@ class GalSimInterpreter(object):
                                     # centroid file where sources are found.
         self.centroid_list = []  # This is a list of the centroid objects which
                                  # will be written to the file.
-
-        self.bf_strength = 1.0  # A scaling factor of the applied B/F strength
 
     def setPSF(self, PSF=None):
         """
@@ -317,19 +317,27 @@ class GalSimInterpreter(object):
         detectorList, \
         centeredObj = self.findAllDetectors(gsObject)
 
+        # Make sure this object is marked as "drawn" since we only
+        # care that this method has been called for this object.
+        self.drawn_objects.add(gsObject.uniqueId)
+
+        if centeredObj is None:
+            return outputString
+
+        # Compute the realized object fluxes for each band and return
+        # if all values are zero in order to save compute.
+        fluxes = [gsObject.flux(bandpassName) for bandpassName in self.bandpassDict]
+        realized_fluxes = [galsim.PoissonDeviate(self._rng, mean=f)() for f in fluxes]
+        if all([f == 0 for f in realized_fluxes]):
+            return outputString
+
         if len(detectorList) == 0:
             # there is nothing to draw
             return outputString
 
         self._addNoiseAndBackground(detectorList)
 
-        for bandpassName in self.bandpassDict:
-
-            # create a new object if one has not already been created or if the PSF is wavelength
-            # dependent (in which case, each filter is going to need its own initialized object)
-            if centeredObj is None:
-                return outputString
-
+        for bandpassName, realized_flux in zip(self.bandpassDict, realized_fluxes):
             for detector in detectorList:
 
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
@@ -342,7 +350,7 @@ class GalSimInterpreter(object):
                 obj = centeredObj
 
                 # convolve the object's shape profile with the spectrum
-                obj = obj.withFlux(gsObject.flux(bandpassName))
+                obj = obj.withFlux(realized_flux)
 
                 self.detectorImages[name] = obj.drawImage(method='phot',
                                                           gain=detector.photParams.gain,
@@ -351,6 +359,7 @@ class GalSimInterpreter(object):
                                                           rng=self._rng,
                                                           maxN=int(1e6),
                                                           image=self.detectorImages[name],
+                                                          poisson_flux=False,
                                                           add_to_image=True)
 
                 # If we are writing centroid files, store the entry.
@@ -359,7 +368,6 @@ class GalSimInterpreter(object):
                                       gsObject.flux(bandpassName), xPix, yPix)
                     self.centroid_list.append(centroid_tuple)
 
-        self.drawn_objects.add(gsObject.uniqueId)
         self.write_checkpoint()
         return outputString
 
@@ -730,11 +738,20 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
     model to the drawn objects.
     """
     def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None,
-                 noiseWrapper=None, epoch=None, seed=None):
+                 noiseWrapper=None, epoch=None, seed=None, bf_strength=1):
         super(GalSimSiliconInterpeter, self)\
             .__init__(obs_metadata=obs_metadata, detectors=detectors,
                       bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
                       epoch=epoch, seed=seed)
+
+        self.gs_bandpass_dict = {}
+        for bandpassName in bandpassDict:
+            bandpass = bandpassDict[bandpassName]
+            index = np.where(bandpass.sb != 0)
+            bp_lut = galsim.LookupTable(x=bandpass.wavelen[index],
+                                        f=bandpass.sb[index])
+            self.gs_bandpass_dict[bandpassName] \
+                = galsim.Bandpass(bp_lut, wave_type='nm')
 
         self.sky_bg_per_pixel = None
 
@@ -755,6 +772,15 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         # the PSF for bright point sources.
         self._ft_default = galsim.GSParams().folding_threshold
 
+        # Create SiliconSensor objects for each detector.
+        self.sensor = dict()
+        for det in detectors:
+            self.sensor[det.name] \
+                = galsim.SiliconSensor(strength=bf_strength,
+                                       treering_center=det.tree_rings.center,
+                                       treering_func=det.tree_rings.func,
+                                       transpose=True)
+
     def drawObject(self, gsObject):
         """
         Draw an astronomical object on all of the relevant FITS files.
@@ -771,6 +797,21 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         outputString, \
         detectorList, \
         centeredObj = self.findAllDetectors(gsObject)
+
+        # Make sure this object is marked as "drawn" since we only
+        # care that this method has been called for this object.
+        self.drawn_objects.add(gsObject.uniqueId)
+
+        if centeredObj is None:
+            return outputString
+
+        # Compute the realized object fluxes (as drawn from the
+        # corresponding Poisson distribution) for each band and return
+        # right away if all values are zero in order to save compute.
+        fluxes = [gsObject.flux(bandpassName) for bandpassName in self.bandpassDict]
+        realized_fluxes = [galsim.PoissonDeviate(self._rng, mean=f)() for f in fluxes]
+        if all([f == 0 for f in realized_fluxes]):
+            return outputString
 
         if len(detectorList) == 0:
             # there is nothing to draw
@@ -799,18 +840,8 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                                   obs_metadata=self.obs_metadata)
         obj_coord = galsim.CelestialCoord(ra_obs*galsim.degrees,
                                           dec_obs*galsim.degrees)
-        for bandpassName in self.bandpassDict:
-            # create a new object if one has not already been created
-            # or if the PSF is wavelength dependent (in which case,
-            # each filter is going to need its own initialized object)
-            if centeredObj is None:
-                return outputString
-
-            bandpass = self.bandpassDict[bandpassName]
-            index = np.where(bandpass.sb != 0)
-            bp_lut = galsim.LookupTable(x=bandpass.wavelen[index],
-                                        f=bandpass.sb[index])
-            gs_bandpass = galsim.Bandpass(bp_lut, wave_type='nm')
+        for bandpassName, realized_flux in zip(self.bandpassDict, realized_fluxes):
+            gs_bandpass = self.gs_bandpass_dict[bandpassName]
             waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass,
                                              rng=self._rng)
             dcr = galsim.PhotonDCR(base_wavelength=gs_bandpass.effective_wavelength,
@@ -818,9 +849,9 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                    latitude=obs_latitude,
                                    obj_coord=obj_coord)
 
-            # Set the object flux.
-            flux = gsObject.flux(bandpassName)
-            obj = centeredObj.withFlux(flux)
+            # Set the object flux to the value realized from the
+            # Poisson distribution.
+            obj = centeredObj.withFlux(realized_flux)
 
             for detector in detectorList:
 
@@ -833,11 +864,8 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                                chipName=detector.name,
                                                obs_metadata=self.obs_metadata)
 
-                sensor = galsim.SiliconSensor(rng=self._rng,
-                                              strength=self.bf_strength,
-                                              treering_center=detector.tree_rings.center,
-                                              treering_func=detector.tree_rings.func,
-                                              transpose=True)
+                # Ensure the rng used by the sensor object is set to the desired state.
+                self.sensor[detector.name].rng.reset(self._rng)
                 surface_ops = [waves, dcr, angles]
 
                 # Desired position to draw the object.
@@ -847,7 +875,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                 # noise)/3. as the nominal minimum surface brightness
                 # for rendering an extended object.
                 keep_sb_level = np.sqrt(self.sky_bg_per_pixel)/3.
-                bounds = self.getStampBounds(gsObject, flux, image_pos,
+                bounds = self.getStampBounds(gsObject, realized_flux, image_pos,
                                              keep_sb_level, 3*keep_sb_level)
 
                 # Ensure the bounds of the postage stamp lie within the image.
@@ -862,9 +890,10 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                   rng=self._rng,
                                   maxN=int(1e6),
                                   image=self.detectorImages[name][bounds],
-                                  sensor=sensor,
+                                  sensor=self.sensor[detector.name],
                                   surface_ops=surface_ops,
                                   add_to_image=True,
+                                  poisson_flux=False,
                                   gain=detector.photParams.gain)
 
                     # If we are writing centroid files,store the entry.
@@ -873,7 +902,6 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                           gsObject.flux(bandpassName), xPix, yPix)
                         self.centroid_list.append(centroid_tuple)
 
-        self.drawn_objects.add(gsObject.uniqueId)
         self.write_checkpoint()
         return outputString
 
@@ -914,7 +942,9 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         galsim.BoundsI: The postage stamp bounds.
 
         """
-        if gsObject.galSimType.lower() == "pointsource":
+        if flux < 10:
+            image_size = 32
+        elif gsObject.galSimType.lower() == "pointsource":
             # For bright stars, set the folding threshold for the
             # stamp size calculation.  Use a
             # Kolmogorov_and_Gaussian_PSF since it is faster to
