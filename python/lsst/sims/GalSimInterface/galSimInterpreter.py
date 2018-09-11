@@ -741,6 +741,15 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                       bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
                       epoch=epoch, seed=seed)
 
+        self.gs_bandpass_dict = {}
+        for bandpassName in bandpassDict:
+            bandpass = bandpassDict[bandpassName]
+            index = np.where(bandpass.sb != 0)
+            bp_lut = galsim.LookupTable(x=bandpass.wavelen[index],
+                                        f=bandpass.sb[index])
+            self.gs_bandpass_dict[bandpassName] \
+                = galsim.Bandpass(bp_lut, wave_type='nm')
+
         self.sky_bg_per_pixel = None
 
         # Create a PSF that's fast to evaluate for the postage stamp
@@ -825,11 +834,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         obj_coord = galsim.CelestialCoord(ra_obs*galsim.degrees,
                                           dec_obs*galsim.degrees)
         for bandpassName, realized_flux in zip(self.bandpassDict, realized_fluxes):
-            bandpass = self.bandpassDict[bandpassName]
-            index = np.where(bandpass.sb != 0)
-            bp_lut = galsim.LookupTable(x=bandpass.wavelen[index],
-                                        f=bandpass.sb[index])
-            gs_bandpass = galsim.Bandpass(bp_lut, wave_type='nm')
+            gs_bandpass = self.gs_bandpass_dict[bandpassName]
             waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass,
                                              rng=self._rng)
             dcr = galsim.PhotonDCR(base_wavelength=gs_bandpass.effective_wavelength,
