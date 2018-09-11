@@ -317,6 +317,10 @@ class GalSimInterpreter(object):
         detectorList, \
         centeredObj = self.findAllDetectors(gsObject)
 
+        # Make sure this object is marked as "drawn" since we only
+        # care that this method has been called for this object.
+        self.drawn_objects.add(gsObject.uniqueId)
+
         if centeredObj is None:
             return outputString
 
@@ -364,7 +368,6 @@ class GalSimInterpreter(object):
                                       gsObject.flux(bandpassName), xPix, yPix)
                     self.centroid_list.append(centroid_tuple)
 
-        self.drawn_objects.add(gsObject.uniqueId)
         self.write_checkpoint()
         return outputString
 
@@ -795,6 +798,10 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         detectorList, \
         centeredObj = self.findAllDetectors(gsObject)
 
+        # Make sure this object is marked as "drawn" since we only
+        # care that this method has been called for this object.
+        self.drawn_objects.add(gsObject.uniqueId)
+
         if centeredObj is None:
             return outputString
 
@@ -895,7 +902,6 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                           gsObject.flux(bandpassName), xPix, yPix)
                         self.centroid_list.append(centroid_tuple)
 
-        self.drawn_objects.add(gsObject.uniqueId)
         self.write_checkpoint()
         return outputString
 
