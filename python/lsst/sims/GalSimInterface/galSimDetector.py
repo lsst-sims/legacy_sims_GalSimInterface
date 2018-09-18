@@ -2,6 +2,7 @@ from builtins import zip
 from builtins import object
 import re
 from collections import namedtuple
+import astropy.time
 import galsim
 import numpy as np
 import lsst.afw.geom as afwGeom
@@ -77,6 +78,8 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
         if self.obs_metadata.mjd is not None:
             self.fitsHeader.set("MJD-OBS", self.obs_metadata.mjd.TAI)
+            mjd_obs = astropy.time.Time(self.obs_metadata.mjd.TAI, format='mjd')
+            self.fitsHeader.set("DATE-OBS", mjd_obs.isot)
 
         if self.photParams is not None:
             self.fitsHeader.set("EXPTIME", self.photParams.nexp*self.photParams.exptime)
