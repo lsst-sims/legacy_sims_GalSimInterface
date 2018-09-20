@@ -15,6 +15,7 @@ import lsst.utils
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.cameraGeom.testUtils as camTestUtils
+from lsst.sims.photUtils import BandpassDict
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
@@ -1139,7 +1140,8 @@ class GetStampBoundsTestCase(unittest.TestCase):
         obs_md.OpsimMetaData['FWHMeff'] = (FWHMgeom - 0.052)/0.822
         obs_md.OpsimMetaData['altitude'] = altitude
         obs_md.OpsimMetaData['rawSeeing'] = seeing
-        gs_interpreter = make_gs_interpreter(obs_md, ['R:2,2 S:1,1'], None,
+        gs_interpreter = make_gs_interpreter(obs_md, ['R:2,2 S:1,1'],
+                                             BandpassDict.loadTotalBandpassesFromFiles(),
                                              None, apply_sensor_model=True)
 
         gsobject = GalSimCelestialObject('pointSource', 0, 0, 1e-7, 1e-7, 1e-7,
@@ -1242,7 +1244,8 @@ class HourAngleTestCase(unittest.TestCase):
         obs_md.OpsimMetaData['FWHMeff'] = (FWHMgeom - 0.052)/0.822
         obs_md.OpsimMetaData['altitude'] = altitude
         obs_md.OpsimMetaData['rawSeeing'] = seeing
-        gs_interpreter = make_gs_interpreter(obs_md, ['R:2,2 S:1,1'], None,
+        gs_interpreter = make_gs_interpreter(obs_md, ['R:2,2 S:1,1'],
+                                             BandpassDict.loadTotalBandpassesFromFiles(),
                                              None, apply_sensor_model=True)
 
         mjd = 59877.15107861111027887
