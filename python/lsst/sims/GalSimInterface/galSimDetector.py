@@ -89,14 +89,14 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         if self.obs_metadata.rotSkyPos is not None:
             self.fitsHeader.set('ROTANGLE', obs_metadata.rotSkyPos)
 
-        self.crpix1 = self.fitsHeader.get("CRPIX1")
-        self.crpix2 = self.fitsHeader.get("CRPIX2")
+        self.crpix1 = self.fitsHeader.getScalar("CRPIX1")
+        self.crpix2 = self.fitsHeader.getScalar("CRPIX2")
 
         self.afw_crpix1 = self.crpix1
         self.afw_crpix2 = self.crpix2
 
-        self.crval1 = self.fitsHeader.get("CRVAL1")
-        self.crval2 = self.fitsHeader.get("CRVAL2")
+        self.crval1 = self.fitsHeader.getScalar("CRVAL1")
+        self.crval2 = self.fitsHeader.getScalar("CRVAL2")
 
         self.origin = galsim.PositionD(x=self.crpix1, y=self.crpix2)
         self._color = None
@@ -170,7 +170,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
 
     def _writeHeader(self, header, bounds):
         for key in self.fitsHeader.getOrderedNames():
-            header[key] = self.fitsHeader.get(key)
+            header[key] = self.fitsHeader.getScalar(key)
 
         return header
 

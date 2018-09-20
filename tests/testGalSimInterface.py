@@ -1108,8 +1108,8 @@ class CheckPointingTestCase(unittest.TestCase):
             self.assertEqual(new_img.wcs.crval2, gs_img.wcs.crval2)
             self.assertEqual(new_img.wcs.detectorName, gs_img.wcs.detectorName)
             for name in new_img.wcs.fitsHeader.names():
-                self.assertEqual(new_img.wcs.fitsHeader.get(name),
-                                 gs_img.wcs.fitsHeader.get(name))
+                self.assertEqual(new_img.wcs.fitsHeader.getScalar(name),
+                                 gs_img.wcs.fitsHeader.getScalar(name))
 
 
 class GetStampBoundsTestCase(unittest.TestCase):
