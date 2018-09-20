@@ -1246,7 +1246,7 @@ class HourAngleTestCase(unittest.TestCase):
         obs_md.OpsimMetaData['rawSeeing'] = seeing
         gs_interpreter = make_gs_interpreter(obs_md, ['R:2,2 S:1,1'],
                                              BandpassDict.loadTotalBandpassesFromFiles(),
-                                             None, apply_sensor_model=True)
+                                             None, apply_sensor_model=False)
 
         mjd = 59877.15107861111027887
         ra = 55.52107440528638449
