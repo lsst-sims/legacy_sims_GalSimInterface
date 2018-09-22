@@ -608,7 +608,7 @@ class GalSimInterpreter(object):
             self.open_centroid_file(centroid_name)
 
         # Write the object to the file
-        self.centroid_handles[centroid_name].write('{:<15d} {:15.5f} {:10.2f} {:10.2f}\n'.
+        self.centroid_handles[centroid_name].write('{:<15} {:15.5f} {:10.2f} {:10.2f}\n'.
                                                    format(uniqueId, flux, xPix, yPix))
 
     def write_centroid_files(self):
