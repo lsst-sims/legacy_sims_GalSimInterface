@@ -15,6 +15,7 @@ import lsst.utils
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.cameraGeom.testUtils as camTestUtils
+from lsst.sims.photUtils import BandpassDict
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.photUtils import Bandpass, calcSkyCountsPerPixelForM5, LSSTdefaults, PhotometricParameters
@@ -27,11 +28,13 @@ from lsst.sims.GalSimInterface import (GalSimGalaxies, GalSimStars, GalSimAgn,
                                        GalSimInterpreter, GalSimCameraWrapper,
                                        make_galsim_detector,
                                        make_gs_interpreter,
-                                       GalSimCelestialObject)
+                                       GalSimCelestialObject,
+                                       LSSTCameraWrapper)
 from lsst.sims.GalSimInterface.galSimInterpreter import getGoodPhotImageSize
 from lsst.sims.catUtils.utils import (calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj,
                                       testGalaxyAgnDBObj, testStarsDBObj)
 import lsst.afw.image as afwImage
+from lsst.sims.coordUtils import clean_up_lsst_camera
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
@@ -1105,8 +1108,8 @@ class CheckPointingTestCase(unittest.TestCase):
             self.assertEqual(new_img.wcs.crval2, gs_img.wcs.crval2)
             self.assertEqual(new_img.wcs.detectorName, gs_img.wcs.detectorName)
             for name in new_img.wcs.fitsHeader.names():
-                self.assertEqual(new_img.wcs.fitsHeader.get(name),
-                                 gs_img.wcs.fitsHeader.get(name))
+                self.assertEqual(new_img.wcs.fitsHeader.getScalar(name),
+                                 gs_img.wcs.fitsHeader.getScalar(name))
 
 
 class GetStampBoundsTestCase(unittest.TestCase):
@@ -1119,6 +1122,7 @@ class GetStampBoundsTestCase(unittest.TestCase):
         self.db_name = os.path.join(self.scratch_dir, 'galsim_test_db')
 
     def tearDown(self):
+        clean_up_lsst_camera()
         if os.path.exists(self.db_name):
             os.remove(self.db_name)
         if os.path.exists(self.scratch_dir):
@@ -1139,7 +1143,11 @@ class GetStampBoundsTestCase(unittest.TestCase):
         obs_md.OpsimMetaData['FWHMeff'] = (FWHMgeom - 0.052)/0.822
         obs_md.OpsimMetaData['altitude'] = altitude
         obs_md.OpsimMetaData['rawSeeing'] = seeing
-        gs_interpreter = make_gs_interpreter(obs_md, ['R:2,2 S:1,1'], None,
+        camera_wrapper = LSSTCameraWrapper()
+        detector = make_galsim_detector(camera_wrapper, 'R:2,2 S:1,1',
+                                        PhotometricParameters(), obs_md)
+        gs_interpreter = make_gs_interpreter(obs_md, [detector],
+                                             BandpassDict.loadTotalBandpassesFromFiles(),
                                              None, apply_sensor_model=True)
 
         gsobject = GalSimCelestialObject('pointSource', 0, 0, 1e-7, 1e-7, 1e-7,
@@ -1242,8 +1250,9 @@ class HourAngleTestCase(unittest.TestCase):
         obs_md.OpsimMetaData['FWHMeff'] = (FWHMgeom - 0.052)/0.822
         obs_md.OpsimMetaData['altitude'] = altitude
         obs_md.OpsimMetaData['rawSeeing'] = seeing
-        gs_interpreter = make_gs_interpreter(obs_md, ['R:2,2 S:1,1'], None,
-                                             None, apply_sensor_model=True)
+        gs_interpreter = make_gs_interpreter(obs_md, [],
+                                             BandpassDict.loadTotalBandpassesFromFiles(),
+                                             None, apply_sensor_model=False)
 
         mjd = 59877.15107861111027887
         ra = 55.52107440528638449
