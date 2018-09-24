@@ -1250,7 +1250,7 @@ class HourAngleTestCase(unittest.TestCase):
         obs_md.OpsimMetaData['FWHMeff'] = (FWHMgeom - 0.052)/0.822
         obs_md.OpsimMetaData['altitude'] = altitude
         obs_md.OpsimMetaData['rawSeeing'] = seeing
-        gs_interpreter = make_gs_interpreter(obs_md, ['R:2,2 S:1,1'],
+        gs_interpreter = make_gs_interpreter(obs_md, [],
                                              BandpassDict.loadTotalBandpassesFromFiles(),
                                              None, apply_sensor_model=False)
 
