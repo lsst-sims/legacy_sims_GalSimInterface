@@ -3,7 +3,7 @@ import os
 import numpy as np
 import lsst.utils.tests
 import lsst.afw.geom as afwGeom
-import lsst.afw.geom.angle as afwAngle
+import lsst.geom as LsstGeom
 from lsst.utils import getPackageDir
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, haversine, arcsecFromRadians
@@ -77,11 +77,11 @@ class WcsTest(unittest.TestCase):
                 yPixList.append(yy)
 
                 pt = afwGeom.Point2D(xx, yy)
-                skyPt = tanWcs.pixelToSky(pt).getPosition(afwAngle.degrees)
+                skyPt = tanWcs.pixelToSky(pt).getPosition(LsstGeom.degrees)
                 tanWcsRa.append(skyPt.getX())
                 tanWcsDec.append(skyPt.getY())
 
-                skyPt = tanSipWcs.pixelToSky(pt).getPosition(afwAngle.degrees)
+                skyPt = tanSipWcs.pixelToSky(pt).getPosition(LsstGeom.degrees)
                 tanSipWcsRa.append(skyPt.getX())
                 tanSipWcsDec.append(skyPt.getY())
 
