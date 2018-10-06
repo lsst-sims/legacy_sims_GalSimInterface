@@ -656,6 +656,7 @@ class GalSimInterpreter(object):
                 pickle.dump(image_state, tmp)
                 tmp.flush()
                 os.fsync(tmp.fileno())
+                os.chmod(tmp.name, 0o660)
             os.rename(tmp.name, self.checkpoint_file)
 
     def restore_checkpoint(self, camera_wrapper, phot_params, obs_metadata,
