@@ -70,33 +70,50 @@ class GalSimCelestialObject(object):
         """
         self._uniqueId = uniqueId
         self._galSimType = galSimType
-        self._xPupilRadians = xPupil
-        self._xPupilArcsec = arcsecFromRadians(xPupil)
-        self._yPupilRadians = yPupil
-        self._yPupilArcsec = arcsecFromRadians(yPupil)
-        self._halfLightRadiusRadians = halfLightRadius
-        self._halfLightRadiusArcsec = arcsecFromRadians(halfLightRadius)
-        self._minorAxisRadians = minorAxis
-        self._majorAxisRadians = majorAxis
-        self._positionAngleRadians = positionAngle
-        self._sindex = sindex
-        self._npoints = npoints
-        self._fits_image_file = fits_image_file
-        self._pixel_scale = pixel_scale
-        self._rotation_angle = rotation_angle
+
         # The galsim.lens(...) function wants to be passed reduced
         # shears and magnification, so convert the WL parameters as
         # defined in phosim instance catalogs to these values.  See
         # https://github.com/GalSim-developers/GalSim/blob/releases/1.4/doc/GalSim_Quick_Reference.pdf
         # and Hoekstra, 2013, http://lanl.arxiv.org/abs/1312.5981
-        self._g1 = gamma1/(1. - kappa)   # real part of reduced shear
-        self._g2 = gamma2/(1. - kappa)   # imaginary part of reduced shear
-        self._mu = 1./((1. - kappa)**2 - (gamma1**2 + gamma2**2)) # magnification
+        g1 = gamma1/(1. - kappa)   # real part of reduced shear
+        g2 = gamma2/(1. - kappa)   # imaginary part of reduced shear
+        mu = 1./((1. - kappa)**2 - (gamma1**2 + gamma2**2)) # magnification
 
         self._fluxDict = {}
         self._sed = sed
         self._bp_dict = bp_dict
         self._photParams = photParams
+
+        # Put all the float values into a numpy array for better memory usage.
+        # (Otherwise, python allocates a shared pointer for each one of these 15 values, which
+        # adds up to a significant memory overhead.)
+        self._float_values = np.array([
+                                        xPupil,                     # xPupilRadians, 0
+                                        arcsecFromRadians(xPupil),  # xPupilArcsec, 1
+                                        yPupil,                     # yPupilRadians, 2
+                                        arcsecFromRadians(yPupil),  # yPupilArcsec, 3
+                                        halfLightRadius,            # halfLightRadiusRadians, 4
+                                        arcsecFromRadians(halfLightRadius), # halfLightRadiusArcsec, 5
+                                        minorAxis,                  # minorAxisRadians, 6
+                                        majorAxis,                  # majorAxisRadians, 7
+                                        positionAngle,              # positionAngleRadians, 8
+                                        sindex,                     # sindex, 9
+                                        pixel_scale,                # pixel_scale, 10
+                                        rotation_angle,             # rotation_angle, 11
+                                        g1,                         # g1, 12
+                                        g2,                         # g2, 13
+                                        mu                          # mu, 14
+                                      ], dtype=float)
+
+        # XXX: We could probably get away with np.float32 for these, but the main
+        #      advantage is from only allocating the actual memory, and not the python
+        #      pointers to the memory.  So not so much more gain to be had from switching
+        #      to single precision.
+
+    #
+    # First properties for all the non-float values.
+    #
 
     @property
     def sed(self):
@@ -106,6 +123,9 @@ class GalSimCelestialObject(object):
     def uniqueId(self):
         return self._uniqueId
 
+    # XXX: I'd recommend removing all these setters and just let python raise an
+    #      AttributeError if people try to set the values, rather than raising a
+    #      RuntimeError manually.  -- MJ
     @uniqueId.setter
     def uniqueId(self, value):
         raise RuntimeError("You should not be setting the unique id on the fly; " \
@@ -119,106 +139,6 @@ class GalSimCelestialObject(object):
     def galSimType(self, value):
         raise RuntimeError("You should not be setting galSimType on the fly; " \
                            + "just instantiate a new GalSimCelestialObject")
-
-    @property
-    def xPupilRadians(self):
-        return self._xPupilRadians
-
-    @xPupilRadians.setter
-    def xPupilRadians(self, value):
-        raise RuntimeError("You should not be setting xPupilRadians on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
-
-    @property
-    def xPupilArcsec(self):
-        return self._xPupilArcsec
-
-    @xPupilArcsec.setter
-    def xPupilArcsec(self, value):
-        raise RuntimeError("You should not be setting xPupilArcsec on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
-
-    @property
-    def yPupilRadians(self):
-        return self._yPupilRadians
-
-    @yPupilRadians.setter
-    def yPupilRadians(self, value):
-        raise RuntimeError("You should not be setting yPupilRadians on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
-
-    @property
-    def yPupilArcsec(self):
-        return self._yPupilArcsec
-
-    @yPupilArcsec.setter
-    def yPupilArcsec(self, value):
-        raise RuntimeError("You should not be setting yPupilArcsec on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
-
-    @property
-    def halfLightRadiusRadians(self):
-        return self._halfLightRadiusRadians
-
-    @halfLightRadiusRadians.setter
-    def halfLightRadiusRadians(self, value):
-        raise RuntimeError("You should not be setting halfLightRadiusRadians on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
-
-    @property
-    def halfLightRadiusArcsec(self):
-        return self._halfLightRadiusArcsec
-
-    @halfLightRadiusArcsec.setter
-    def halfLightRadiusArcsec(self, value):
-        raise RuntimeError("You should not be setting halfLightRadiusArcsec on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
-
-    @property
-    def minorAxisRadians(self):
-        return self._minorAxisRadians
-
-    @minorAxisRadians.setter
-    def minorAxisRadians(self, value):
-        raise RuntimeError("You should not be setting minorAxisRadians on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
-
-    @property
-    def majorAxisRadians(self):
-        return self._majorAxisRadians
-
-    @majorAxisRadians.setter
-    def majorAxisRadians(self, value):
-        raise RuntimeError("You should not be setting majorAxisRadians on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
-
-    @property
-    def positionAngleRadians(self):
-        return self._positionAngleRadians
-
-    @positionAngleRadians.setter
-    def positionAngleRadians(self, value):
-        raise RuntimeError("You should not be setting positionAngleRadians on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
-
-    @property
-    def sindex(self):
-        return self._sindex
-
-    @sindex.setter
-    def sindex(self, value):
-        raise RuntimeError("You should not be setting sindex on the fly; " \
-        + "just instantiate a new GalSimCelestialObject")
-
 
     @property
     def npoints(self):
@@ -238,9 +158,113 @@ class GalSimCelestialObject(object):
         raise RuntimeError("You should not be setting fits_image_file on the fly; "
                            "just instantiate a new GalSimCelestialObject")
 
+
+    #
+    # The float values are accessed from the numpy array called self._float_values.
+    #
+
+    @property
+    def xPupilRadians(self):
+        return self._float_values[0]
+
+    @xPupilRadians.setter
+    def xPupilRadians(self, value):
+        raise RuntimeError("You should not be setting xPupilRadians on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def xPupilArcsec(self):
+        return self._float_values[1]
+
+    @xPupilArcsec.setter
+    def xPupilArcsec(self, value):
+        raise RuntimeError("You should not be setting xPupilArcsec on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def yPupilRadians(self):
+        return self._float_values[2]
+
+    @yPupilRadians.setter
+    def yPupilRadians(self, value):
+        raise RuntimeError("You should not be setting yPupilRadians on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def yPupilArcsec(self):
+        return self._float_values[3]
+
+    @yPupilArcsec.setter
+    def yPupilArcsec(self, value):
+        raise RuntimeError("You should not be setting yPupilArcsec on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def halfLightRadiusRadians(self):
+        return self._float_values[4]
+
+    @halfLightRadiusRadians.setter
+    def halfLightRadiusRadians(self, value):
+        raise RuntimeError("You should not be setting halfLightRadiusRadians on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def halfLightRadiusArcsec(self):
+        return self._float_values[5]
+
+    @halfLightRadiusArcsec.setter
+    def halfLightRadiusArcsec(self, value):
+        raise RuntimeError("You should not be setting halfLightRadiusArcsec on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def minorAxisRadians(self):
+        return self._float_values[6]
+
+    @minorAxisRadians.setter
+    def minorAxisRadians(self, value):
+        raise RuntimeError("You should not be setting minorAxisRadians on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def majorAxisRadians(self):
+        return self._float_values[7]
+
+    @majorAxisRadians.setter
+    def majorAxisRadians(self, value):
+        raise RuntimeError("You should not be setting majorAxisRadians on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def positionAngleRadians(self):
+        return self._float_values[8]
+
+    @positionAngleRadians.setter
+    def positionAngleRadians(self, value):
+        raise RuntimeError("You should not be setting positionAngleRadians on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
+
+    @property
+    def sindex(self):
+        return self._float_values[9]
+
+    @sindex.setter
+    def sindex(self, value):
+        raise RuntimeError("You should not be setting sindex on the fly; " \
+        + "just instantiate a new GalSimCelestialObject")
+
     @property
     def pixel_scale(self):
-        return self._pixel_scale
+        return self._float_values[10]
 
     @pixel_scale.setter
     def pixel_scale(self, value):
@@ -249,7 +273,7 @@ class GalSimCelestialObject(object):
 
     @property
     def rotation_angle(self):
-        return self._rotation_angle
+        return self._float_values[11]
 
     @rotation_angle.setter
     def rotation_angle(self, value):
@@ -258,7 +282,7 @@ class GalSimCelestialObject(object):
 
     @property
     def g1(self):
-        return self._g1
+        return self._float_values[12]
 
     @g1.setter
     def g1(self, value):
@@ -268,7 +292,7 @@ class GalSimCelestialObject(object):
 
     @property
     def g2(self):
-        return self._g2
+        return self._float_values[13]
 
     @g2.setter
     def g2(self, value):
@@ -278,12 +302,13 @@ class GalSimCelestialObject(object):
 
     @property
     def mu(self):
-        return self._mu
+        return self._float_values[14]
 
     @mu.setter
     def mu(self, value):
         raise RuntimeError("You should not be setting mu on the fly; " \
         + "just instantiate a new GalSimCelestialObject")
+
 
 
     def flux(self, band):
