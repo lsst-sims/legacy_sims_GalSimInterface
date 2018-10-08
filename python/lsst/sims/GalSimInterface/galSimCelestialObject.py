@@ -1,5 +1,5 @@
 from builtins import object
-import numpy
+import numpy as np
 from lsst.sims.utils import arcsecFromRadians
 
 __all__ = ["GalSimCelestialObject"]
