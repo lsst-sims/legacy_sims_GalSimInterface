@@ -3,7 +3,8 @@ import numpy as np
 import lsst.utils.tests
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.GalSimInterface import GalSimCelestialObject
-from lsst.sims.photUtils import Sed
+from lsst.sims.photUtils import Sed, BandpassDict, Bandpass
+from lsst.sims.photUtils import PhotometricParameters
 
 
 def setup_module(module):
@@ -29,16 +30,32 @@ class GSCOTestCase(unittest.TestCase):
         gamma1 = 0.512
         gamma2 = 3.4456
         kappa = 1.747
+        phot_params = PhotometricParameters()
 
         rng = np.random.RandomState(88)
-        spec = Sed(wavelen=np.sort(rng.random_sample(50)), flambda=rng.random_sample(50))
+        wav = np.arange(0.1, 200.0, 0.17)
+        spec = Sed(wavelen=wav, flambda=rng.random_sample(len(wav)))
+
+        # copy spec for comparison below
         spec2 = Sed(wavelen=spec.wavelen, flambda=spec.flambda)
+
+        # keep BandpassDict on the same wavelength grid as Sed,
+        # otherwise, the random initialization results in flux==NaN
+        bp_list = []
+        bp_name_list = []
+        for bp_name in 'abcd':
+            sb = rng.random_sample(len(wav))
+            bp = Bandpass(wavelen=wav, sb=sb)
+            bp_list.append(bp)
+            bp_name_list.append(bp_name)
+
+        bp_dict = BandpassDict(bp_list, bp_name_list)
 
         gso = GalSimCelestialObject('pointSource',
                                     xpupil_rad, ypupil_rad,
                                     hlr, minor_axis_rad, major_axis_rad,
                                     position_angle_rad, sindex,
-                                    spec, None, None,
+                                    spec, bp_dict, phot_params,
                                     npoints, 'bob', pixel_scale,
                                     rotation_angle_rad,
                                     gamma1=gamma1, gamma2=gamma2,
@@ -67,6 +84,11 @@ class GSCOTestCase(unittest.TestCase):
         self.assertAlmostEqual(gso.mu/mu, 1.0, 10)
         self.assertEqual(gso.fits_image_file, 'bob')
         self.assertEqual(gso.sed, spec2)
+        for bp_name in bp_dict:
+            ff = spec2.calcADU(bp_dict[bp_name], phot_params)
+            ff *= phot_params.gain
+            self.assertTrue(np.isfinite(ff))
+            self.assertAlmostEqual(gso.flux(bp_name)/ff, 1.0, 10)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
