@@ -393,7 +393,7 @@ class GalSimInterpreter(object):
                                                                     photParams=detector.photParams,
                                                                     detector=detector)
 
-        self.write_checkpoint(force=True, object_list=[])
+        self.write_checkpoint(force=True, object_list=set())
 
     def drawPointSource(self, gsObject, psf=None):
         """
