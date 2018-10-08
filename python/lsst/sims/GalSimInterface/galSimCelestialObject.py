@@ -70,6 +70,7 @@ class GalSimCelestialObject(object):
         """
         self._uniqueId = uniqueId
         self._galSimType = galSimType
+        self._fits_image_file = fits_image_file
 
         # The galsim.lens(...) function wants to be passed reduced
         # shears and magnification, so convert the WL parameters as
