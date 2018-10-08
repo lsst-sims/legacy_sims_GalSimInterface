@@ -103,7 +103,8 @@ class GalSimCelestialObject(object):
                                         rotation_angle,             # rotation_angle, 11
                                         g1,                         # g1, 12
                                         g2,                         # g2, 13
-                                        mu                          # mu, 14
+                                        mu,                         # mu, 14
+                                        npoints                     # npoints, 15
                                       ], dtype=float)
 
         # XXX: We could probably get away with np.float32 for these, but the main
@@ -142,7 +143,7 @@ class GalSimCelestialObject(object):
 
     @property
     def npoints(self):
-        return self._npoints
+        return self._float_values[15]
 
     @npoints.setter
     def npoints(self, value):
