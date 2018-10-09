@@ -158,17 +158,22 @@ class GalSimInterpreter(object):
         else:
             return False
 
-    def findAllDetectors(self, gsObject):
+    def findAllDetectors(self, gsObject, conservative_factor=10.):
         """
-        Find all of the detectors on which a given astronomical object casts light.
+        Find all of the detectors on which a given astronomical object might cast light.
 
-        This method works by drawing a test image of the astronomical object and comparing
-        the pixels in that image with flux above a certain threshold value to the pixel
-        domains of the detectors in the camera.  Any detectors which overlap these
-        'active' pixels are considered illumined by the object.
+        Note: This is a bit conservative.  Later, once we actually have the real flux, we
+        can figure out a better estimate for the stamp size to use, at which point some objects
+        might not get drawn.  For now, we just use the nominal stamp size from GalSim, scaled
+        up by the factor `conservative_factor` (default=10).
 
         @param [in] gsObject is an instantiation of the GalSimCelestialObject class
         carrying information about the object whose image is to be drawn
+
+        @param [in] conservative_factor is a factor (should be > 1) by which we scale up the
+        nominal stamp size.  Brighter objects should use larger factors, but the default value
+        of 10 should be fairly conservative and not waste too many cycles on things off the
+        edges of detectors.
 
         @param [out] outputString is a string indicating which chips the object illumines
         (suitable for the GalSim InstanceCatalog classes)
@@ -182,93 +187,31 @@ class GalSimInterpreter(object):
         pointSources, etc.
         """
 
-        outputString = ''
-        outputList = []
-        centeredObj = None
-        testScale = 0.1
-
         # create a GalSim Object centered on the chip.
         centeredObj = self.createCenteredObject(gsObject)
 
+        sizeArcsec = centeredObj.getGoodImageSize(1.0)  # pixel_scale = 1.0 means size is in arcsec.
+        sizeArcsec *= conservative_factor
+        xmax = gsObject.xPupilArcsec + sizeArcsec/2.
+        xmin = gsObject.xPupilArcsec - sizeArcsec/2.
+        ymax = gsObject.yPupilArcsec + sizeArcsec/2.
+        ymin = gsObject.yPupilArcsec - sizeArcsec/2.
 
-        # 4 March 2015
-        # create a test image of the object to compare against the pixel
-        # domains of each detector.  Use photon shooting rather than real space integration
-        # for reasons of speed.  A flux of 1000 photons ought to be enough to plot the true
-        # extent of the object, but this is just a guess.
-        centeredImage = centeredObj.drawImage(scale=testScale, method='phot', n_photons=1000, rng=self._rng)
-        xmax = testScale*(centeredImage.xmax/2) + gsObject.xPupilArcsec
-        xmin = testScale*(-1*centeredImage.xmax/2) + gsObject.xPupilArcsec
-        ymax = testScale*(centeredImage.ymax/2) + gsObject.yPupilArcsec
-        ymin = testScale*(-1*centeredImage.ymin/2) + gsObject.yPupilArcsec
+        outputString = ''
+        outputList = []
 
         # first assemble a list of detectors which have any hope
         # of overlapping the test image
         viableDetectors = []
         for dd in self.detectors:
-            xOverLaps = False
-            if xmax > dd.xMinArcsec and xmax < dd.xMaxArcsec:
-                xOverLaps = True
-            elif xmin > dd.xMinArcsec and xmin < dd.xMaxArcsec:
-                xOverLaps = True
-            elif xmin < dd.xMinArcsec and xmax > dd.xMaxArcsec:
-                xOverLaps = True
+            xOverLaps = min(xmax, dd.xMaxArcsec) > max(xmin, dd.xMinArcsec)
+            yOverLaps = min(ymax, dd.yMaxArcsec) > max(ymin, dd.yMinArcsec)
 
-            yOverLaps = False
-            if ymax > dd.yMinArcsec and ymax < dd.yMaxArcsec:
-                yOverLaps = True
-            elif ymin > dd.yMinArcsec and ymin < dd.yMaxArcsec:
-                yOverLaps = True
-            elif ymin < dd.yMinArcsec and ymax > dd.yMaxArcsec:
-                yOverLaps = True
-
-            if xOverLaps and yOverLaps and dd not in outputList:
-                viableDetectors.append(dd)
-
-        if len(viableDetectors) > 0:
-
-            # Find the pixels that have a flux greater than 0.001 times the flux of
-            # the central pixel (remember that the object is centered on the test image)
-            maxPixel = centeredImage(centeredImage.xmax/2, centeredImage.ymax/2)
-            activePixels = np.where(centeredImage.array > maxPixel*0.001)
-
-            # Find the bounds of those active pixels in pixel coordinates
-            xmin = testScale * (activePixels[0].min() - centeredImage.xmax/2) + gsObject.xPupilArcsec
-            xmax = testScale * (activePixels[0].max() - centeredImage.xmax/2) + gsObject.xPupilArcsec
-            ymin = testScale * (activePixels[1].min() - centeredImage.ymax/2) + gsObject.yPupilArcsec
-            ymax = testScale * (activePixels[1].max() - centeredImage.ymax/2) + gsObject.yPupilArcsec
-
-            # find all of the detectors that overlap with the bounds of the active pixels.
-            for dd in viableDetectors:
-                xOverLaps = False
-                if xmax > dd.xMinArcsec and xmax < dd.xMaxArcsec:
-                    xOverLaps = True
-                elif xmin > dd.xMinArcsec and xmin < dd.xMaxArcsec:
-                    xOverLaps = True
-                elif xmin < dd.xMinArcsec and xmax > dd.xMaxArcsec:
-                    xOverLaps = True
-
-                yOverLaps = False
-                if ymax > dd.yMinArcsec and ymax < dd.yMaxArcsec:
-                    yOverLaps = True
-                elif ymin > dd.yMinArcsec and ymin < dd.yMaxArcsec:
-                    yOverLaps = True
-                elif ymin < dd.yMinArcsec and ymax > dd.yMaxArcsec:
-                    yOverLaps = True
-
-                # specifically test that these overlapping detectors do contain active pixels
-                if xOverLaps and yOverLaps:
-                    if self._doesObjectImpingeOnDetector(xPupil=gsObject.xPupilArcsec -
-                                                                centeredImage.xmax*testScale/2.0,
-                                                         yPupil=gsObject.yPupilArcsec -
-                                                                centeredImage.ymax*testScale/2.0,
-                                                         detector=dd, imgScale=centeredImage.scale,
-                                                         nonZeroPixels=activePixels):
-
-                        if outputString != '':
-                            outputString += '//'
-                        outputString += dd.name
-                        outputList.append(dd)
+            if xOverLaps and yOverLaps:
+                if outputString != '':
+                    outputString += '//'
+                outputString += dd.name
+                outputList.append(dd)
 
         if outputString == '':
             outputString = None
