@@ -875,6 +875,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
 
         """
         if flux < 10:
+            # For really faint things, don't try too hard.  Just use 32x32.
             image_size = 32
         elif gsObject.galSimType.lower() == "pointsource":
             # For bright stars, set the folding threshold for the
@@ -898,8 +899,19 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             obj = self.createCenteredObject(gsObject,
                                             psf=self._double_gaussian_psf)
             obj = obj.withFlux(flux)
-            image_size = getGoodPhotImageSize(obj, keep_sb_level,
-                                              pixel_scale=pixel_scale)
+
+            # Start with GalSim's estimate of a good box size.
+            image_size = obj.getGoodImageSize(pixel_scale)
+
+            # For bright things, defined as having an average of at least 10 photons per
+            # pixel on average, try to be careful about not truncating the surface brightness
+            # at the edge of the box.
+            if flux > 10 * image_size**2:
+                image_size = getGoodPhotImageSize(obj, keep_sb_level,
+                                                  pixel_scale=pixel_scale)
+
+            # If the above size comes out really huge, scale back to what you get for
+            # a somewhat brighter surface brightness limit.
             if image_size > Nmax:
                 image_size = getGoodPhotImageSize(obj, large_object_sb_level,
                                                   pixel_scale=pixel_scale)
