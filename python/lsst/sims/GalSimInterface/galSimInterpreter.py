@@ -190,8 +190,6 @@ class GalSimInterpreter(object):
         # create a GalSim Object centered on the chip.
         centeredObj = self.createCenteredObject(gsObject)
 
-        if centeredObj is None:
-            return
 
         # 4 March 2015
         # create a test image of the object to compare against the pixel
@@ -320,9 +318,6 @@ class GalSimInterpreter(object):
         # Make sure this object is marked as "drawn" since we only
         # care that this method has been called for this object.
         self.drawn_objects.add(gsObject.uniqueId)
-
-        if centeredObj is None:
-            return outputString
 
         # Compute the realized object fluxes for each band and return
         # if all values are zero in order to save compute.
@@ -536,10 +531,8 @@ class GalSimInterpreter(object):
             centeredObj = self.drawFitsImage(gsObject, psf=psf)
 
         else:
-            print("Apologies: the GalSimInterpreter does not yet have a method to draw ")
-            print(gsObject.galSimType)
-            print(" objects\n")
-            centeredObj = None
+            raise RuntimeError("Apologies: the GalSimInterpreter does not yet have a method to draw " +
+                               gsobject.galSimType + " objects")
 
         return centeredObj
 
@@ -805,9 +798,6 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         # Make sure this object is marked as "drawn" since we only
         # care that this method has been called for this object.
         self.drawn_objects.add(gsObject.uniqueId)
-
-        if centeredObj is None:
-            return outputString
 
         # Compute the realized object fluxes (as drawn from the
         # corresponding Poisson distribution) for each band and return
