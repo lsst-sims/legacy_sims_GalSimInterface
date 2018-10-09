@@ -175,8 +175,8 @@ class GalSimPlacementTest(unittest.TestCase):
 
         ff = controlSed.calcFluxNorm(self.magNorm, uBandpass)
         controlSed.multiplyFluxNorm(ff)
-        a_int, b_int = controlSed.setupCCMab()
-        controlSed.addCCMDust(a_int, b_int, A_v=0.1, R_v=3.1)
+        a_int, b_int = controlSed.setupCCM_ab()
+        controlSed.addDust(a_int, b_int, A_v=0.1, R_v=3.1)
 
         nSamples = 3
         rng = np.random.RandomState(42)

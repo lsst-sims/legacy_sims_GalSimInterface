@@ -267,8 +267,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
         # apply dust extinction (internal)
         if iAv != 0.0 and iRv != 0.0:
-            a_int, b_int = sed.setupCCMab()
-            sed.addCCMDust(a_int, b_int, A_v=iAv, R_v=iRv)
+            a_int, b_int = sed.setupCCM_ab()
+            sed.addDust(a_int, b_int, A_v=iAv, R_v=iRv)
 
         # 22 June 2015
         # apply redshift; there is no need to apply the distance modulus from
@@ -279,8 +279,8 @@ class GalSimBase(InstanceCatalog, CameraCoords):
 
         # apply dust extinction (galactic)
         if gAv != 0.0 and gRv != 0.0:
-            a_int, b_int = sed.setupCCMab()
-            sed.addCCMDust(a_int, b_int, A_v=gAv, R_v=gRv)
+            a_int, b_int = sed.setupCCM_ab()
+            sed.addDust(a_int, b_int, A_v=gAv, R_v=gRv)
         return sed
 
     def _calculateGalSimSeds(self):
