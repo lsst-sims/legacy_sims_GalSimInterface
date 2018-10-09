@@ -285,20 +285,19 @@ class GalSimInterpreter(object):
                                                                                 detector.name,
                                                                                 self.obs_metadata)
 
-                obj = centeredObj
+                # Set the object flux to the value realized from the
+                # Poisson distribution.
+                obj = centeredObj.withFlux(realized_flux)
 
-                # convolve the object's shape profile with the spectrum
-                obj = obj.withFlux(realized_flux)
-
-                self.detectorImages[name] = obj.drawImage(method='phot',
-                                                          gain=detector.photParams.gain,
-                                                          offset=galsim.PositionD(xPix-detector.xCenterPix,
-                                                                                  yPix-detector.yCenterPix),
-                                                          rng=self._rng,
-                                                          maxN=int(1e6),
-                                                          image=self.detectorImages[name],
-                                                          poisson_flux=False,
-                                                          add_to_image=True)
+                obj.drawImage(method='phot',
+                              gain=detector.photParams.gain,
+                              offset=galsim.PositionD(xPix-detector.xCenterPix,
+                                                      yPix-detector.yCenterPix),
+                              rng=self._rng,
+                              maxN=int(1e6),
+                              image=self.detectorImages[name],
+                              poisson_flux=False,
+                              add_to_image=True)
 
                 # If we are writing centroid files, store the entry.
                 if self.centroid_base_name is not None:
@@ -818,10 +817,10 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                 # Ensure the bounds of the postage stamp lie within the image.
                 bounds = bounds & self.detectorImages[name].bounds
 
-                # offset is relative to the "true" center of the postage stamp.
-                offset = image_pos - bounds.true_center
+                if bounds.isDefined():
+                    # offset is relative to the "true" center of the postage stamp.
+                    offset = image_pos - bounds.true_center
 
-                if bounds.area() > 0:
                     obj.drawImage(method='phot',
                                   offset=offset,
                                   rng=self._rng,
