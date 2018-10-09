@@ -393,6 +393,7 @@ class GalSimInterpreter(object):
                                                                     photParams=detector.photParams,
                                                                     detector=detector)
 
+                        self.write_checkpoint(force=True, object_list=set())
 
     def drawPointSource(self, gsObject, psf=None):
         """
@@ -629,7 +630,7 @@ class GalSimInterpreter(object):
         for name in self.centroid_handles:
             self.centroid_handles[name].close()
 
-    def write_checkpoint(self, force=False):
+    def write_checkpoint(self, force=False, object_list=None):
         """
         Write a pickle file of detector images packaged with the
         objects that have been drawn. By default, write the checkpoint
@@ -644,15 +645,18 @@ class GalSimInterpreter(object):
             # the galsim.Images from scratch, given the detector name.
             images = {key: value.array for key, value
                       in self.detectorImages.items()}
+            drawn_objects = self.drawn_objects if object_list is None \
+                            else object_list
             image_state = dict(images=images,
                                rng=self._rng,
-                               drawn_objects=self.drawn_objects,
+                               drawn_objects=drawn_objects,
                                centroid_objects=self.centroid_list)
             with tempfile.NamedTemporaryFile(mode='wb', delete=False,
                                              dir='.') as tmp:
                 pickle.dump(image_state, tmp)
                 tmp.flush()
                 os.fsync(tmp.fileno())
+                os.chmod(tmp.name, 0o660)
             os.rename(tmp.name, self.checkpoint_file)
 
     def restore_checkpoint(self, camera_wrapper, phot_params, obs_metadata,
