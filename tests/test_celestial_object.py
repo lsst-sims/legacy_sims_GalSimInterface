@@ -69,7 +69,7 @@ class GSCOTestCase(unittest.TestCase):
         self.assertAlmostEqual(gso.halfLightRadiusArcsec/arcsecFromRadians(hlr), 1.0, 10)
         self.assertEqual(gso.uniqueId, 111)
         self.assertEqual(gso.galSimType, 'pointSource')
-        self.assertAlmostEqual(gso.npoints/npoints, 1.0, 10)
+        self.assertEqual(gso.npoints, npoints)
         self.assertAlmostEqual(gso.minorAxisRadians/minor_axis_rad, 1.0, 10)
         self.assertAlmostEqual(gso.majorAxisRadians/major_axis_rad, 1.0, 10)
         self.assertAlmostEqual(gso.positionAngleRadians/position_angle_rad, 1.0, 10)

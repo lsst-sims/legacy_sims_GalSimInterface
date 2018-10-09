@@ -144,7 +144,7 @@ class GalSimCelestialObject(object):
 
     @property
     def npoints(self):
-        return self._float_values[15]
+        return int(self._float_values[15]+0.5)
 
     @npoints.setter
     def npoints(self, value):
