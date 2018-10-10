@@ -383,7 +383,7 @@ class GalSimInterfaceTest(unittest.TestCase):
                         msg += 'background per pixel %e pixels %e %s' % \
                                (backgroundCounts[ff[-6]], galsimPixels[ff], ff)
 
-                    self.assertLess(np.abs(controlCounts[ff] - galsimCounts[ff]), 4.0*countSigma,
+                    self.assertLess(np.abs(controlCounts[ff] - galsimCounts[ff]), 4.1*countSigma,
                                     msg=msg)
                 elif galsimCounts[ff] > 0.001:
                     unDrawnDetectors += 1
