@@ -96,6 +96,12 @@ class GalSimInterpreter(object):
         self.centroid_list = []  # This is a list of the centroid objects which
                                  # will be written to the file.
 
+        # Make a trivial SED to use for faint things.
+        blue_limit = np.min([bp.blue_limit for bp in self.gs_bandpass_dict.values()])
+        red_limit = np.max([bp.red_limit for bp in self.gs_bandpass_dict.values()])
+        constant_func = galsim.LookupTable([blue_limit, red_limit], [1,1], interpolant='linear')
+        self.trivial_sed = galsim.SED(constant_func, wave_type='nm', flux_type='fphotons')
+
     def setPSF(self, PSF=None):
         """
         Set the PSF wrapper for this GalSimInterpreter
@@ -778,7 +784,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             # For faint things, use a very simple SED, since we don't really care about getting
             # the exact right distribution of wavelengths here.  (Impacts DCR and electron
             # conversion depth in silicon)
-            gs_sed = galsim.SED('1', wave_type='nm', flux_type='fphotons')
+            gs_sed = self.trivial_sed
         else:
             sed_lut = galsim.LookupTable(x=gsObject.sed.wavelen,
                                          f=gsObject.sed.flambda)
