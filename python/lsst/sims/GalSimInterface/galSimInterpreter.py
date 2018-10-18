@@ -717,6 +717,12 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         # the PSF for bright point sources.
         self._ft_default = galsim.GSParams().folding_threshold
 
+        # Save these, which are needed for DCR
+        self.local_hour_angle \
+            = self.getHourAngle(self.obs_metadata.mjd.TAI,
+                                self.obs_metadata.pointingRA)*galsim.degrees
+        self.obs_latitude = self.observatory.getLatitude().asDegrees()*galsim.degrees
+
         # Create SiliconSensor objects for each detector.
         self.sensor = dict()
         for det in detectors:
@@ -791,22 +797,19 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             gs_sed = galsim.SED(sed_lut, wave_type='nm', flux_type='flambda',
                                 redshift=0.)
 
-        local_hour_angle \
-            = self.getHourAngle(self.obs_metadata.mjd.TAI,
-                                self.obs_metadata.pointingRA)*galsim.degrees
-        obs_latitude = self.observatory.getLatitude().asDegrees()*galsim.degrees
         ra_obs, dec_obs = observedFromPupilCoords(gsObject.xPupilRadians,
                                                   gsObject.yPupilRadians,
                                                   obs_metadata=self.obs_metadata)
         obj_coord = galsim.CelestialCoord(ra_obs*galsim.degrees,
                                           dec_obs*galsim.degrees)
+
         for bandpassName, realized_flux in zip(self.bandpassDict, realized_fluxes):
             gs_bandpass = self.gs_bandpass_dict[bandpassName]
             waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass,
                                              rng=self._rng)
             dcr = galsim.PhotonDCR(base_wavelength=gs_bandpass.effective_wavelength,
-                                   HA=local_hour_angle,
-                                   latitude=obs_latitude,
+                                   HA=self.local_hour_angle,
+                                   latitude=self.obs_latitude,
                                    obj_coord=obj_coord)
 
             # Set the object flux to the value realized from the
