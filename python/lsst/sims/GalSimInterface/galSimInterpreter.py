@@ -241,13 +241,17 @@ class GalSimInterpreter(object):
             self.blankImageCache[detector.name] = image
             return image.copy()
 
-    def drawObject(self, gsObject):
+    def drawObject(self, gsObject, max_flux_simple=100, sensor_limit=200):
         """
         Draw an astronomical object on all of the relevant FITS files.
 
         @param [in] gsObject is an instantiation of the GalSimCelestialObject
         class carrying all of the information for the object whose image
         is to be drawn
+
+        @param [in] max_flux_simple is ignored here.
+
+        @param [in] sensor_limit is ignored here.
 
         @param [out] outputString is a string denoting which detectors the astronomical
         object illumines, suitable for output in the GalSim InstanceCatalog
