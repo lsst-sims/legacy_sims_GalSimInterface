@@ -96,12 +96,6 @@ class GalSimInterpreter(object):
         self.centroid_list = []  # This is a list of the centroid objects which
                                  # will be written to the file.
 
-        # Make a trivial SED to use for faint things.
-        blue_limit = np.min([bp.blue_limit for bp in self.gs_bandpass_dict.values()])
-        red_limit = np.max([bp.red_limit for bp in self.gs_bandpass_dict.values()])
-        constant_func = galsim.LookupTable([blue_limit, red_limit], [1,1], interpolant='linear')
-        self.trivial_sed = galsim.SED(constant_func, wave_type='nm', flux_type='fphotons')
-
     def setPSF(self, PSF=None):
         """
         Set the PSF wrapper for this GalSimInterpreter
@@ -722,6 +716,12 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             = self.getHourAngle(self.obs_metadata.mjd.TAI,
                                 self.obs_metadata.pointingRA)*galsim.degrees
         self.obs_latitude = self.observatory.getLatitude().asDegrees()*galsim.degrees
+
+        # Make a trivial SED to use for faint things.
+        blue_limit = np.min([bp.blue_limit for bp in self.gs_bandpass_dict.values()])
+        red_limit = np.max([bp.red_limit for bp in self.gs_bandpass_dict.values()])
+        constant_func = galsim.LookupTable([blue_limit, red_limit], [1,1], interpolant='linear')
+        self.trivial_sed = galsim.SED(constant_func, wave_type='nm', flux_type='fphotons')
 
         # Create SiliconSensor objects for each detector.
         self.sensor = dict()
