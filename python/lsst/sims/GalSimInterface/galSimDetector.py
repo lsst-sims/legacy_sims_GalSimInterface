@@ -1,6 +1,7 @@
 from builtins import zip
 from builtins import object
 import re
+import copy
 from collections import namedtuple
 import galsim
 import numpy as np
@@ -164,6 +165,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         _newWcs.__dict__.update(self.__dict__)
         _newWcs.crpix1 = origin.x
         _newWcs.crpix2 = origin.y
+        _newWcs.fitsHeader = copy.deepcopy(self.fitsHeader)
         _newWcs.fitsHeader.set('CRPIX1', origin.x)
         _newWcs.fitsHeader.set('CRPIX2', origin.y)
         return _newWcs
