@@ -241,7 +241,7 @@ class GalSimInterpreter(object):
             self.blankImageCache[detector.name] = image
             return image.copy()
 
-    def drawObject(self, gsObject, max_flux_simple=100, sensor_limit=200):
+    def drawObject(self, gsObject, max_flux_simple=100, sensor_limit=0):
         """
         Draw an astronomical object on all of the relevant FITS files.
 
@@ -736,7 +736,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                        treering_func=det.tree_rings.func,
                                        transpose=True)
 
-    def drawObject(self, gsObject, max_flux_simple=100, sensor_limit=200):
+    def drawObject(self, gsObject, max_flux_simple=100, sensor_limit=0):
         """
         Draw an astronomical object on all of the relevant FITS files.
 
@@ -751,7 +751,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         @param [in] sensor_limit is the limiting value of the existing flux in the
         postage stamp image, above which the use of a SiliconSensor model is forced.
         For faint things, if there is not already flux at this level, then a simple
-        sensor model will be used instead.  (default = 200)
+        sensor model will be used instead.  (default = 0)
 
         @param [out] outputString is a string denoting which detectors the astronomical
         object illumines, suitable for output in the GalSim InstanceCatalog
@@ -856,7 +856,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                     # For faint things, only use the silicon sensor if there is already
                     # some significant flux on the image near the object.
                     # Brighter-fatter doesn't start having any measurable effect until at least
-                    # around 1000 e-/pixel. So this limit of 200 is conservative by a factor of 5.
+                    # around 1000 e-/pixel. So a limit of 200 is conservative by a factor of 5.
                     # Do the calculation relative to the median, since a perfectly flat sky level
                     # will not have any B/F effect.  (But noise fluctuations due to the sky will
                     # be properly included here if the sky is drawn first.)
