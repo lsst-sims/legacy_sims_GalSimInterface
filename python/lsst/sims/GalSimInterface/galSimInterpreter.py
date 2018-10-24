@@ -745,13 +745,14 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         is to be drawn
 
         @param [in] max_flux_simple is the maximum flux at which various simplifying
-        approximations are used.  These include using a flat SED and omitting the
-        realistic sensor effects. (default = 100)
+        approximations are used.  These include using a flat SED and possibly omitting
+        the realistic sensor effects. (default = 100)
 
         @param [in] sensor_limit is the limiting value of the existing flux in the
         postage stamp image, above which the use of a SiliconSensor model is forced.
         For faint things, if there is not already flux at this level, then a simple
-        sensor model will be used instead.  (default = 0)
+        sensor model will be used instead.  (default = 0, which means the SiliconSensor
+        is always used, even for the faint things)
 
         @param [out] outputString is a string denoting which detectors the astronomical
         object illumines, suitable for output in the GalSim InstanceCatalog
