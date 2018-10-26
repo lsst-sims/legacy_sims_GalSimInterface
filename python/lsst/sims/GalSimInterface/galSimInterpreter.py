@@ -241,7 +241,7 @@ class GalSimInterpreter(object):
             self.blankImageCache[detector.name] = image
             return image.copy()
 
-    def drawObject(self, gsObject, max_flux_simple=100, sensor_limit=0):
+    def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0):
         """
         Draw an astronomical object on all of the relevant FITS files.
 
@@ -249,9 +249,9 @@ class GalSimInterpreter(object):
         class carrying all of the information for the object whose image
         is to be drawn
 
-        @param [in] max_flux_simple is ignored here.
+        @param [in] max_flux_simple is ignored here. (Used by GalSimSiliconInterpreter)
 
-        @param [in] sensor_limit is ignored here.
+        @param [in] sensor_limit is ignored here.  (Used by GalSimSiliconInterpreter)
 
         @param [out] outputString is a string denoting which detectors the astronomical
         object illumines, suitable for output in the GalSim InstanceCatalog
@@ -736,7 +736,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                        treering_func=det.tree_rings.func,
                                        transpose=True)
 
-    def drawObject(self, gsObject, max_flux_simple=100, sensor_limit=0):
+    def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0):
         """
         Draw an astronomical object on all of the relevant FITS files.
 
@@ -746,7 +746,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
 
         @param [in] max_flux_simple is the maximum flux at which various simplifying
         approximations are used.  These include using a flat SED and possibly omitting
-        the realistic sensor effects. (default = 100)
+        the realistic sensor effects. (default = 0, which means always use the full SED)
 
         @param [in] sensor_limit is the limiting value of the existing flux in the
         postage stamp image, above which the use of a SiliconSensor model is forced.
