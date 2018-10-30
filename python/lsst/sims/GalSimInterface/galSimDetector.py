@@ -1,6 +1,7 @@
 from builtins import zip
 from builtins import object
 import re
+import copy
 from collections import namedtuple
 import galsim
 import numpy as np
@@ -160,10 +161,11 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         @param [out] _newWcs is a WCS identical to self, but with the origin
         in pixel space moved to the specified origin
         """
-        _newWcs = GalSim_afw_TanSipWCS(self.detectorName, self.cameraWrapper, self.obs_metadata, self.epoch,
-                                       photParams=self.photParams, wcs=self._tanSipWcs)
+        _newWcs = GalSim_afw_TanSipWCS.__new__(GalSim_afw_TanSipWCS)
+        _newWcs.__dict__.update(self.__dict__)
         _newWcs.crpix1 = origin.x
         _newWcs.crpix2 = origin.y
+        _newWcs.fitsHeader = copy.deepcopy(self.fitsHeader)
         _newWcs.fitsHeader.set('CRPIX1', origin.x)
         _newWcs.fitsHeader.set('CRPIX2', origin.y)
         return _newWcs

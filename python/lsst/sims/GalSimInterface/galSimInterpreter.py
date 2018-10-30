@@ -241,13 +241,17 @@ class GalSimInterpreter(object):
             self.blankImageCache[detector.name] = image
             return image.copy()
 
-    def drawObject(self, gsObject):
+    def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0):
         """
         Draw an astronomical object on all of the relevant FITS files.
 
         @param [in] gsObject is an instantiation of the GalSimCelestialObject
         class carrying all of the information for the object whose image
         is to be drawn
+
+        @param [in] max_flux_simple is ignored here. (Used by GalSimSiliconInterpreter)
+
+        @param [in] sensor_limit is ignored here.  (Used by GalSimSiliconInterpreter)
 
         @param [out] outputString is a string denoting which detectors the astronomical
         object illumines, suitable for output in the GalSim InstanceCatalog
@@ -711,6 +715,18 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         # the PSF for bright point sources.
         self._ft_default = galsim.GSParams().folding_threshold
 
+        # Save these, which are needed for DCR
+        self.local_hour_angle \
+            = self.getHourAngle(self.obs_metadata.mjd.TAI,
+                                self.obs_metadata.pointingRA)*galsim.degrees
+        self.obs_latitude = self.observatory.getLatitude().asDegrees()*galsim.degrees
+
+        # Make a trivial SED to use for faint things.
+        blue_limit = np.min([bp.blue_limit for bp in self.gs_bandpass_dict.values()])
+        red_limit = np.max([bp.red_limit for bp in self.gs_bandpass_dict.values()])
+        constant_func = galsim.LookupTable([blue_limit, red_limit], [1,1], interpolant='linear')
+        self.trivial_sed = galsim.SED(constant_func, wave_type='nm', flux_type='fphotons')
+
         # Create SiliconSensor objects for each detector.
         self.sensor = dict()
         for det in detectors:
@@ -720,13 +736,23 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                        treering_func=det.tree_rings.func,
                                        transpose=True)
 
-    def drawObject(self, gsObject):
+    def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0):
         """
         Draw an astronomical object on all of the relevant FITS files.
 
         @param [in] gsObject is an instantiation of the GalSimCelestialObject
         class carrying all of the information for the object whose image
         is to be drawn
+
+        @param [in] max_flux_simple is the maximum flux at which various simplifying
+        approximations are used.  These include using a flat SED and possibly omitting
+        the realistic sensor effects. (default = 0, which means always use the full SED)
+
+        @param [in] sensor_limit is the limiting value of the existing flux in the
+        postage stamp image, above which the use of a SiliconSensor model is forced.
+        For faint things, if there is not already flux at this level, then a simple
+        sensor model will be used instead.  (default = 0, which means the SiliconSensor
+        is always used, even for the faint things)
 
         @param [out] outputString is a string denoting which detectors the astronomical
         object illumines, suitable for output in the GalSim InstanceCatalog
@@ -747,10 +773,11 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         fluxes = [gsObject.flux(bandpassName) for bandpassName in self.bandpassDict]
         realized_fluxes = [galsim.PoissonDeviate(self._rng, mean=f)() for f in fluxes]
         if all([f == 0 for f in realized_fluxes]):
+            # All fluxes are 0, so no photons will be shot.
             return outputString
 
         if len(detectorList) == 0:
-            # there is nothing to draw
+            # There is nothing to draw
             return outputString
 
         self._addNoiseAndBackground(detectorList)
@@ -762,27 +789,32 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         obscuration = 0.606  # (8.4**2 - 6.68**2)**0.5 / 8.4
         angles = galsim.FRatioAngles(fratio, obscuration, self._rng)
 
-        sed_lut = galsim.LookupTable(x=gsObject.sed.wavelen,
-                                     f=gsObject.sed.flambda)
-        gs_sed = galsim.SED(sed_lut, wave_type='nm', flux_type='flambda',
-                            redshift=0.)
+        faint = all([f < max_flux_simple for f in realized_fluxes])
 
-        local_hour_angle \
-            = self.getHourAngle(self.obs_metadata.mjd.TAI,
-                                self.obs_metadata.pointingRA)*galsim.degrees
-        obs_latitude = self.observatory.getLatitude().asDegrees()*galsim.degrees
+        if faint:
+            # For faint things, use a very simple SED, since we don't really care about getting
+            # the exact right distribution of wavelengths here.  (Impacts DCR and electron
+            # conversion depth in silicon)
+            gs_sed = self.trivial_sed
+        else:
+            sed_lut = galsim.LookupTable(x=gsObject.sed.wavelen,
+                                         f=gsObject.sed.flambda)
+            gs_sed = galsim.SED(sed_lut, wave_type='nm', flux_type='flambda',
+                                redshift=0.)
+
         ra_obs, dec_obs = observedFromPupilCoords(gsObject.xPupilRadians,
                                                   gsObject.yPupilRadians,
                                                   obs_metadata=self.obs_metadata)
         obj_coord = galsim.CelestialCoord(ra_obs*galsim.degrees,
                                           dec_obs*galsim.degrees)
+
         for bandpassName, realized_flux in zip(self.bandpassDict, realized_fluxes):
             gs_bandpass = self.gs_bandpass_dict[bandpassName]
             waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass,
                                              rng=self._rng)
             dcr = galsim.PhotonDCR(base_wavelength=gs_bandpass.effective_wavelength,
-                                   HA=local_hour_angle,
-                                   latitude=obs_latitude,
+                                   HA=self.local_hour_angle,
+                                   latitude=self.obs_latitude,
                                    obj_coord=obj_coord)
 
             # Set the object flux to the value realized from the
@@ -800,10 +832,6 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                                chipName=detector.name,
                                                obs_metadata=self.obs_metadata)
 
-                # Ensure the rng used by the sensor object is set to the desired state.
-                self.sensor[detector.name].rng.reset(self._rng)
-                surface_ops = [waves, dcr, angles]
-
                 # Desired position to draw the object.
                 image_pos = galsim.PositionD(xPix, yPix)
 
@@ -817,26 +845,53 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                 # Ensure the bounds of the postage stamp lie within the image.
                 bounds = bounds & self.detectorImages[name].bounds
 
-                if bounds.isDefined():
-                    # offset is relative to the "true" center of the postage stamp.
-                    offset = image_pos - bounds.true_center
+                if not bounds.isDefined():
+                    continue
 
-                    obj.drawImage(method='phot',
-                                  offset=offset,
-                                  rng=self._rng,
-                                  maxN=int(1e6),
-                                  image=self.detectorImages[name][bounds],
-                                  sensor=self.sensor[detector.name],
-                                  surface_ops=surface_ops,
-                                  add_to_image=True,
-                                  poisson_flux=False,
-                                  gain=detector.photParams.gain)
+                # Offset is relative to the "true" center of the postage stamp.
+                offset = image_pos - bounds.true_center
 
-                    # If we are writing centroid files,store the entry.
-                    if self.centroid_base_name is not None:
-                        centroid_tuple = (detector.fileName, bandpassName, gsObject.uniqueId,
-                                          gsObject.flux(bandpassName), xPix, yPix)
-                        self.centroid_list.append(centroid_tuple)
+                image = self.detectorImages[name][bounds]
+
+                if faint:
+                    # For faint things, only use the silicon sensor if there is already
+                    # some significant flux on the image near the object.
+                    # Brighter-fatter doesn't start having any measurable effect until at least
+                    # around 1000 e-/pixel. So a limit of 200 is conservative by a factor of 5.
+                    # Do the calculation relative to the median, since a perfectly flat sky level
+                    # will not have any B/F effect.  (But noise fluctuations due to the sky will
+                    # be properly included here if the sky is drawn first.)
+                    if np.max(image.array) > np.median(image.array) + sensor_limit:
+                        sensor = self.sensor[detector.name]
+                    else:
+                        sensor = None
+                else:
+                    sensor = self.sensor[detector.name]
+
+                if sensor:
+                    # Ensure the rng used by the sensor object is set to the desired state.
+                    self.sensor[detector.name].rng.reset(self._rng)
+                    surface_ops = [waves, dcr, angles]
+                else:
+                    # Don't need angles if not doing silicon sensor.
+                    surface_ops = [waves, dcr]
+
+                obj.drawImage(method='phot',
+                              offset=offset,
+                              rng=self._rng,
+                              maxN=int(1e6),
+                              image=image,
+                              sensor=sensor,
+                              surface_ops=surface_ops,
+                              add_to_image=True,
+                              poisson_flux=False,
+                              gain=detector.photParams.gain)
+
+                # If we are writing centroid files,store the entry.
+                if self.centroid_base_name is not None:
+                    centroid_tuple = (detector.fileName, bandpassName, gsObject.uniqueId,
+                                      gsObject.flux(bandpassName), xPix, yPix)
+                    self.centroid_list.append(centroid_tuple)
 
         self.write_checkpoint()
         return outputString
