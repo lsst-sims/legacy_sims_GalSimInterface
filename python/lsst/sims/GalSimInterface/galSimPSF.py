@@ -68,13 +68,12 @@ class PSFbase(object):
         #coordinates and (optionally) wavelength
         psf = self._getPSF(xPupil=xPupil, yPupil=yPupil, **kwargs)
 
-        if obj is not None:
-            #if we are dealing with an extended object, convolve it with the psf
-            obj = galsim.Convolve(obj, psf)
-            return obj
-        else:
-            #if there is no object (i.e. if this is a point source), just return the PSF
-            return psf
+        if obj is None:
+            #if there is no object, use a DeltaFunction as a point source
+            obj = galsim.DeltaFunction()
+
+        #convolve obj with the psf
+        return galsim.Convolve(obj, psf)
 
     def __eq__(self, rhs):
         """
