@@ -945,6 +945,9 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         galsim.GSObj, bool: obj = the object to actually use
                             use_fft = whether to use fft drawing
         """
+        if not fft_sb_thresh:
+            return obj, False
+
         # obj.original should be a Convolution with the PSF at the end.  Extract it.
         geom_psf = obj.original.obj_list[-1]
         all_but_psf = obj.original.obj_list[:-1]
