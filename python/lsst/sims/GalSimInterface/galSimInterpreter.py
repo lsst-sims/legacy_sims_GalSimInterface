@@ -240,7 +240,7 @@ class GalSimInterpreter(object):
             self.blankImageCache[detector.name] = image
             return image.copy()
 
-    def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0):
+    def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0, fft_sb_thresh=None):
         """
         Draw an astronomical object on all of the relevant FITS files.
 
@@ -251,6 +251,8 @@ class GalSimInterpreter(object):
         @param [in] max_flux_simple is ignored here. (Used by GalSimSiliconInterpreter)
 
         @param [in] sensor_limit is ignored here.  (Used by GalSimSiliconInterpreter)
+
+        @param [in] fft_sb_thresh is ignored here.  (Used by GalSimSiliconInterpreter)
 
         @param [out] outputString is a string denoting which detectors the astronomical
         object illumines, suitable for output in the GalSim InstanceCatalog
