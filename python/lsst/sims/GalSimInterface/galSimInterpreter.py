@@ -730,7 +730,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                        treering_func=det.tree_rings.func,
                                        transpose=True)
 
-    def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0, fft_sb_thresh=0):
+    def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0, fft_sb_thresh=None):
         """
         Draw an astronomical object on all of the relevant FITS files.
 
@@ -750,7 +750,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
 
         @param [in] fft_sb_thresh is a surface brightness (photons/pixel) where we will
         switch from photon shooting to drawing with fft if any pixel is above this.
-        Should be at least the saturation level, if not higher. (default = 0, which means
+        Should be at least the saturation level, if not higher. (default = None, which means
         never switch to fft.)
 
         @param [out] outputString is a string denoting which detectors the astronomical
@@ -821,7 +821,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             obj = centeredObj.withFlux(realized_flux)
 
             use_fft = False
-            if realized_flux > 1.e6 and fft_sb_thesh > 0 and realized_flux > thresh:
+            if realized_flux > 1.e6 and fft_sb_thesh is not None and realized_flux > thresh:
                 # Note: Don't bother with this check unless the total flux is > thresh.
                 # Otherwise, there is no chance that the flux in 1 pixel is > thresh.
                 # Also, the cross-over point for time to where the fft becomes faster is
