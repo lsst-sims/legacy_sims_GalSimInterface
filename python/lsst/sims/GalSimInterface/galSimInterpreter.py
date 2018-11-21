@@ -821,9 +821,12 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             obj = centeredObj.withFlux(realized_flux)
 
             use_fft = False
-            if realized_flux > fft_sb_thresh:
+            if realized_flux > 1.e6 and fft_sb_thesh > 0 and realized_flux > thresh:
                 # Note: Don't bother with this check unless the total flux is > thresh.
                 # Otherwise, there is no chance that the flux in 1 pixel is > thresh.
+                # Also, the cross-over point for time to where the fft becomes faster is
+                # emprically around 1.e6 photons, so also don't bother unless the flux
+                # is more than this.
                 obj, use_fft = self.maybeSwitchPSF(gsObject, obj, fft_sb_thresh)
 
             for detector in detectorList:
@@ -947,21 +950,18 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         all_but_psf = obj.original.obj_list[:-1]
         try:
             # If geom_psf is a PhaseScreenPSF, then make a simpler one the just convolves
-            # a VonKarman profile with an OpticalPSF.
+            # a Kolmogorov profile with an OpticalPSF.
             opt_screen = [s for s in geom_psf.screen_list if isinstance(s, galsim.OpticalScreen)][0]
             optical_psf = galsim.OpticalPSF(
                     lam=geom_psf.lam,
                     diam=opt_screen.diam,
-                    flux=geom_psf.flux,
                     aberrations=opt_screen.aberrations,
                     annular_zernike=opt_screen.annular_zernike,
                     obscuration=opt_screen.obscuration,
                     gsparams=geom_psf.gsparams)
             r0_500 = geom_psf.r0_500_effective
-            r0 = r0_500 * (geom_psf.lam / 500)**1.2
-            L0 = np.mean([s.L0 for s in geom_psf.screens if hasattr(s, 'L0')])
-            atm_psf = galsim.VonKarman(lam=geom_psf.lam, r0=r0, L0=L0,
-                                       gsparams=geom_psf.gsparams)
+            atm_psf = galsim.Kolmogorov(lam=geom_psf.lam, r0_500=r0_500,
+                                        gsparams=geom_psf.gsparams)
             fft_psf = [optical_psf, atm_psf]
         except AttributeError:
             # If the above didn't work, just use whatever the geometric PSF was.
@@ -974,6 +974,8 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         # However, the max_sb feature gives an over-estimate, whereas to be conservative, we would
         # rather an under-estimate.  For this kind of profile, dividing by 2 does a good job
         # of giving us an underestimate of the max surface brightness.
+        # Also note that `max_sb` is in photons/arcsec^2, so multiply by pixel_scale**2
+        # to get photons/pixel, which we compare to fft_sb_thresh.
         if fft_obj.max_sb/2. * pixel_scale**2 > fft_sb_thresh:
             return fft_obj, True
         else:
