@@ -927,6 +927,10 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         should only be done when the core is going to be saturated anyway, so we only really
         care about the wings of the PSF.
 
+        Note: This function assumes that obj at this point is a convolution with the PSF at the
+              end, and that it has had its flux set to a new value with `withFlux()`.
+              If this is not the case, an AttributeError will be raised.
+
         Parameters
         ----------
         gsObject: GalSimCelestialObject
