@@ -917,6 +917,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         self.write_checkpoint()
         return outputString
 
+    @staticmethod
     def maybeSwitchPSF(gsObject, obj, fft_sb_thresh, pixel_scale=0.2):
         """
         Check if the maximum surface brightness of the object is high enough that we should
