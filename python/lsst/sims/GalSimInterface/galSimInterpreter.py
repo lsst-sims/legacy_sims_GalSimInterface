@@ -887,15 +887,15 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                     surface_ops = [waves, dcr]
 
                 if use_fft:
-                    obj.drawImage(method='fft',
-                                  offset=offset,
-                                  image=image,
-                                  sensor=sensor,
-                                  surface_ops=surface_ops,
-                                  add_to_image=True,
-                                  gain=detector.photParams.gain)
-                    image.array[image.array < 0] = 0.
-                    image.addNoise(galsim.PoissonNoise())
+                    im1 = obj.drawImage(method='fft',
+                                        offset=offset,
+                                        image=image.copy(),
+                                        sensor=sensor,
+                                        surface_ops=surface_ops,
+                                        gain=detector.photParams.gain)
+                    im1.array[im1.array < 0] = 0.
+                    im1.addNoise(galsim.PoissonNoise())
+                    image += im1
                 else:
                     obj.drawImage(method='phot',
                                   offset=offset,
