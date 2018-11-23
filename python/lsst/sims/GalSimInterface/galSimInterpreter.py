@@ -823,7 +823,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             obj = centeredObj.withFlux(realized_flux)
 
             use_fft = False
-            if realized_flux > 1.e6 and fft_sb_thesh is not None and realized_flux > thresh:
+            if realized_flux > 1.e6 and fft_sb_thresh is not None and realized_flux > fft_sb_thresh:
                 # Note: Don't bother with this check unless the total flux is > thresh.
                 # Otherwise, there is no chance that the flux in 1 pixel is > thresh.
                 # Also, the cross-over point for time to where the fft becomes faster is
