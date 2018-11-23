@@ -954,23 +954,31 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         geom_psf = obj.original.obj_list[-1]
         all_but_psf = obj.original.obj_list[:-1]
         try:
+            screen_list = geom_psf.screen_list
+        except AttributeError:
+            # If it's not a galsim.PhaseScreenPSF, just use whatever it is.
+            fft_psf = [geom_psf]
+        else:
             # If geom_psf is a PhaseScreenPSF, then make a simpler one the just convolves
             # a Kolmogorov profile with an OpticalPSF.
-            opt_screen = [s for s in geom_psf.screen_list if isinstance(s, galsim.OpticalScreen)][0]
-            optical_psf = galsim.OpticalPSF(
-                    lam=geom_psf.lam,
-                    diam=opt_screen.diam,
-                    aberrations=opt_screen.aberrations,
-                    annular_zernike=opt_screen.annular_zernike,
-                    obscuration=opt_screen.obscuration,
-                    gsparams=geom_psf.gsparams)
+            opt_screens = [s for s in geom_psf.screen_list if isinstance(s, galsim.OpticalScreen)]
+            if len(opt_screens) >= 1:
+                # Should never be more than 1, but it there weirdly is, just use the first.
+                opt_screen = opt_screens[0]
+                optical_psf = galsim.OpticalPSF(
+                        lam=geom_psf.lam,
+                        diam=opt_screen.diam,
+                        aberrations=opt_screen.aberrations,
+                        annular_zernike=opt_screen.annular_zernike,
+                        obscuration=opt_screen.obscuration,
+                        gsparams=geom_psf.gsparams)
+                fft_psf = [optical_psf]
+            else:
+                fft_psf = []
             r0_500 = geom_psf.r0_500_effective
             atm_psf = galsim.Kolmogorov(lam=geom_psf.lam, r0_500=r0_500,
                                         gsparams=geom_psf.gsparams)
-            fft_psf = [optical_psf, atm_psf]
-        except AttributeError:
-            # If the above didn't work, just use whatever the geometric PSF was.
-            fft_psf = [geom_psf]
+            fft_psf.append(atm_psf)
 
         fft_obj = galsim.Convolve(all_but_psf + fft_psf).withFlux(obj.flux)
 
