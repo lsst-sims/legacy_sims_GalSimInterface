@@ -3,17 +3,22 @@ from builtins import object
 import re
 import copy
 from collections import namedtuple
+import warnings
+import astropy.time
+import astropy.coordinates
+from astropy._erfa import ErfaWarning
 import galsim
 import numpy as np
 import lsst.afw.geom as afwGeom
 from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
 from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
+from lsst.obs.lsstSim import LsstSimMapper
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.GalSimInterface.wcsUtils import tanSipWcsFromDetector
 from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.photUtils import PhotometricParameters
 
-__all__ = ["GalSimDetector", "make_galsim_detector"]
+__all__ = ["GalSimDetector", "make_galsim_detector", "LsstObservatory"]
 
 
 class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
@@ -73,14 +78,20 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         if self.obs_metadata.bandpass is not None:
             if (not isinstance(self.obs_metadata.bandpass, list) and not
                 isinstance(self.obs_metadata.bandpass, np.ndarray)):
-
                 self.fitsHeader.set("FILTER", self.obs_metadata.bandpass)
 
         if self.obs_metadata.mjd is not None:
             self.fitsHeader.set("MJD-OBS", self.obs_metadata.mjd.TAI)
+            mjd_obs = astropy.time.Time(self.obs_metadata.mjd.TAI, format='mjd')
+            self.fitsHeader.set('DATE-OBS', mjd_obs.isot)
 
         if self.photParams is not None:
-            self.fitsHeader.set("EXPTIME", self.photParams.nexp*self.photParams.exptime)
+            exptime = self.photParams.nexp*self.photParams.exptime
+            self.fitsHeader.set("EXPTIME", exptime)
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', 'ERFA function', ErfaWarning)
+                mjd_end = mjd_obs + astropy.time.TimeDelta(exptime, format='sec')
+                self.fitsHeader.set('DATE-END', mjd_end.isot)
 
         # Add pointing information to FITS header.
         if self.obs_metadata.pointingRA is not None:
@@ -89,6 +100,28 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
             self.fitsHeader.set('DECTEL', obs_metadata.pointingDec)
         if self.obs_metadata.rotSkyPos is not None:
             self.fitsHeader.set('ROTANGLE', obs_metadata.rotSkyPos)
+
+        # Add airmass, needed by jointcal.
+        try:
+            airmass = self.obs_metadata.OpsimMetaData['airmass']
+        except KeyError:
+            pass
+        else:
+            self.fitsHeader.set('AIRMASS', airmass)
+
+        # Add boilerplate keywords requested by DM.
+        self.fitsHeader.set('TELESCOP', 'LSST')
+        self.fitsHeader.set('INSTRUME', 'CAMERA')
+        self.fitsHeader.set('SIMULATE', True)
+        self.fitsHeader.set('ORIGIN', 'IMSIM')
+        observatory = LsstObservatory()
+        self.fitsHeader.set('OBS-LONG', observatory.getLongitude().asDegrees())
+        self.fitsHeader.set('OBS-LAT', observatory.getLongitude().asDegrees())
+        self.fitsHeader.set('OBS-ELEV', observatory.getElevation())
+        obs_location = observatory.getLocation()
+        self.fitsHeader.set('OBSGEO-X', obs_location.geocentric[0].value)
+        self.fitsHeader.set('OBSGEO-Y', obs_location.geocentric[1].value)
+        self.fitsHeader.set('OBSGEO-Z', obs_location.geocentric[2].value)
 
         self.crpix1 = self.fitsHeader.getScalar("CRPIX1")
         self.crpix2 = self.fitsHeader.getScalar("CRPIX2")
@@ -646,3 +679,29 @@ def make_galsim_detector(camera_wrapper, detname, phot_params,
     return GalSimDetector(detname, camera_wrapper,
                           obs_metadata=obs_metadata, epoch=epoch,
                           photParams=params)
+
+
+class LsstObservatory:
+    """
+    Class to encapsulate an Observatory object and compute the
+    observatory location information.
+    """
+    def __init__(self):
+        self.observatory = LsstSimMapper().MakeRawVisitInfoClass().observatory
+
+    def getLocation(self):
+        """
+        The LSST observatory location in geocentric coordinates.
+
+        Returns
+        -------
+        astropy.coordinates.earth.EarthLocation
+        """
+        return astropy.coordinates.EarthLocation.from_geodetic(
+            self.observatory.getLongitude().asDegrees(),
+            self.observatory.getLatitude().asDegrees(),
+            self.observatory.getElevation())
+
+    def __getattr__(self, attr):
+        if hasattr(self.observatory, attr):
+            return getattr(self.observatory, attr)

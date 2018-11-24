@@ -18,10 +18,9 @@ import gzip
 import numpy as np
 import astropy
 import galsim
-from lsst.obs.lsstSim import LsstSimMapper
 from lsst.sims.utils import radiansFromArcsec, observedFromPupilCoords
 from lsst.sims.GalSimInterface import make_galsim_detector, SNRdocumentPSF, \
-    Kolmogorov_and_Gaussian_PSF
+    Kolmogorov_and_Gaussian_PSF, LsstObservatory
 
 __all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpeter"]
 
@@ -656,12 +655,8 @@ class GalSimInterpreter(object):
         -------
         float: hour angle in degrees
         """
-
-        obs_location = astropy.coordinates.EarthLocation.from_geodetic(
-            self.observatory.getLongitude().asDegrees(),
-            self.observatory.getLatitude().asDegrees(),
-            self.observatory.getElevation())
-        time = astropy.time.Time(mjd, format='mjd', location=obs_location)
+        time = astropy.time.Time(mjd, format='mjd',
+                                 location=self.observatory.getLocation())
         # Get the local apparent sidereal time.
         last = time.sidereal_time('apparent').degree
         ha = last - ra
@@ -670,8 +665,7 @@ class GalSimInterpreter(object):
     @property
     def observatory(self):
         if self._observatory is None:
-            self._observatory \
-                = LsstSimMapper().MakeRawVisitInfoClass().observatory
+            self._observatory = LsstObservatory()
         return self._observatory
 
 
