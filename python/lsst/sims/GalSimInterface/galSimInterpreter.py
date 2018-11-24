@@ -980,7 +980,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                 fft_psf = [optical_psf]
             else:
                 fft_psf = []
-            r0_500 = geom_psf.r0_500_effective
+            r0_500 = screen_list.r0_500_effective
             atm_psf = galsim.Kolmogorov(lam=geom_psf.lam, r0_500=r0_500,
                                         gsparams=geom_psf.gsparams)
             fft_psf.append(atm_psf)
