@@ -272,6 +272,7 @@ class GalSimInterpreter(object):
         fluxes = [gsObject.flux(bandpassName) for bandpassName in self.bandpassDict]
         realized_fluxes = [galsim.PoissonDeviate(self._rng, mean=f)() for f in fluxes]
         if all([f == 0 for f in realized_fluxes]):
+            self._store_zero_flux_centroid_info(detectorList, fluxes, gsObject)
             return outputString
 
         if len(detectorList) == 0:
@@ -280,7 +281,7 @@ class GalSimInterpreter(object):
 
         self._addNoiseAndBackground(detectorList)
 
-        for bandpassName, realized_flux in zip(self.bandpassDict, realized_fluxes):
+        for bandpassName, realized_flux, flux in zip(self.bandpassDict, realized_fluxes, fluxes):
             for detector in detectorList:
 
                 name = self._getFileName(detector=detector, bandpassName=bandpassName)
@@ -307,11 +308,25 @@ class GalSimInterpreter(object):
                 # If we are writing centroid files, store the entry.
                 if self.centroid_base_name is not None:
                     centroid_tuple = (detector.fileName, bandpassName, gsObject.uniqueId,
-                                      gsObject.flux(bandpassName), xPix, yPix)
+                                      flux, realized_flux, xPix, yPix, gsObject.galSimType)
                     self.centroid_list.append(centroid_tuple)
 
         self.write_checkpoint()
         return outputString
+
+    def _store_zero_flux_centroid_info(self, detectorList, fluxes, gsObject):
+        if self.centroid_base_name is None:
+            return
+        realized_flux = 0
+        for bandpassName, flux in zip(self.bandpassDict, fluxes):
+            for detector in detectorList:
+                xPix, yPix = detector.camera_wrapper.pixelCoordsFromPupilCoords(gsObject.xPupilRadians,
+                                                                                gsObject.yPupilRadians,
+                                                                                detector.name,
+                                                                                self.obs_metadata)
+                centroid_tuple = (detector.fileName, bandpassName, gsObject.uniqueId,
+                                  flux, realized_flux, xPix, yPix, gsObject.galSimType)
+                self.centroid_list.append(centroid_tuple)
 
     def _addNoiseAndBackground(self, detectorList):
         """
@@ -524,22 +539,32 @@ class GalSimInterpreter(object):
         # the centroid files in gzipped format.  Note the 'wt' which writes in
         # text mode which you must explicitly specify with gzip.
         self.centroid_handles[centroid_name] = gzip.open(file_name, 'wt')
-        self.centroid_handles[centroid_name].write('{:15} {:>15} {:>10} {:>10}\n'.
-                                                   format('SourceID', 'Flux', 'xPix', 'yPix'))
+        self.centroid_handles[centroid_name].write('{:15} {:>15} {:>15} {:>10} {:>10} {:>15}\n'.
+                                                   format('SourceID', 'Flux', 'Realized flux',
+                                                          'xPix', 'yPix', 'GalSimType'))
 
-    def _writeObjectToCentroidFile(self, detector_name, bandpass_name, uniqueId, flux, xPix, yPix):
+    def _writeObjectToCentroidFile(self, detector_name, bandpass_name, uniqueId,
+                                   flux, realized_flux, xPix, yPix, object_type):
         """
         Write the flux and the the object position on the sensor for this object
         into a centroid file.  First check if a centroid file exists for this
         detector and, if it doesn't create it.
 
-        @param [in] detectorName is the name of the sensor the gsObject falls on.
+        @param [in] detector_name is the name of the sensor the gsObject falls on.
 
-        @param [in] bandpassName is the name of the filter used in this exposure.
+        @param [in] bandpass_name is the name of the filter used in this exposure.
 
-        @param [in] UniqueID is the Unique ID of the gsObject.
+        @param [in] uniqueId is the unique ID of the gsObject.
 
-        @param [in] flux is the calculated flux for the gsObject in the given bandPass.
+        @param [in] flux is the calculated flux for the gsObject in the given bandpass.
+
+        @param [in] realized_flux is the Poisson realization of the object flux.
+
+        @param [in] xPix x-pixel coordinate of object.
+
+        @param [in] yPix y-pixel coordinate of object.
+
+        @param [in] object_type is the gsObject.galSimType
         """
 
         centroid_name = detector_name + '_' + bandpass_name
@@ -549,8 +574,9 @@ class GalSimInterpreter(object):
             self.open_centroid_file(centroid_name)
 
         # Write the object to the file
-        self.centroid_handles[centroid_name].write('{:<15} {:15.5f} {:10.2f} {:10.2f}\n'.
-                                                   format(uniqueId, flux, xPix, yPix))
+        self.centroid_handles[centroid_name].write('{:<15} {:15.5f} {:15.5f} {:10.2f} {:10.2f} {:>15}\n'.
+                                                   format(uniqueId, flux, realized_flux, xPix, yPix,
+                                                          object_type))
 
     def write_centroid_files(self):
         """
@@ -775,6 +801,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         realized_fluxes = [galsim.PoissonDeviate(self._rng, mean=f)() for f in fluxes]
         if all([f == 0 for f in realized_fluxes]):
             # All fluxes are 0, so no photons will be shot.
+            self._store_zero_flux_centroid_info(detectorList, fluxes, gsObject)
             return outputString
 
         if len(detectorList) == 0:
@@ -809,7 +836,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         obj_coord = galsim.CelestialCoord(ra_obs*galsim.degrees,
                                           dec_obs*galsim.degrees)
 
-        for bandpassName, realized_flux in zip(self.bandpassDict, realized_fluxes):
+        for bandpassName, realized_flux, flux in zip(self.bandpassDict, realized_fluxes, fluxes):
             gs_bandpass = self.gs_bandpass_dict[bandpassName]
             waves = galsim.WavelengthSampler(sed=gs_sed, bandpass=gs_bandpass,
                                              rng=self._rng)
@@ -911,7 +938,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                 # If we are writing centroid files,store the entry.
                 if self.centroid_base_name is not None:
                     centroid_tuple = (detector.fileName, bandpassName, gsObject.uniqueId,
-                                      gsObject.flux(bandpassName), xPix, yPix)
+                                      flux, realized_flux, xPix, yPix, gsObject.galSimType)
                     self.centroid_list.append(centroid_tuple)
 
         self.write_checkpoint()
