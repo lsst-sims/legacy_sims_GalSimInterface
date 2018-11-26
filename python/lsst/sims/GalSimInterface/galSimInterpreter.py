@@ -240,7 +240,7 @@ class GalSimInterpreter(object):
             self.blankImageCache[detector.name] = image
             return image.copy()
 
-    def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0):
+    def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0, fft_sb_thresh=None):
         """
         Draw an astronomical object on all of the relevant FITS files.
 
@@ -251,6 +251,8 @@ class GalSimInterpreter(object):
         @param [in] max_flux_simple is ignored here. (Used by GalSimSiliconInterpreter)
 
         @param [in] sensor_limit is ignored here.  (Used by GalSimSiliconInterpreter)
+
+        @param [in] fft_sb_thresh is ignored here.  (Used by GalSimSiliconInterpreter)
 
         @param [out] outputString is a string denoting which detectors the astronomical
         object illumines, suitable for output in the GalSim InstanceCatalog
@@ -730,7 +732,7 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                                        treering_func=det.tree_rings.func,
                                        transpose=True)
 
-    def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0):
+    def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0, fft_sb_thresh=None):
         """
         Draw an astronomical object on all of the relevant FITS files.
 
@@ -747,6 +749,11 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
         For faint things, if there is not already flux at this level, then a simple
         sensor model will be used instead.  (default = 0, which means the SiliconSensor
         is always used, even for the faint things)
+
+        @param [in] fft_sb_thresh is a surface brightness (photons/pixel) where we will
+        switch from photon shooting to drawing with fft if any pixel is above this.
+        Should be at least the saturation level, if not higher. (default = None, which means
+        never switch to fft.)
 
         @param [out] outputString is a string denoting which detectors the astronomical
         object illumines, suitable for output in the GalSim InstanceCatalog
@@ -815,6 +822,15 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
             # Poisson distribution.
             obj = centeredObj.withFlux(realized_flux)
 
+            use_fft = False
+            if realized_flux > 1.e6 and fft_sb_thresh is not None and realized_flux > fft_sb_thresh:
+                # Note: Don't bother with this check unless the total flux is > thresh.
+                # Otherwise, there is no chance that the flux in 1 pixel is > thresh.
+                # Also, the cross-over point for time to where the fft becomes faster is
+                # emprically around 1.e6 photons, so also don't bother unless the flux
+                # is more than this.
+                obj, use_fft = self.maybeSwitchPSF(gsObject, obj, fft_sb_thresh)
+
             for detector in detectorList:
 
                 name = self._getFileName(detector=detector,
@@ -870,16 +886,27 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
                     # Don't need angles if not doing silicon sensor.
                     surface_ops = [waves, dcr]
 
-                obj.drawImage(method='phot',
-                              offset=offset,
-                              rng=self._rng,
-                              maxN=int(1e6),
-                              image=image,
-                              sensor=sensor,
-                              surface_ops=surface_ops,
-                              add_to_image=True,
-                              poisson_flux=False,
-                              gain=detector.photParams.gain)
+                if use_fft:
+                    im1 = obj.drawImage(method='fft',
+                                        offset=offset,
+                                        image=image.copy(),
+                                        sensor=sensor,
+                                        surface_ops=surface_ops,
+                                        gain=detector.photParams.gain)
+                    im1.array[im1.array < 0] = 0.
+                    im1.addNoise(galsim.PoissonNoise())
+                    image += im1
+                else:
+                    obj.drawImage(method='phot',
+                                  offset=offset,
+                                  rng=self._rng,
+                                  maxN=int(1e6),
+                                  image=image,
+                                  sensor=sensor,
+                                  surface_ops=surface_ops,
+                                  add_to_image=True,
+                                  poisson_flux=False,
+                                  gain=detector.photParams.gain)
 
                 # If we are writing centroid files,store the entry.
                 if self.centroid_base_name is not None:
@@ -889,6 +916,88 @@ class GalSimSiliconInterpeter(GalSimInterpreter):
 
         self.write_checkpoint()
         return outputString
+
+    @staticmethod
+    def maybeSwitchPSF(gsObject, obj, fft_sb_thresh, pixel_scale=0.2):
+        """
+        Check if the maximum surface brightness of the object is high enough that we should
+        switch to using an fft method rather than photon shooting.
+
+        When we do this, we also switch the PSF model to something slightly simpler with
+        roughly the same wings, but not as complicated in the central core.  Thus, this
+        should only be done when the core is going to be saturated anyway, so we only really
+        care about the wings of the PSF.
+
+        Note: This function assumes that obj at this point is a convolution with the PSF at the
+              end, and that it has had its flux set to a new value with `withFlux()`.
+              If this is not the case, an AttributeError will be raised.
+
+        Parameters
+        ----------
+        gsObject: GalSimCelestialObject
+            This contains the information needed to construct a
+            galsim.GSObject convolved with the desired PSF.
+        obj: galsim.GSObject
+            The current GSObject to draw, which might need to be modified
+            if we decide to switch to fft drawing.
+        fft_sb_thresh: float
+            The surface brightness (photons/pixel) where we will switch from
+            photon shooting to drawing with fft if any pixel is above this.
+            Should be at least the saturation level, if not higher.
+        pixel_scale: float [0.2]
+            The CCD pixel scale in arcsec.
+
+        Returns
+        -------
+        galsim.GSObj, bool: obj = the object to actually use
+                            use_fft = whether to use fft drawing
+        """
+        if not fft_sb_thresh:
+            return obj, False
+
+        # obj.original should be a Convolution with the PSF at the end.  Extract it.
+        geom_psf = obj.original.obj_list[-1]
+        all_but_psf = obj.original.obj_list[:-1]
+        try:
+            screen_list = geom_psf.screen_list
+        except AttributeError:
+            # If it's not a galsim.PhaseScreenPSF, just use whatever it is.
+            fft_psf = [geom_psf]
+        else:
+            # If geom_psf is a PhaseScreenPSF, then make a simpler one the just convolves
+            # a Kolmogorov profile with an OpticalPSF.
+            opt_screens = [s for s in geom_psf.screen_list if isinstance(s, galsim.OpticalScreen)]
+            if len(opt_screens) >= 1:
+                # Should never be more than 1, but it there weirdly is, just use the first.
+                opt_screen = opt_screens[0]
+                optical_psf = galsim.OpticalPSF(
+                        lam=geom_psf.lam,
+                        diam=opt_screen.diam,
+                        aberrations=opt_screen.aberrations,
+                        annular_zernike=opt_screen.annular_zernike,
+                        obscuration=opt_screen.obscuration,
+                        gsparams=geom_psf.gsparams)
+                fft_psf = [optical_psf]
+            else:
+                fft_psf = []
+            r0_500 = screen_list.r0_500_effective
+            atm_psf = galsim.Kolmogorov(lam=geom_psf.lam, r0_500=r0_500,
+                                        gsparams=geom_psf.gsparams)
+            fft_psf.append(atm_psf)
+
+        fft_obj = galsim.Convolve(all_but_psf + fft_psf).withFlux(obj.flux)
+
+        # Now this object should have a much better estimate of the real maximum surface brightness
+        # than the original geom_psf did.
+        # However, the max_sb feature gives an over-estimate, whereas to be conservative, we would
+        # rather an under-estimate.  For this kind of profile, dividing by 2 does a good job
+        # of giving us an underestimate of the max surface brightness.
+        # Also note that `max_sb` is in photons/arcsec^2, so multiply by pixel_scale**2
+        # to get photons/pixel, which we compare to fft_sb_thresh.
+        if fft_obj.max_sb/2. * pixel_scale**2 > fft_sb_thresh:
+            return fft_obj, True
+        else:
+            return obj, False
 
     def getStampBounds(self, gsObject, flux, image_pos, keep_sb_level,
                        large_object_sb_level, Nmax=1400, pixel_scale=0.2):
