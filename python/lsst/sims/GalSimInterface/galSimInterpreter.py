@@ -22,14 +22,14 @@ from lsst.sims.utils import radiansFromArcsec, observedFromPupilCoords
 from lsst.sims.GalSimInterface import make_galsim_detector, SNRdocumentPSF, \
     Kolmogorov_and_Gaussian_PSF, LsstObservatory
 
-__all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpeter"]
+__all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpreter"]
 
 
 def make_gs_interpreter(obs_md, detectors, bandpassDict, noiseWrapper,
                         epoch=None, seed=None, apply_sensor_model=False,
                         bf_strength=1):
     if apply_sensor_model:
-        return GalSimSiliconInterpeter(obs_metadata=obs_md, detectors=detectors,
+        return GalSimSiliconInterpreter(obs_metadata=obs_md, detectors=detectors,
                                        bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
                                        epoch=epoch, seed=seed, bf_strength=bf_strength)
 
@@ -671,14 +671,14 @@ class GalSimInterpreter(object):
         return self._observatory
 
 
-class GalSimSiliconInterpeter(GalSimInterpreter):
+class GalSimSiliconInterpreter(GalSimInterpreter):
     """
     This subclass of GalSimInterpreter applies the Silicon sensor
     model to the drawn objects.
     """
     def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None,
                  noiseWrapper=None, epoch=None, seed=None, bf_strength=1):
-        super(GalSimSiliconInterpeter, self)\
+        super(GalSimSiliconInterpreter, self)\
             .__init__(obs_metadata=obs_metadata, detectors=detectors,
                       bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
                       epoch=epoch, seed=seed)
