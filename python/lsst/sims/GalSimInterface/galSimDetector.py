@@ -102,12 +102,13 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
             self.fitsHeader.set('ROTANGLE', obs_metadata.rotSkyPos)
 
         # Add airmass, needed by jointcal.
-        try:
-            airmass = self.obs_metadata.OpsimMetaData['airmass']
-        except KeyError:
-            pass
-        else:
-            self.fitsHeader.set('AIRMASS', airmass)
+        if self.obs_metadata.OpsimMetaData is not None:
+            try:
+                airmass = self.obs_metadata.OpsimMetaData['airmass']
+            except KeyError:
+                pass
+            else:
+                self.fitsHeader.set('AIRMASS', airmass)
 
         # Add boilerplate keywords requested by DM.
         self.fitsHeader.set('TELESCOP', 'LSST')
