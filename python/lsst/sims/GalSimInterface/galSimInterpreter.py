@@ -257,6 +257,8 @@ class GalSimInterpreter(object):
         @param [out] outputString is a string denoting which detectors the astronomical
         object illumines, suitable for output in the GalSim InstanceCatalog
         """
+        object_flags = ObjectFlags()
+        object_flags.set_flag('no_silicon')
 
         # find the detectors which the astronomical object illumines
         outputString, \
@@ -272,7 +274,9 @@ class GalSimInterpreter(object):
         fluxes = [gsObject.flux(bandpassName) for bandpassName in self.bandpassDict]
         realized_fluxes = [galsim.PoissonDeviate(self._rng, mean=f)() for f in fluxes]
         if all([f == 0 for f in realized_fluxes]):
-            self._store_zero_flux_centroid_info(detectorList, fluxes, gsObject)
+            object_flags.set_flag('skipped')
+            self._store_zero_flux_centroid_info(detectorList, fluxes, gsObject,
+                                                object_flags.value)
             return outputString
 
         if len(detectorList) == 0:
@@ -308,13 +312,14 @@ class GalSimInterpreter(object):
                 # If we are writing centroid files, store the entry.
                 if self.centroid_base_name is not None:
                     centroid_tuple = (detector.fileName, bandpassName, gsObject.uniqueId,
-                                      flux, realized_flux, xPix, yPix, gsObject.galSimType)
+                                      flux, realized_flux, xPix, yPix, object_flags.value,
+                                      gsObject.galSimType)
                     self.centroid_list.append(centroid_tuple)
 
         self.write_checkpoint()
         return outputString
 
-    def _store_zero_flux_centroid_info(self, detectorList, fluxes, gsObject):
+    def _store_zero_flux_centroid_info(self, detectorList, fluxes, gsObject, obj_flags_value):
         if self.centroid_base_name is None:
             return
         realized_flux = 0
@@ -325,7 +330,8 @@ class GalSimInterpreter(object):
                                                                                 detector.name,
                                                                                 self.obs_metadata)
                 centroid_tuple = (detector.fileName, bandpassName, gsObject.uniqueId,
-                                  flux, realized_flux, xPix, yPix, gsObject.galSimType)
+                                  flux, realized_flux, xPix, yPix, obj_flags_value,
+                                  gsObject.galSimType)
                 self.centroid_list.append(centroid_tuple)
 
     def _addNoiseAndBackground(self, detectorList):
@@ -539,12 +545,13 @@ class GalSimInterpreter(object):
         # the centroid files in gzipped format.  Note the 'wt' which writes in
         # text mode which you must explicitly specify with gzip.
         self.centroid_handles[centroid_name] = gzip.open(file_name, 'wt')
-        self.centroid_handles[centroid_name].write('{:15} {:>15} {:>15} {:>10} {:>10} {:>15}\n'.
+        self.centroid_handles[centroid_name].write('{:15} {:>15} {:>15} {:>10} {:>10} {:>11} {:>15}\n'.
                                                    format('SourceID', 'Flux', 'Realized flux',
-                                                          'xPix', 'yPix', 'GalSimType'))
+                                                          'xPix', 'yPix', 'flags', 'GalSimType'))
 
     def _writeObjectToCentroidFile(self, detector_name, bandpass_name, uniqueId,
-                                   flux, realized_flux, xPix, yPix, object_type):
+                                   flux, realized_flux, xPix, yPix,
+                                   obj_flags_value, object_type):
         """
         Write the flux and the the object position on the sensor for this object
         into a centroid file.  First check if a centroid file exists for this
@@ -564,6 +571,9 @@ class GalSimInterpreter(object):
 
         @param [in] yPix y-pixel coordinate of object.
 
+        @param [in] obj_flags_value is the bit flags for the object handling composed
+              as an integer.
+
         @param [in] object_type is the gsObject.galSimType
         """
 
@@ -574,9 +584,9 @@ class GalSimInterpreter(object):
             self.open_centroid_file(centroid_name)
 
         # Write the object to the file
-        self.centroid_handles[centroid_name].write('{:<15} {:15.5f} {:15.5f} {:10.2f} {:10.2f} {:>15}\n'.
+        self.centroid_handles[centroid_name].write('{:<15} {:15.5f} {:15.5f} {:10.2f} {:10.2f} {:11d} {:>15}\n'.
                                                    format(uniqueId, flux, realized_flux, xPix, yPix,
-                                                          object_type))
+                                                          obj_flags_value, object_type))
 
     def write_centroid_files(self):
         """
@@ -784,6 +794,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         @param [out] outputString is a string denoting which detectors the astronomical
         object illumines, suitable for output in the GalSim InstanceCatalog
         """
+        object_flags = ObjectFlags()
 
         # find the detectors which the astronomical object illumines
         outputString, \
@@ -801,7 +812,9 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         realized_fluxes = [galsim.PoissonDeviate(self._rng, mean=f)() for f in fluxes]
         if all([f == 0 for f in realized_fluxes]):
             # All fluxes are 0, so no photons will be shot.
-            self._store_zero_flux_centroid_info(detectorList, fluxes, gsObject)
+            object_flags.set_flag('skipped')
+            self._store_zero_flux_centroid_info(detectorList, fluxes, gsObject,
+                                                object_flags.value)
             return outputString
 
         if len(detectorList) == 0:
@@ -824,6 +837,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
             # the exact right distribution of wavelengths here.  (Impacts DCR and electron
             # conversion depth in silicon)
             gs_sed = self.trivial_sed
+            object_flags.set_flag('simple_sed')
         else:
             sed_lut = galsim.LookupTable(x=gsObject.sed.wavelen,
                                          f=gsObject.sed.flambda)
@@ -857,6 +871,9 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                 # emprically around 1.e6 photons, so also don't bother unless the flux
                 # is more than this.
                 obj, use_fft = self.maybeSwitchPSF(gsObject, obj, fft_sb_thresh)
+
+            if use_fft:
+                object_flags.set_flag('fft_rendered')
 
             for detector in detectorList:
 
@@ -938,7 +955,8 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                 # If we are writing centroid files,store the entry.
                 if self.centroid_base_name is not None:
                     centroid_tuple = (detector.fileName, bandpassName, gsObject.uniqueId,
-                                      flux, realized_flux, xPix, yPix, gsObject.galSimType)
+                                      flux, realized_flux, xPix, yPix, object_flags.value,
+                                      gsObject.galSimType)
                     self.centroid_list.append(centroid_tuple)
 
         self.write_checkpoint()
@@ -1188,3 +1206,41 @@ def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
         N /= factor
 
     return int(N)
+
+
+class ObjectFlags:
+    """
+    Class to keep track of the object rendering bit flags. The bits
+    will be composed as an int for storing in centroid files.
+    """
+    def __init__(self, conditions='skipped simple_sed no_silicon fft_rendered'.split()):
+        """
+        Parameters
+        ----------
+        conditions: list or tuple
+            The sequence of strings describing the various conditions
+            to be tracked.  The order will determine how the bits
+            are assigned, so it should be a well-ordered sequence, i.e.,
+            specifically a list or a tuple.
+        """
+        if type(conditions) not in (list, tuple):
+            raise TypeError("conditions must be a list or a tuple")
+        if len(conditions) != len(set(conditions)):
+            raise ValueError("conditions must contain unique entries")
+        self.flags = {condition: 1<<shift for shift, condition in
+                      enumerate(conditions)}
+        self.value = 0
+
+    def set_flag(self, condition):
+        """
+        Set the bit associated with the specified condition.
+
+        Parameters
+        ----------
+        condition: str
+            A condition not in the known set will raise a ValueError.
+        """
+        try:
+            self.value |= self.flags[condition]
+        except KeyError:
+            raise ValueError("unknown bit flag: %s" % condition)
