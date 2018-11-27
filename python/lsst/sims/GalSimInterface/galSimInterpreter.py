@@ -500,7 +500,7 @@ class GalSimInterpreter(object):
 
         else:
             raise RuntimeError("Apologies: the GalSimInterpreter does not yet have a method to draw " +
-                               gsobject.galSimType + " objects")
+                               gsObject.galSimType + " objects")
 
         return centeredObj
 
