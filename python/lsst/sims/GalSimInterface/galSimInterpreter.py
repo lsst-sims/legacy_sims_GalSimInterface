@@ -919,6 +919,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                         sensor = self.sensor[detector.name]
                     else:
                         sensor = None
+                        object_flags.set_flag('no_silicon')
                 else:
                     sensor = self.sensor[detector.name]
 
