@@ -874,6 +874,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
 
             if use_fft:
                 object_flags.set_flag('fft_rendered')
+                object_flags.set_flag('no_silicon')
 
             for detector in detectorList:
 
@@ -935,8 +936,6 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                     im1 = obj.drawImage(method='fft',
                                         offset=offset,
                                         image=image.copy(),
-                                        sensor=sensor,
-                                        surface_ops=surface_ops,
                                         gain=detector.photParams.gain)
                     im1.array[im1.array < 0] = 0.
                     im1.addNoise(galsim.PoissonNoise())
