@@ -866,7 +866,8 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
             # For very bright things, we might want to switch to FFT rendering, in which case
             # the PSF needs to be swapped out for something similar but without all the
             # atmospheric screens.
-            obj, use_fft = self.maybeSwitchPSF(gsObject, obj, fft_sb_thresh)
+            if fft_sb_thresh and realized_flux > 1.e6:
+                obj, use_fft = self.maybeSwitchPSF(gsObject, obj, fft_sb_thresh)
 
             if use_fft:
                 object_flags.set_flag('fft_rendered')
@@ -1004,7 +1005,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         # Also, the cross-over point for time to where the fft becomes faster is
         # emprically around 1.e6 photons, so also don't bother unless the flux
         # is more than this.
-        if realized_flux < fft_sb_thresh or  realized_flux < 1.e6:
+        if realized_flux < fft_sb_thresh or realized_flux < 1.e6:
             return obj, False
 
         # obj.original should be a Convolution with the PSF at the end.  Extract it.
