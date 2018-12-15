@@ -863,14 +863,10 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
             # Poisson distribution.
             obj = centeredObj.withFlux(realized_flux)
 
-            use_fft = False
-            if realized_flux > 1.e6 and fft_sb_thresh is not None and realized_flux > fft_sb_thresh:
-                # Note: Don't bother with this check unless the total flux is > thresh.
-                # Otherwise, there is no chance that the flux in 1 pixel is > thresh.
-                # Also, the cross-over point for time to where the fft becomes faster is
-                # emprically around 1.e6 photons, so also don't bother unless the flux
-                # is more than this.
-                obj, use_fft = self.maybeSwitchPSF(gsObject, obj, fft_sb_thresh)
+            # For very bright things, we might want to switch to FFT rendering, in which case
+            # the PSF needs to be swapped out for something similar but without all the
+            # atmospheric screens.
+            obj, use_fft = self.maybeSwitchPSF(gsObject, obj, fft_sb_thresh)
 
             if use_fft:
                 object_flags.set_flag('fft_rendered')
@@ -997,7 +993,18 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         galsim.GSObj, bool: obj = the object to actually use
                             use_fft = whether to use fft drawing
         """
+        # Some quick returns for cases where we can already know that we don't want to switch.
+
+        # If fft_sb_thresh is 0 or None, that means don't switch.
         if not fft_sb_thresh:
+            return obj, False
+
+        # Don't switch if the total flux is < thresh.
+        # Otherwise, there is no chance that the flux in 1 pixel is > thresh.
+        # Also, the cross-over point for time to where the fft becomes faster is
+        # emprically around 1.e6 photons, so also don't bother unless the flux
+        # is more than this.
+        if realized_flux < fft_sb_thresh or  realized_flux < 1.e6:
             return obj, False
 
         # obj.original should be a Convolution with the PSF at the end.  Extract it.
@@ -1006,11 +1013,27 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         try:
             screen_list = geom_psf.screen_list
         except AttributeError:
-            # If it's not a galsim.PhaseScreenPSF, just use whatever it is.
-            fft_psf = [geom_psf]
+            # If it's not a galsim.PhaseScreenPSF, just leave the object as is, but still
+            # want to check if we should switch to FFT or not.
+            fft_obj = obj
         else:
-            # If geom_psf is a PhaseScreenPSF, then make a simpler one the just convolves
-            # a Kolmogorov profile with an OpticalPSF.
+            # First make a Kolmogorov approximation to the atmospheric part.
+            # Note: VonKarman would potentially be better, but it was showing unacceptable
+            # artifacts in FFT rendering in GalSim 2.1.  If that gets fixed, we could
+            # consider switching to that instead.  But practically, it shouldn't make a
+            # huge difference.
+            r0_500 = screen_list.r0_500_effective
+            atm_psf = galsim.Kolmogorov(lam=geom_psf.lam, r0_500=r0_500,
+                                        gsparams=geom_psf.gsparams)
+
+            # If this component has a max sb less than the thresh, we can again exit early,
+            # since convolving by the optical part and the galaxy (if any) will only spread it
+            # out and lower the peak sb.
+            if atm_psf.withFlux(obj.flux).max_sb * pixel_scale**2 < fft_sb_thresh:
+                return obj, False
+
+            # Now convolve with an OpticalPSF made from the OpticalScreen
+            fft_psf = [atm_psf]
             opt_screens = [s for s in geom_psf.screen_list if isinstance(s, galsim.OpticalScreen)]
             if len(opt_screens) >= 1:
                 # Should never be more than 1, but it there weirdly is, just use the first.
@@ -1021,16 +1044,12 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                         aberrations=opt_screen.aberrations,
                         annular_zernike=opt_screen.annular_zernike,
                         obscuration=opt_screen.obscuration,
+                        aper=geom_psf.aper,
                         gsparams=geom_psf.gsparams)
-                fft_psf = [optical_psf]
-            else:
-                fft_psf = []
-            r0_500 = screen_list.r0_500_effective
-            atm_psf = galsim.Kolmogorov(lam=geom_psf.lam, r0_500=r0_500,
-                                        gsparams=geom_psf.gsparams)
-            fft_psf.append(atm_psf)
+                fft_psf.append(optical_psf)
 
-        fft_obj = galsim.Convolve(all_but_psf + fft_psf).withFlux(obj.flux)
+            # Put the object back together for sb test below.
+            fft_obj = galsim.Convolve(all_but_psf + fft_psf).withFlux(obj.flux)
 
         # Now this object should have a much better estimate of the real maximum surface brightness
         # than the original geom_psf did.
