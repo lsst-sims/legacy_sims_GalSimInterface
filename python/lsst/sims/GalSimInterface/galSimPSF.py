@@ -73,7 +73,14 @@ class PSFbase(object):
             obj = galsim.DeltaFunction()
 
         #convolve obj with the psf
-        return galsim.Convolve(obj, psf)
+        if isinstance(psf, galsim.Convolution):
+            # If the psf is itself a Convolution object, convolve obj
+            # with the individual components to ensure that the
+            # obj_list of the returned obj lists those components
+            # separately.
+            return galsim.Convolution([obj] + psf.obj_list)
+        else:
+            return galsim.Convolve(obj, psf)
 
     def __eq__(self, rhs):
         """
