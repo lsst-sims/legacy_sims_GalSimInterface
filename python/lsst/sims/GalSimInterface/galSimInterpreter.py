@@ -1170,6 +1170,16 @@ def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
     N = obj.getGoodImageSize(pixel_scale)
     #print('N = ',N)
 
+    try:
+        # If the galaxy is a RandomWalk, extract the underlying profile for this calculation
+        # rather than using the knotty version, which will pose problems for the xValue function.
+        gal = obj.original.obj_list[0]
+        gal = galsim.Transformation(gal.original._profile,
+                gal.jac, gal.offset, gal.flux_ratio, gal.gsparams)
+        obj = galsim.Convolve(gal, *obj.original.obj_list[1:]) * obj.flux_ratio
+    except Exception:
+        pass
+
     # This can be too small for bright stars, so increase it in steps until the edges are
     # all below the requested sb level.
     # (Don't go bigger than 4096)
