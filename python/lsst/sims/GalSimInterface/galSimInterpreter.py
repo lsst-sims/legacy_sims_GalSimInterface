@@ -1178,6 +1178,9 @@ def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
                 gal.jac, gal.offset, gal.flux_ratio, gal.gsparams)
         obj = galsim.Convolve(gal, *obj.original.obj_list[1:]) * obj.flux_ratio
     except Exception:
+        # If not a RandomWalk, then `._profile` will raise an AttributeError.
+        # Catch any (non-Base) Exception though in case there are other possibilities
+        # I didn't anticipate, where we should just leave the obj alone.
         pass
 
     # This can be too small for bright stars, so increase it in steps until the edges are
