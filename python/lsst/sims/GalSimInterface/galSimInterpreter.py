@@ -22,7 +22,8 @@ from lsst.sims.utils import radiansFromArcsec, observedFromPupilCoords
 from lsst.sims.GalSimInterface import make_galsim_detector, SNRdocumentPSF, \
     Kolmogorov_and_Gaussian_PSF, LsstObservatory
 
-__all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpreter"]
+__all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpreter",
+           "ObjectFlags"]
 
 
 def make_gs_interpreter(obs_md, detectors, bandpassDict, noiseWrapper,
@@ -933,14 +934,21 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                     surface_ops = [waves, dcr]
 
                 if use_fft:
-                    im1 = obj.drawImage(method='fft',
-                                        offset=offset,
-                                        image=image.copy(),
-                                        gain=detector.photParams.gain)
-                    im1.array[im1.array < 0] = 0.
-                    im1.addNoise(galsim.PoissonNoise())
-                    image += im1
-                else:
+                    try:
+                        im1 = obj.drawImage(method='fft',
+                                            offset=offset,
+                                            image=image.copy(),
+                                            gain=detector.photParams.gain)
+                    except galsim.errors.GalSimFFTSizeError:
+                        use_fft = False
+                        object_flags.unset_flag('fft_rendered')
+                        if sensor is not None:
+                            object_flags.unset_flag('no_silicon')
+                    else:
+                        im1.array[im1.array < 0] = 0.
+                        im1.addNoise(galsim.PoissonNoise())
+                        image += im1
+                if not use_fft:
                     obj.drawImage(method='phot',
                                   offset=offset,
                                   rng=self._rng,
@@ -1255,5 +1263,19 @@ class ObjectFlags:
         """
         try:
             self.value |= self.flags[condition]
+        except KeyError:
+            raise ValueError("unknown bit flag: %s" % condition)
+
+    def unset_flag(self, condition):
+        """
+        Unset the bit associated with the specified condition.
+
+        Parameters
+        ----------
+        condition: str
+            A condition not in the known set will raise a ValueError.
+        """
+        try:
+            self.value &= ~self.flags[condition]
         except KeyError:
             raise ValueError("unknown bit flag: %s" % condition)
