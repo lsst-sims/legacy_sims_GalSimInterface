@@ -22,7 +22,8 @@ from lsst.sims.utils import radiansFromArcsec, observedFromPupilCoords
 from lsst.sims.GalSimInterface import make_galsim_detector, SNRdocumentPSF, \
     Kolmogorov_and_Gaussian_PSF, LsstObservatory
 
-__all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpreter"]
+__all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpreter",
+           "ObjectFlags"]
 
 
 def make_gs_interpreter(obs_md, detectors, bandpassDict, noiseWrapper,
@@ -894,11 +895,11 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                 # noise)/3. as the nominal minimum surface brightness
                 # for rendering an extended object.
                 keep_sb_level = np.sqrt(self.sky_bg_per_pixel)/3.
-                bounds = self.getStampBounds(gsObject, realized_flux, image_pos,
-                                             keep_sb_level, 3*keep_sb_level)
+                full_bounds = self.getStampBounds(gsObject, realized_flux, image_pos,
+                                                  keep_sb_level, 3*keep_sb_level)
 
                 # Ensure the bounds of the postage stamp lie within the image.
-                bounds = bounds & self.detectorImages[name].bounds
+                bounds = full_bounds & self.detectorImages[name].bounds
 
                 if not bounds.isDefined():
                     continue
@@ -933,14 +934,36 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                     surface_ops = [waves, dcr]
 
                 if use_fft:
-                    im1 = obj.drawImage(method='fft',
-                                        offset=offset,
-                                        image=image.copy(),
-                                        gain=detector.photParams.gain)
-                    im1.array[im1.array < 0] = 0.
-                    im1.addNoise(galsim.PoissonNoise())
-                    image += im1
-                else:
+                    # When drawing with FFTs, large offsets can be a problem, since they
+                    # can blow up the required FFT size.  We'll guard for that below with
+                    # a try block, but we can minimize how often this happens by making sure
+                    # the offset is close to 0,0.
+                    if abs(offset.x) > 2 or abs(offset.y) > 2:
+                        # Make a larger image that has the object near the center.
+                        fft_image = galsim.Image(full_bounds, dtype=image.dtype, wcs=image.wcs)
+                        fft_image[bounds] = image
+                        fft_offset = image_pos - full_bounds.true_center
+                    else:
+                        fft_image = image.copy()
+                        fft_offset = offset
+
+                    try:
+                        obj.drawImage(method='fft',
+                                      offset=fft_offset,
+                                      image=fft_image,
+                                      gain=detector.photParams.gain)
+                    except galsim.errors.GalSimFFTSizeError:
+                        use_fft = False
+                        object_flags.unset_flag('fft_rendered')
+                        if sensor is not None:
+                            object_flags.unset_flag('no_silicon')
+                    else:
+                        # Some pixels can end up negative from FFT numerics.  Just set them to 0.
+                        fft_image.array[fft_image.array < 0] = 0.
+                        fft_image.addNoise(galsim.PoissonNoise())
+                        # In case we had to make a bigger image, just copy the part we need.
+                        image += fft_image[bounds]
+                if not use_fft:
                     obj.drawImage(method='phot',
                                   offset=offset,
                                   rng=self._rng,
@@ -1255,5 +1278,19 @@ class ObjectFlags:
         """
         try:
             self.value |= self.flags[condition]
+        except KeyError:
+            raise ValueError("unknown bit flag: %s" % condition)
+
+    def unset_flag(self, condition):
+        """
+        Unset the bit associated with the specified condition.
+
+        Parameters
+        ----------
+        condition: str
+            A condition not in the known set will raise a ValueError.
+        """
+        try:
+            self.value &= ~self.flags[condition]
         except KeyError:
             raise ValueError("unknown bit flag: %s" % condition)
