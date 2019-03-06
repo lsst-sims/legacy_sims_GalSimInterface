@@ -950,7 +950,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                     try:
                         obj.drawImage(method='fft',
                                       offset=fft_offset,
-                                      image=fft_image
+                                      image=fft_image,
                                       gain=detector.photParams.gain)
                     except galsim.errors.GalSimFFTSizeError:
                         use_fft = False
