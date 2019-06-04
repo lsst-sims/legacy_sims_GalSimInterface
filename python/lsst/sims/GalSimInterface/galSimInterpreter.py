@@ -43,6 +43,7 @@ class GalSimInterpreter(object):
     This is the class which actually takes the objects contained in the GalSim
     InstanceCatalog and converts them into FITS images.
     """
+    _observatory = LsstObservatory()
 
     def __init__(self, obs_metadata=None, detectors=None,
                  bandpassDict=None, noiseWrapper=None,
@@ -88,7 +89,6 @@ class GalSimInterpreter(object):
         self.checkpoint_file = None
         self.drawn_objects = set()
         self.nobj_checkpoint = 1000
-        self._observatory = None
 
         self.centroid_base_name = None
         self.centroid_handles = {}  # This dict will contain the file handles for each
@@ -703,8 +703,6 @@ class GalSimInterpreter(object):
 
     @property
     def observatory(self):
-        if self._observatory is None:
-            self._observatory = LsstObservatory()
         return self._observatory
 
 
