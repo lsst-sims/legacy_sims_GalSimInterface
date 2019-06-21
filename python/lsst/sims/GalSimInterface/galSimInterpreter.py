@@ -96,6 +96,7 @@ class GalSimInterpreter(object):
         self.centroid_list = []  # This is a list of the centroid objects which
                                  # will be written to the file.
 
+
     def setPSF(self, PSF=None):
         """
         Set the PSF wrapper for this GalSimInterpreter
@@ -348,14 +349,14 @@ class GalSimInterpreter(object):
                     self.detectorImages[name] = self.blankImage(detector=detector)
                     if self.noiseWrapper is not None:
                         # Add sky background and noise to the image
-                        self.detectorImages[name] = \
-                            self.noiseWrapper.addNoiseAndBackground(self.detectorImages[name],
-                                                                    bandpass=self.bandpassDict[bandpassName],
-                                                                    m5=self.obs_metadata.m5[bandpassName],
-                                                                    FWHMeff=self.
-                                                                    obs_metadata.seeing[bandpassName],
-                                                                    photParams=detector.photParams,
-                                                                    detector=detector)
+                        # self.detectorImages[name] = \
+                        #     self.noiseWrapper.addNoiseAndBackground(self.detectorImages[name],
+                        #                                             bandpass=self.bandpassDict[bandpassName],
+                        #                                             m5=self.obs_metadata.m5[bandpassName],
+                        #                                             FWHMeff=self.
+                        #                                             obs_metadata.seeing[bandpassName],
+                        #                                             photParams=detector.photParams,
+                        #                                             detector=detector)
 
                         self.write_checkpoint(force=True, object_list=set())
 
@@ -711,6 +712,13 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
     This subclass of GalSimInterpreter applies the Silicon sensor
     model to the drawn objects.
     """
+
+    # I want one giant photon file. So this is shared by all instances of the
+    # class.
+    photon_file = open("photon_list.txt", 'w')
+    photon_file.write("sensor uid flux realized_flux num_photons_shot array_length "
+                      "min_photon max_photon std_photon object_class object_type\n")
+
     def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None,
                  noiseWrapper=None, epoch=None, seed=None, bf_strength=1):
         super(GalSimSiliconInterpreter, self)\
@@ -961,6 +969,14 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                         fft_image.addNoise(galsim.PoissonNoise())
                         # In case we had to make a bigger image, just copy the part we need.
                         image += fft_image[bounds]
+
+                    outfile = self.photon_file
+                    outfile.write(f'{detector.fileName} {gsObject.uniqueId:10} '
+                                  f'{flux:15.2f} {realized_flux:15.2f} 0 0 '
+                                  f'0 0 0  '
+                                  f'{object_flags.value:3} {gsObject.galSimType}'
+                                  f'\n')
+
                 if not use_fft:
                     obj.drawImage(method='phot',
                                   offset=offset,
@@ -972,6 +988,30 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                                   add_to_image=True,
                                   poisson_flux=False,
                                   gain=detector.photParams.gain)
+
+                    # Make photon list
+                    from galsim.bounds import BoundsI
+                    dummy_image = galsim.ImageF(BoundsI(xmin=-49, ymin=-49,
+                                                        xmax=49, ymax=49), scale=1.0)
+                    local_wcs = image.wcs.local(offset)
+                    dummy_profile = local_wcs.profileToImage(obj)
+
+                    nphotons, photons = dummy_profile.drawPhot(image = dummy_image,
+                                                               gain = 1.0,
+                                                               rng = self._rng,
+                                                               poisson_flux = False,
+                                                               sensor = None,
+                                                               surface_ops = surface_ops,
+                                                               maxN = None,
+                                                               local_wcs = local_wcs)
+
+                    outfile = self.photon_file
+                    outfile.write(f'{detector.fileName} {gsObject.uniqueId:10} '
+                                  f'{flux:15.2f} {realized_flux:15.2f} {nphotons:15.2f} {len(photons):12d} '
+                                  f'{np.min(photons.flux):8.4f} {np.max(photons.flux):8.4f} {np.std(photons.flux):4.2f} '
+                                  f'{object_flags.value:3} {gsObject.galSimType}'
+                                  f'\n')
+                    print(photons.flux[:10])
 
                 # If we are writing centroid files,store the entry.
                 if self.centroid_base_name is not None:
