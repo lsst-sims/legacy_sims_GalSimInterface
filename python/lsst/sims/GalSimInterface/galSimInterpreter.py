@@ -318,8 +318,11 @@ class GalSimInterpreter(object):
                     self.centroid_list.append(centroid_tuple)
 
         # Because rendering FitsImage object types can take a long
-        # time, force a checkpoint after each object is drawn.
-        force_checkpoint = (gsObject.galSimType == 'FitsImage')
+        # time for bright objects (>1e4 photons takes longer than ~30s
+        # on cori-haswell), force a checkpoint after each object is
+        # drawn.
+        force_checkpoint = ((gsObject.galSimType == 'FitsImage') and
+                            realized_flux > 1e4)
         self.write_checkpoint(force=force_checkpoint)
         return outputString
 
@@ -984,8 +987,11 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                     self.centroid_list.append(centroid_tuple)
 
         # Because rendering FitsImage object types can take a long
-        # time, force a checkpoint after each object is drawn.
-        force_checkpoint = (gsObject.galSimType == 'FitsImage')
+        # time for bright objects (>1e4 photons takes longer than ~30s
+        # on cori-haswell), force a checkpoint after each object is
+        # drawn.
+        force_checkpoint = ((gsObject.galSimType == 'FitsImage') and
+                            realized_flux > 1e4)
         self.write_checkpoint(force=force_checkpoint)
         return outputString
 
