@@ -375,10 +375,13 @@ class GalSimInterpreter(object):
         @param [in] psf PSF to use for the convolution.  If None, then use self.PSF.
         """
         if psf is None:
-            if self.PSF is None:
-                raise RuntimeError("Cannot draw a point source in GalSim without a PSF")
             psf = self.PSF
+        return self._drawPointSource(gsObject, psf=psf)
 
+    def _drawPointSource(self, gsObject, psf=None):
+        if psf is None:
+            raise RuntimeError("Cannot draw a point source in GalSim "
+                               "without a PSF")
         return psf.applyPSF(xPupil=gsObject.xPupilArcsec, yPupil=gsObject.yPupilArcsec)
 
     def drawSersic(self, gsObject, psf=None):
@@ -393,7 +396,9 @@ class GalSimInterpreter(object):
 
         if psf is None:
             psf = self.PSF
+        return self._drawSersic(gsObject, psf=psf)
 
+    def _drawSersic(self, gsObject, psf=None):
         # create a Sersic profile
         centeredObj = galsim.Sersic(n=float(gsObject.sindex),
                                     half_light_radius=float(gsObject.halfLightRadiusArcsec))
@@ -426,6 +431,9 @@ class GalSimInterpreter(object):
         """
         if psf is None:
             psf = self.PSF
+        return self._drawRandomWalk(gsObject, psf=psf)
+
+    def _drawRandomWalk(self, gsObject, psf=None):
         # Seeds the random walk with the object id if available
         if gsObject.uniqueId is None:
             rng = None
@@ -463,7 +471,9 @@ class GalSimInterpreter(object):
         """
         if psf is None:
             psf = self.PSF
+        return self._drawFitsImage(gsObject, psf=psf)
 
+    def _drawFitsImage(self, gsObject, psf=None):
         # Create the galsim.InterpolatedImage profile from the FITS image.
         centeredObj = galsim.InterpolatedImage(gsObject.fits_image_file,
                                                scale=gsObject.pixel_scale)
@@ -492,18 +502,22 @@ class GalSimInterpreter(object):
         Note: parameters that obviously only apply to Sersic profiles will be ignored in the case
         of point sources
         """
+        if psf is None:
+            psf = self.PSF
+        return self._createCenteredObject(gsObject, psf=psf)
 
+    def _createCenteredObject(self, gsObject, psf=None):
         if gsObject.galSimType == 'sersic':
-            centeredObj = self.drawSersic(gsObject, psf=psf)
+            centeredObj = self._drawSersic(gsObject, psf=psf)
 
         elif gsObject.galSimType == 'pointSource':
-            centeredObj = self.drawPointSource(gsObject, psf=psf)
+            centeredObj = self._drawPointSource(gsObject, psf=psf)
 
         elif gsObject.galSimType == 'RandomWalk':
-            centeredObj = self.drawRandomWalk(gsObject, psf=psf)
+            centeredObj = self._drawRandomWalk(gsObject, psf=psf)
 
         elif gsObject.galSimType == 'FitsImage':
-            centeredObj = self.drawFitsImage(gsObject, psf=psf)
+            centeredObj = self._drawFitsImage(gsObject, psf=psf)
 
         else:
             raise RuntimeError("Apologies: the GalSimInterpreter does not yet have a method to draw " +
@@ -1147,14 +1161,14 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
             # pixel on average, try to be careful about not truncating the surface brightness
             # at the edge of the box.
             if flux > 10 * image_size**2:
-                image_size = getGoodPhotImageSize(obj, keep_sb_level,
-                                                  pixel_scale=pixel_scale)
+                image_size = self._getGoodPhotImageSize(gsObject, flux, keep_sb_level,
+                                                        pixel_scale=pixel_scale)
 
             # If the above size comes out really huge, scale back to what you get for
             # a somewhat brighter surface brightness limit.
             if image_size > Nmax:
-                image_size = getGoodPhotImageSize(obj, large_object_sb_level,
-                                                  pixel_scale=pixel_scale)
+                image_size = self._getGoodPhotImageSize(gsObject, flux, large_object_sb_level,
+                                                        pixel_scale=pixel_scale)
                 image_size = max(image_size, Nmax)
 
         # Create the bounds object centered on the desired location.
@@ -1164,6 +1178,18 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         ymax = int(math.ceil(image_pos.y) + image_size/2)
 
         return galsim.BoundsI(xmin, xmax, ymin, ymax)
+
+    def _getGoodPhotImageSize(self, gsObject, flux, keep_sb_level,
+                              pixel_scale=0.2):
+        point_source = self.drawPointSource(gsObject, self._double_gaussian_psf)
+        point_source = point_source.withFlux(flux)
+        ps_size = getGoodPhotImageSize(point_source, keep_sb_level,
+                                       pixel_scale=pixel_scale)
+        unconvolved_obj = self._createCenteredObject(gsObject, psf=None)
+        unconvolved_obj = unconvolved_obj.withFlux(flux)
+        obj_size = getGoodPhotImageSize(unconvolved_obj, keep_sb_level,
+                                        pixel_scale=pixel_scale)
+        return int(np.sqrt(ps_size**2 + obj_size**2))
 
 
 def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
