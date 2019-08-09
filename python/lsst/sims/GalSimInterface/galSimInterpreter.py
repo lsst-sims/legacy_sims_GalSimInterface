@@ -773,6 +773,14 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                                        treering_func=det.tree_rings.func,
                                        transpose=True)
 
+        if os.environ.get('SIMULATE_LOW_NOISE_OBJECTS', False) == 'True':
+            self._low_noise_objects = True
+        else:
+            self._low_noise_objects = False
+
+    def _get_realized_fluxes(self, gsObject, fluxes):
+        return [galsim.PoissonDeviate(self._rng, mean=f)() for f in fluxes]
+
     def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0, fft_sb_thresh=None):
         """
         Draw an astronomical object on all of the relevant FITS files.
@@ -814,7 +822,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         # corresponding Poisson distribution) for each band and return
         # right away if all values are zero in order to save compute.
         fluxes = [gsObject.flux(bandpassName) for bandpassName in self.bandpassDict]
-        realized_fluxes = [galsim.PoissonDeviate(self._rng, mean=f)() for f in fluxes]
+        realized_fluxes = self._get_realized_fluxes(gsObject, fluxes)
         if all([f == 0 for f in realized_fluxes]):
             # All fluxes are 0, so no photons will be shot.
             object_flags.set_flag('skipped')
@@ -964,13 +972,19 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                     else:
                         # Some pixels can end up negative from FFT numerics.  Just set them to 0.
                         fft_image.array[fft_image.array < 0] = 0.
-                        fft_image.addNoise(galsim.PoissonNoise())
+                        if not self._low_noise_objects:
+                            fft_image.addNoise(galsim.PoissonNoise())
                         # In case we had to make a bigger image, just copy the part we need.
                         image += fft_image[bounds]
                 if not use_fft:
+                    if self._low_noise_objects:
+                        n_photons = obj.flux*10.
+                    else:
+                        n_photons = 0.
                     obj.drawImage(method='phot',
                                   offset=offset,
                                   rng=self._rng,
+                                  n_photons=n_photons,
                                   maxN=int(1e6),
                                   image=image,
                                   sensor=sensor,
