@@ -28,11 +28,12 @@ __all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpreter
 
 def make_gs_interpreter(obs_md, detectors, bandpassDict, noiseWrapper,
                         epoch=None, seed=None, apply_sensor_model=False,
-                        bf_strength=1):
+                        bf_strength=1, input_centroid_file=None):
     if apply_sensor_model:
         return GalSimSiliconInterpreter(obs_metadata=obs_md, detectors=detectors,
-                                       bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
-                                       epoch=epoch, seed=seed, bf_strength=bf_strength)
+                                        bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
+                                        epoch=epoch, seed=seed, bf_strength=bf_strength,
+                                        input_centroid_file=input_centroid_file)
 
     return GalSimInterpreter(obs_metadata=obs_md, detectors=detectors,
                              bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
@@ -718,7 +719,8 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
     model to the drawn objects.
     """
     def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None,
-                 noiseWrapper=None, epoch=None, seed=None, bf_strength=1):
+                 noiseWrapper=None, epoch=None, seed=None, bf_strength=1,
+                 input_centroid_file=None):
         super(GalSimSiliconInterpreter, self)\
             .__init__(obs_metadata=obs_metadata, detectors=detectors,
                       bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
@@ -773,13 +775,30 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                                        treering_func=det.tree_rings.func,
                                        transpose=True)
 
-        if os.environ.get('SIMULATE_LOW_NOISE_OBJECTS', False) == 'True':
-            self._low_noise_objects = True
-        else:
-            self._low_noise_objects = False
+        self._read_realized_fluxes(input_centroid_file)
+
+    def _read_realized_fluxes(self, centroid_file):
+        if centroid_file is None:
+            self._realized_fluxes = None
+            return
+        self._realized_fluxes = dict()
+        names = 'SourceID Flux Realized_flux xPix yPix flags GalSimType'.split()
+        records = np.recfromtxt(centroid_file, skip_header=1, dtype=None,
+                                names=names)
+        for rec in records:
+            try:
+                obj_id = rec['SourceID'].decode('utf-8')
+            except AttributeError:
+                obj_id = str(rec['SourceID'])
+            self._realized_fluxes[obj_id] = rec['Realized_flux']
 
     def _get_realized_fluxes(self, gsObject, fluxes):
-        return [galsim.PoissonDeviate(self._rng, mean=f)() for f in fluxes]
+        if (self._realized_fluxes is None or
+            gsObject.uniqueId not in self._realized_fluxes):
+            return [galsim.PoissonDeviate(self._rng, mean=f)() for f in fluxes]
+        if len(fluxes) > 1:
+            raise RuntimeError('Cannot use realized fluxes from a centroid file.')
+        return [self._realized_fluxes[gsObject.uniqueId]]
 
     def drawObject(self, gsObject, max_flux_simple=0, sensor_limit=0, fft_sb_thresh=None):
         """
@@ -972,12 +991,12 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                     else:
                         # Some pixels can end up negative from FFT numerics.  Just set them to 0.
                         fft_image.array[fft_image.array < 0] = 0.
-                        if not self._low_noise_objects:
+                        if self._realized_fluxes is None:
                             fft_image.addNoise(galsim.PoissonNoise())
                         # In case we had to make a bigger image, just copy the part we need.
                         image += fft_image[bounds]
                 if not use_fft:
-                    if self._low_noise_objects:
+                    if self._realized_fluxes is not None:
                         n_photons = obj.flux*10.
                     else:
                         n_photons = 0.
