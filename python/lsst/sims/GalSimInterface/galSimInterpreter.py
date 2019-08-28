@@ -964,7 +964,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                     else:
                         # Some pixels can end up negative from FFT numerics.  Just set them to 0.
                         fft_image.array[fft_image.array < 0] = 0.
-                        fft_image.addNoise(galsim.PoissonNoise())
+                        fft_image.addNoise(galsim.PoissonNoise(rng=self._rng))
                         # In case we had to make a bigger image, just copy the part we need.
                         image += fft_image[bounds]
                 if not use_fft:
