@@ -1,6 +1,7 @@
 import numpy as np
 from lsst.afw.cameraGeom import TAN_PIXELS, FOCAL_PLANE
 import lsst.afw.geom as afwGeom
+import lsst.geom as LsstGeom
 import lsst.afw.image as afwImage
 import lsst.afw.image.utils as afwImageUtils
 import lsst.daf.base as dafBase
@@ -169,7 +170,7 @@ def tanSipWcsFromDetector(detector_name, camera_wrapper, obs_metadata, epoch,
 
     tanSipWcs = approximateWcs(tanWcs,
                                order=order,
-                               skyTolerance=skyToleranceArcSec*afwGeom.arcseconds,
+                               skyTolerance=skyToleranceArcSec*LsstGeom.arcseconds,
                                pixelTolerance=pixelTolerance,
                                detector_name=detector_name,
                                camera_wrapper=camera_wrapper,
