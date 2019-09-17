@@ -28,7 +28,7 @@ from lsst.sims.GalSimInterface import make_galsim_detector
 from lsst.sims.photUtils import (Sed, Bandpass, BandpassDict,
                                  PhotometricParameters)
 import lsst.afw.cameraGeom.testUtils as camTestUtils
-import lsst.afw.geom as afwGeom
+import lsst.geom as LsstGeom
 from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
 from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
 

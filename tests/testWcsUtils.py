@@ -2,7 +2,6 @@ import unittest
 import os
 import numpy as np
 import lsst.utils.tests
-import lsst.afw.geom as afwGeom
 import lsst.geom as LsstGeom
 from lsst.utils import getPackageDir
 from lsst.sims.utils.CodeUtilities import sims_clean_up
@@ -76,7 +75,7 @@ class WcsTest(unittest.TestCase):
                 xPixList.append(xx)
                 yPixList.append(yy)
 
-                pt = afwGeom.Point2D(xx, yy)
+                pt = LsstGeom.Point2D(xx, yy)
                 skyPt = tanWcs.pixelToSky(pt).getPosition(LsstGeom.degrees)
                 tanWcsRa.append(skyPt.getX())
                 tanWcsDec.append(skyPt.getY())

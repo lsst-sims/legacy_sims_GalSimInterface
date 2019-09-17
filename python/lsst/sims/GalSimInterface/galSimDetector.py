@@ -9,7 +9,7 @@ import astropy.coordinates
 from astropy._erfa import ErfaWarning
 import galsim
 import numpy as np
-import lsst.afw.geom as afwGeom
+import lsst.geom as LsstGeom
 from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
 from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
 from lsst.obs.lsstSim import LsstSimMapper
@@ -23,7 +23,7 @@ __all__ = ["GalSimDetector", "make_galsim_detector", "LsstObservatory"]
 
 class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
     """
-    This class uses methods from afw.geom and meas_astrom to
+    This class uses methods from lsst.geom and meas_astrom to
     fit a TAN-SIP WCS to an afw.cameraGeom.Detector and then wrap
     that WCS into something that GalSim can parse.
 
@@ -264,7 +264,7 @@ class GalSimDetector(object):
         self._yMinPix = bbox.getMinY()
         self._yMaxPix = bbox.getMaxY()
 
-        self._bbox = afwGeom.Box2D(bbox)
+        self._bbox = LsstGeom.Box2D(bbox)
 
         centerPupil = self._cameraWrapper.getCenterPupil(self._name)
         self._xCenterArcsec = arcsecFromRadians(centerPupil.getX())
@@ -374,7 +374,7 @@ class GalSimDetector(object):
         """
 
         xPix, yPix = self.pixelCoordinatesFromRaDec(ra, dec)
-        points = [afwGeom.Point2D(xx, yy) for xx, yy in zip(xPix, yPix)]
+        points = [LsstGeom.Point2D(xx, yy) for xx, yy in zip(xPix, yPix)]
         answer = [self._bbox.contains(pp) for pp in points]
         return answer
 
@@ -392,7 +392,7 @@ class GalSimDetector(object):
         the corresponding RA, Dec pair falls on this detector
         """
         xPix, yPix = self.pixelCoordinatesFromPupilCoordinates(xPupil, yPupil)
-        points = [afwGeom.Point2D(xx, yy) for xx, yy in zip(xPix, yPix)]
+        points = [LsstGeom.Point2D(xx, yy) for xx, yy in zip(xPix, yPix)]
         answer = [self._bbox.contains(pp) for pp in points]
         return answer
 

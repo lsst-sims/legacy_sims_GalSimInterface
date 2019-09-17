@@ -58,7 +58,7 @@ need:
 import numpy as np
 from lsst.afw.cameraGeom import FOCAL_PLANE, PIXELS, TAN_PIXELS
 from lsst.afw.cameraGeom import FIELD_ANGLE
-import lsst.afw.geom as afwGeom
+import lsst.geom as LsstGeom
 import lsst.sims.coordUtils as coordUtils
 import lsst.sims.utils as simsUtils
 
@@ -113,7 +113,7 @@ class GalSimCameraWrapper(object):
     def getCenterPupil(self, detector_name):
         """
         Return the pupil coordinates of the center of the named detector
-        as an afwGeom.Point2D
+        as an LsstGeom.Point2D
         """
         if not hasattr(self, '_center_pupil_cache'):
             self._center_pupil_cache = {}
@@ -129,7 +129,7 @@ class GalSimCameraWrapper(object):
     def getCornerPupilList(self, detector_name):
         """
         Return a list of the pupil coordinates of the corners of the named
-        detector as a list of afwGeom.Point2D objects
+        detector as a list of LsstGeom.Point2D objects
         """
         if not hasattr(self, '_corner_pupil_cache'):
             self._corner_pupil_cache = {}

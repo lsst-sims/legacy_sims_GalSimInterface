@@ -30,7 +30,6 @@ from builtins import range
 import numpy as np
 import lsst.afw.image as afwImage
 import lsst.afw.table as afwTable
-import lsst.afw.geom as afwGeom
 import lsst.geom as LsstGeom
 from lsst.meas.base import SingleFrameMeasurementTask
 from lsst.meas.astrom.sip import makeCreateWcsWithSip
@@ -40,7 +39,7 @@ __all__ = ["approximateWcs"]
 
 def approximateWcs(wcs, camera_wrapper=None, detector_name=None, obs_metadata=None,
                    order=3, nx=20, ny=20, iterations=3,
-                   skyTolerance=0.001*afwGeom.arcseconds, pixelTolerance=0.02):
+                   skyTolerance=0.001*LsstGeom.arcseconds, pixelTolerance=0.02):
     """Approximate an existing WCS as a TAN-SIP WCS
 
     The fit is performed by evaluating the WCS at a uniform grid of points within a bounding box.
@@ -81,11 +80,11 @@ def approximateWcs(wcs, camera_wrapper=None, detector_name=None, obs_metadata=No
         matchList = []
 
     bbox = camera_wrapper.getBBox(detector_name)
-    bboxd = afwGeom.Box2D(bbox)
+    bboxd = LsstGeom.Box2D(bbox)
 
     for x in np.linspace(bboxd.getMinX(), bboxd.getMaxX(), nx):
         for y in np.linspace(bboxd.getMinY(), bboxd.getMaxY(), ny):
-            pixelPos = afwGeom.Point2D(x, y)
+            pixelPos = LsstGeom.Point2D(x, y)
 
             ra, dec = camera_wrapper.raDecFromPixelCoords(np.array([x]), np.array([y]),
                                                           detector_name,
@@ -93,7 +92,7 @@ def approximateWcs(wcs, camera_wrapper=None, detector_name=None, obs_metadata=No
                                                           epoch=2000.0,
                                                           includeDistortion=True)
 
-            skyCoord = afwGeom.SpherePoint(ra[0], dec[0], LsstGeom.degrees)
+            skyCoord = LsstGeom.SpherePoint(ra[0], dec[0], LsstGeom.degrees)
 
             refObj = refCat.addNew()
             refObj.set(refCoordKey, skyCoord)

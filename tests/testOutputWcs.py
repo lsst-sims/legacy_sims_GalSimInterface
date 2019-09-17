@@ -7,7 +7,6 @@ import shutil
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
-import lsst.afw.geom as afwGeom
 import lsst.geom as LsstGeom
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
@@ -132,7 +131,7 @@ class GalSimOutputWcsTest(unittest.TestCase):
                     xxTestList.append(xx)
                     yyTestList.append(yy)
 
-                    pt = afwGeom.Point2D(xx, yy)
+                    pt = LsstGeom.Point2D(xx, yy)
                     skyPt = wcs.pixelToSky(pt).getPosition(LsstGeom.degrees)
                     raImage.append(skyPt.getX())
                     decImage.append(skyPt.getY())
