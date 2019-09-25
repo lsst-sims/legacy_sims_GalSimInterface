@@ -1188,11 +1188,12 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         unconvolved_obj = self._createCenteredObject(gsObject, psf=None)
         unconvolved_obj = unconvolved_obj.withFlux(flux)
         obj_size = getGoodPhotImageSize(unconvolved_obj, keep_sb_level,
-                                        pixel_scale=pixel_scale)
+                                        pixel_scale=pixel_scale,
+                                        gs_type=gsObject.galSimType)
         return int(np.sqrt(ps_size**2 + obj_size**2))
 
 
-def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
+def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2, gs_type=None):
     """
     Get a postage stamp size (appropriate for photon-shooting) given a
     minimum surface brightness in photons/pixel out to which to
@@ -1229,18 +1230,10 @@ def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
     N = obj.getGoodImageSize(pixel_scale)
     #print('N = ',N)
 
-    try:
+    if gs_type is not None and gs_type.lower() == 'randomwalk':
         # If the galaxy is a RandomWalk, extract the underlying profile for this calculation
         # rather than using the knotty version, which will pose problems for the xValue function.
-        gal = obj.original.obj_list[0]
-        gal = galsim.Transformation(gal.original._profile,
-                gal.jac, gal.offset, gal.flux_ratio, gal.gsparams)
-        obj = galsim.Convolve(gal, *obj.original.obj_list[1:]) * obj.flux_ratio
-    except Exception:
-        # If not a RandomWalk, then `._profile` will raise an AttributeError.
-        # Catch any (non-Base) Exception though in case there are other possibilities
-        # I didn't anticipate, where we should just leave the obj alone.
-        pass
+        obj = galsim.Transformation(obj._profile, gsparams=obj.gsparams)
 
     # This can be too small for bright stars, so increase it in steps until the edges are
     # all below the requested sb level.
