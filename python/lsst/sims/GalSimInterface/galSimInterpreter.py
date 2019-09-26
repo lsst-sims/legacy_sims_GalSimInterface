@@ -441,9 +441,9 @@ class GalSimInterpreter(object):
             rng = galsim.BaseDeviate(int(gsObject.uniqueId))
 
         # Create the RandomWalk profile
-        centeredObj = galsim.RandomWalk(npoints=int(gsObject.npoints),
-                                        half_light_radius=float(gsObject.halfLightRadiusArcsec),
-                                        rng=rng)
+        centeredObj = galsim.RandomKnots(npoints=int(gsObject.npoints),
+                                         half_light_radius=float(gsObject.halfLightRadiusArcsec),
+                                         rng=rng)
 
         # Apply intrinsic ellipticity to the profile
         centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians,
@@ -1229,18 +1229,10 @@ def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
     N = obj.getGoodImageSize(pixel_scale)
     #print('N = ',N)
 
-    try:
+    if isinstance(obj, galsim.RandomKnots):
         # If the galaxy is a RandomWalk, extract the underlying profile for this calculation
         # rather than using the knotty version, which will pose problems for the xValue function.
-        gal = obj.original.obj_list[0]
-        gal = galsim.Transformation(gal.original._profile,
-                gal.jac, gal.offset, gal.flux_ratio, gal.gsparams)
-        obj = galsim.Convolve(gal, *obj.original.obj_list[1:]) * obj.flux_ratio
-    except Exception:
-        # If not a RandomWalk, then `._profile` will raise an AttributeError.
-        # Catch any (non-Base) Exception though in case there are other possibilities
-        # I didn't anticipate, where we should just leave the obj alone.
-        pass
+        obj = obj._profile
 
     # This can be too small for bright stars, so increase it in steps until the edges are
     # all below the requested sb level.
