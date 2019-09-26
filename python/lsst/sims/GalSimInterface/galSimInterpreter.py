@@ -441,9 +441,9 @@ class GalSimInterpreter(object):
             rng = galsim.BaseDeviate(int(gsObject.uniqueId))
 
         # Create the RandomWalk profile
-        centeredObj = galsim.RandomWalk(npoints=int(gsObject.npoints),
-                                        half_light_radius=float(gsObject.halfLightRadiusArcsec),
-                                        rng=rng)
+        centeredObj = galsim.RandomKnots(npoints=int(gsObject.npoints),
+                                         half_light_radius=float(gsObject.halfLightRadiusArcsec),
+                                         rng=rng)
 
         # Apply intrinsic ellipticity to the profile
         centeredObj = centeredObj.shear(q=gsObject.minorAxisRadians/gsObject.majorAxisRadians,
@@ -1188,12 +1188,11 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         unconvolved_obj = self._createCenteredObject(gsObject, psf=None)
         unconvolved_obj = unconvolved_obj.withFlux(flux)
         obj_size = getGoodPhotImageSize(unconvolved_obj, keep_sb_level,
-                                        pixel_scale=pixel_scale,
-                                        gs_type=gsObject.galSimType)
+                                        pixel_scale=pixel_scale)
         return int(np.sqrt(ps_size**2 + obj_size**2))
 
 
-def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2, gs_type=None):
+def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2):
     """
     Get a postage stamp size (appropriate for photon-shooting) given a
     minimum surface brightness in photons/pixel out to which to
@@ -1230,10 +1229,10 @@ def getGoodPhotImageSize(obj, keep_sb_level, pixel_scale=0.2, gs_type=None):
     N = obj.getGoodImageSize(pixel_scale)
     #print('N = ',N)
 
-    if gs_type is not None and gs_type.lower() == 'randomwalk':
+    if isinstance(obj, galsim.RandomKnots):
         # If the galaxy is a RandomWalk, extract the underlying profile for this calculation
         # rather than using the knotty version, which will pose problems for the xValue function.
-        obj = galsim.Transformation(obj._profile, gsparams=obj.gsparams)
+        obj = obj._profile
 
     # This can be too small for bright stars, so increase it in steps until the edges are
     # all below the requested sb level.
