@@ -1059,7 +1059,7 @@ class CheckPointingTestCase(unittest.TestCase):
 
         # Set the image data by hand.
         key = "R00_S00_r.fits"
-        detname = "R:0,0 S:0,0"
+        detname = "R00_S00"
         detector = make_galsim_detector(camera_wrapper, detname,
                                         phot_params, obs_md)
         image = gs_interpreter.blankImage(detector=detector)
@@ -1141,7 +1141,7 @@ class GetStampBoundsTestCase(unittest.TestCase):
         obs_md.OpsimMetaData['altitude'] = altitude
         obs_md.OpsimMetaData['rawSeeing'] = seeing
         camera_wrapper = LSSTCameraWrapper()
-        detector = make_galsim_detector(camera_wrapper, 'R:2,2 S:1,1',
+        detector = make_galsim_detector(camera_wrapper, 'R22_S11',
                                         PhotometricParameters(), obs_md)
         gs_interpreter = make_gs_interpreter(obs_md, [detector],
                                              BandpassDict.loadTotalBandpassesFromFiles(),
