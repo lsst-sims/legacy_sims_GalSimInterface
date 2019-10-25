@@ -34,7 +34,6 @@ from lsst.sims.GalSimInterface.galSimInterpreter import getGoodPhotImageSize
 from lsst.sims.catUtils.utils import (calcADUwrapper, testGalaxyBulgeDBObj, testGalaxyDiskDBObj,
                                       testGalaxyAgnDBObj, testStarsDBObj)
 import lsst.afw.image as afwImage
-from lsst.sims.coordUtils import clean_up_lsst_camera
 
 # Tell astropy not to download this file again, even if it's out of date.
 from astropy.utils import iers
@@ -1121,7 +1120,6 @@ class GetStampBoundsTestCase(unittest.TestCase):
         self.db_name = os.path.join(self.scratch_dir, 'galsim_test_db')
 
     def tearDown(self):
-        clean_up_lsst_camera()
         if os.path.exists(self.db_name):
             os.remove(self.db_name)
         if os.path.exists(self.scratch_dir):

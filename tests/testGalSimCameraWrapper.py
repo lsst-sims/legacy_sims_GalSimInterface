@@ -27,7 +27,6 @@ from lsst.sims.coordUtils import pixelCoordsFromPupilCoordsLSST
 from lsst.sims.coordUtils import raDecFromPixelCoordsLSST
 from lsst.sims.coordUtils import lsst_camera
 
-from lsst.sims.coordUtils import clean_up_lsst_camera
 
 def setup_module(module):
     lsst.utils.tests.init()
@@ -36,10 +35,6 @@ def setup_module(module):
 class Camera_Wrapper_Test_Class(unittest.TestCase):
 
     longMessage = True
-
-    @classmethod
-    def tearDownClass(cls):
-        clean_up_lsst_camera()
 
     def test_generic_camera_wrapper(self):
         """
