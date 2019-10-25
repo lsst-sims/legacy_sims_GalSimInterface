@@ -2,6 +2,8 @@ import unittest
 import numpy as np
 import lsst.utils.tests
 
+import lsst.obs.lsst.phosim as obs_lsst_phosim
+
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.utils import raDecFromAltAz
 from lsst.sims.coordUtils import pixelCoordsFromRaDec
@@ -13,19 +15,10 @@ from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
 
 from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.GalSimInterface import LSSTCameraWrapper
-from lsst.sims.coordUtils import lsst_camera
 
 import lsst.afw.cameraGeom.testUtils as camTestUtils
 from lsst.afw.cameraGeom import FOCAL_PLANE
 from lsst.afw.cameraGeom import TAN_PIXELS, FIELD_ANGLE, PIXELS
-
-from lsst.sims.coordUtils import chipNameFromPupilCoordsLSST
-from lsst.sims.coordUtils import focalPlaneCoordsFromPupilCoordsLSST
-from lsst.sims.coordUtils import pupilCoordsFromFocalPlaneCoordsLSST
-from lsst.sims.coordUtils import pupilCoordsFromPixelCoordsLSST
-from lsst.sims.coordUtils import pixelCoordsFromPupilCoordsLSST
-from lsst.sims.coordUtils import raDecFromPixelCoordsLSST
-from lsst.sims.coordUtils import lsst_camera
 
 
 def setup_module(module):
@@ -204,7 +197,7 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         Camera +y = DM +x
         Camera +x = DM -y
         """
-        camera = lsst_camera()
+        camera = obs_lsst_phosim.PhosimMapper().camera
         camera_wrapper = LSSTCameraWrapper()
 
         obs_mjd = ObservationMetaData(mjd=60000.0)
@@ -285,8 +278,8 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             # is as expected
             x_pup = rng.random_sample(10)*0.005-0.01
             y_pup = rng.random_sample(10)*0.005-0.01
-            x_pix, y_pix = pixelCoordsFromPupilCoordsLSST(x_pup, y_pup, chipName=name,
-                                                          band=obs.bandpass)
+            x_pix, y_pix = pixelCoordsFromPupilCoords(x_pup, y_pup, chipName=name,
+                                                      camera=camera)
 
             (x_pix_wrapper,
              y_pix_wrapper) = camera_wrapper.pixelCoordsFromPupilCoords(x_pup, y_pup,
@@ -319,8 +312,8 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
             x_pix = bbox.getMinX() + rng.random_sample(10)*(bbox.getMaxX()-bbox.getMinX())
             y_pix = bbox.getMinY() + rng.random_sample(10)*(bbox.getMaxY()-bbox.getMinY())
 
-            ra, dec = raDecFromPixelCoordsLSST(x_pix, y_pix, name, obs_metadata=obs,
-                                               band=obs.bandpass)
+            ra, dec = raDecFromPixelCoords(x_pix, y_pix, name, obs_metadata=obs,
+                                           camera=camera)
 
             (ra_wrapper,
              dec_wrapper) = camera_wrapper.raDecFromPixelCoords(2.0*center_pix.getY()-y_pix,
@@ -365,14 +358,13 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
 
         del camera
         del camera_wrapper
-        del lsst_camera._lsst_camera
 
     def test_dmPixFromCameraPix(self):
         """
         Test that the method to return DM pixel coordinates from
         Camera Team pixel coordinates works.
         """
-        camera = lsst_camera()
+        camera = obs_lsst_phosim.PhosimMapper().camera
         camera_wrapper = LSSTCameraWrapper()
         obs = ObservationMetaData(bandpassName='u')
 
@@ -386,10 +378,10 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         chip_name_list = rng.choice(name_list, size=npts)
 
         (xPup_list,
-         yPup_list) = pupilCoordsFromPixelCoordsLSST(dm_x_pix_list,
-                                                     dm_y_pix_list,
-                                                     chipName=chip_name_list,
-                                                     band=obs.bandpass)
+         yPup_list) = pupilCoordsFromPixelCoords(dm_x_pix_list,
+                                                 dm_y_pix_list,
+                                                 chipName=chip_name_list,
+                                                 camera=camera)
 
         (cam_x_pix_list,
          cam_y_pix_list) = camera_wrapper.pixelCoordsFromPupilCoords(xPup_list,
@@ -420,10 +412,10 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         chip_name = chip_name_list[10]
 
         (xPup_list,
-         yPup_list) = pupilCoordsFromPixelCoordsLSST(dm_x_pix_list,
-                                                     dm_y_pix_list,
-                                                     chipName=chip_name,
-                                                     band=obs.bandpass)
+         yPup_list) = pupilCoordsFromPixelCoords(dm_x_pix_list,
+                                                 dm_y_pix_list,
+                                                 chipName=chip_name,
+                                                 camera=camera)
 
         (cam_x_pix_list,
          cam_y_pix_list) = camera_wrapper.pixelCoordsFromPupilCoords(xPup_list,
@@ -443,7 +435,6 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
 
         del camera
         del camera_wrapper
-        del lsst_camera._lsst_camera
 
     def test_camPixFromDMpix(self):
         """
@@ -454,12 +445,11 @@ class Camera_Wrapper_Test_Class(unittest.TestCase):
         npts = 200
         cam_x_in = rng.random_sample(npts)*4000.0
         cam_y_in = rng.random_sample(npts)*4000.0
-        dm_x, dm_y = camera_wrapper.dmPixFromCameraPix(cam_x_in, cam_y_in, 'R:1,1 S:2,2')
-        cam_x, cam_y = camera_wrapper.cameraPixFromDMPix(dm_x, dm_y, 'R:1,1 S:2,2')
+        dm_x, dm_y = camera_wrapper.dmPixFromCameraPix(cam_x_in, cam_y_in, 'R11_S22')
+        cam_x, cam_y = camera_wrapper.cameraPixFromDMPix(dm_x, dm_y, 'R11_S22')
         np.testing.assert_array_almost_equal(cam_x_in, cam_x, decimal=10)
         np.testing.assert_array_almost_equal(cam_y_in, cam_y, decimal=10)
         del camera_wrapper
-        del lsst_camera._lsst_camera
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
