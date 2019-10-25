@@ -10,9 +10,9 @@ from astropy._erfa import ErfaWarning
 import galsim
 import numpy as np
 import lsst.geom as LsstGeom
+import lsst.obs.lsst.translators.lsst
 from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
 from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
-from lsst.obs.lsstSim import LsstSimMapper
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.GalSimInterface.wcsUtils import tanSipWcsFromDetector
 from lsst.sims.GalSimInterface import GalSimCameraWrapper
@@ -116,10 +116,10 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.fitsHeader.set('SIMULATE', True)
         self.fitsHeader.set('ORIGIN', 'IMSIM')
         observatory = LsstObservatory()
-        self.fitsHeader.set('OBS-LONG', observatory.getLongitude().asDegrees())
-        self.fitsHeader.set('OBS-LAT', observatory.getLongitude().asDegrees())
-        self.fitsHeader.set('OBS-ELEV', observatory.getElevation())
-        obs_location = observatory.getLocation()
+        self.fitsHeader.set('OBS-LONG', observatory.lon.degree)
+        self.fitsHeader.set('OBS-LAT', observatory.lat.degree)
+        self.fitsHeader.set('OBS-ELEV', observatory.height.value)
+        obs_location = observatory.to_geocentric()
         self.fitsHeader.set('OBSGEO-X', obs_location.geocentric[0].value)
         self.fitsHeader.set('OBSGEO-Y', obs_location.geocentric[1].value)
         self.fitsHeader.set('OBSGEO-Z', obs_location.geocentric[2].value)
@@ -688,7 +688,7 @@ class LsstObservatory:
     observatory location information.
     """
     def __init__(self):
-        self.observatory = LsstSimMapper().MakeRawVisitInfoClass().observatory
+        self.observatory = lsst.obs.lsst.translators.lsst.LSST_LOCATION
 
     def getLocation(self):
         """
@@ -698,10 +698,7 @@ class LsstObservatory:
         -------
         astropy.coordinates.earth.EarthLocation
         """
-        return astropy.coordinates.EarthLocation.from_geodetic(
-            self.observatory.getLongitude().asDegrees(),
-            self.observatory.getLatitude().asDegrees(),
-            self.observatory.getElevation())
+        return self.observatory
 
     def __getattr__(self, attr):
         if hasattr(self.observatory, attr):
