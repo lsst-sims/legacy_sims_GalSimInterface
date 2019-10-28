@@ -126,10 +126,6 @@ class GalSimPlacementTest(unittest.TestCase):
                 ra_obj = ra_c + rng.random_sample()*0.2 - 0.1
                 dec_obj = dec_c + rng.random_sample()*0.2 - 0.1
 
-                dmx_wrong, dmy_wrong = pixelCoordsFromRaDec(ra_obj, dec_obj,
-                                                            chipName=detector.getName(),
-                                                            obs_metadata=obs,
-                                                            camera=self.camera)
 
                 dmx_pix, dmy_pix = pixelCoordsFromRaDec(ra_obj, dec_obj,
                                                         chipName=detector.getName(),
@@ -139,8 +135,6 @@ class GalSimPlacementTest(unittest.TestCase):
                 x_pix, y_pix = pixel_transformer.cameraPixFromDMPix(dmx_pix, dmy_pix,
                                                                     detector.getName())
 
-                x_pix_wrong, y_pix_wrong = pixel_transformer.cameraPixFromDMPix(dmx_wrong, dmy_wrong,
-                                                                                detector.getName())
 
                 d_ra = 3600.0*(ra_obj - obs.pointingRA)  # in arcseconds
                 d_dec = 3600.0*(dec_obj - obs.pointingDec)
@@ -166,11 +160,6 @@ class GalSimPlacementTest(unittest.TestCase):
                 x_centroid = sum([ii*im[:,ii].sum() for ii in range(im.shape[1])])/tot_flux
                 dd = np.sqrt((x_pix-x_centroid)**2 + (y_pix-y_centroid)**2)
                 self.assertLess(dd, 0.5*fwhm)
-
-                dd_wrong = np.sqrt((x_pix_wrong-x_centroid)**2 +
-                                   (y_pix_wrong-y_centroid)**2)
-
-                self.assertLess(dd, dd_wrong)
 
                 if os.path.exists(dbFileName):
                     os.unlink(dbFileName)
