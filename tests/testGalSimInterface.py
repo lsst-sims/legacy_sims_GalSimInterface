@@ -1059,7 +1059,7 @@ class CheckPointingTestCase(unittest.TestCase):
 
         # Set the image data by hand.
         key = "R00_S00_r.fits"
-        detname = "R00_S00"
+        detname = "R:0,0 S:0,0"
         detector = make_galsim_detector(camera_wrapper, detname,
                                         phot_params, obs_md)
         image = gs_interpreter.blankImage(detector=detector)
