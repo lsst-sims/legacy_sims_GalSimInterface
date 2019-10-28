@@ -119,10 +119,9 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.fitsHeader.set('OBS-LONG', observatory.lon.degree)
         self.fitsHeader.set('OBS-LAT', observatory.lat.degree)
         self.fitsHeader.set('OBS-ELEV', observatory.height.value)
-        obs_location = observatory.to_geocentric()
-        self.fitsHeader.set('OBSGEO-X', obs_location.geocentric[0].value)
-        self.fitsHeader.set('OBSGEO-Y', obs_location.geocentric[1].value)
-        self.fitsHeader.set('OBSGEO-Z', obs_location.geocentric[2].value)
+        self.fitsHeader.set('OBSGEO-X', observatory.geocentric[0].value)
+        self.fitsHeader.set('OBSGEO-Y', observatory.geocentric[1].value)
+        self.fitsHeader.set('OBSGEO-Z', observatory.geocentric[2].value)
 
         self.crpix1 = self.fitsHeader.getScalar("CRPIX1")
         self.crpix2 = self.fitsHeader.getScalar("CRPIX2")
@@ -689,6 +688,7 @@ class LsstObservatory:
     """
     def __init__(self):
         self.observatory = lsst.obs.lsst.translators.lsst.LSST_LOCATION
+        self.geocentric = self.observatory.to_geocentric()
 
     def getLocation(self):
         """
