@@ -28,7 +28,7 @@ class WcsTest(unittest.TestCase):
     def setUpClass(cls):
 
         cls.camera_wrapper = LSSTCameraWrapper()
-        cls.detector = cls.camera_wrapper.camera['R:1,1 S:2,2']
+        cls.detector = cls.camera_wrapper.camera['R11_S22']
 
         cls.obs = ObservationMetaData(pointingRA=25.0, pointingDec=-10.0,
                                       boundType='circle', boundLength=1.0,
