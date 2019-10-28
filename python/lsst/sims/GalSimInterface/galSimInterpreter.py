@@ -770,7 +770,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         self.local_hour_angle \
             = self.getHourAngle(self.obs_metadata.mjd.TAI,
                                 self.obs_metadata.pointingRA)*galsim.degrees
-        self.obs_latitude = self.observatory.getLatitude().asDegrees()*galsim.degrees
+        self.obs_latitude = self.observatory.lat.degree*galsim.degrees
 
         # Make a trivial SED to use for faint things.
         blue_limit = np.min([bp.blue_limit for bp in self.gs_bandpass_dict.values()])
