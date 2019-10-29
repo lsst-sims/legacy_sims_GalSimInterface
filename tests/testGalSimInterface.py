@@ -36,9 +36,9 @@ from lsst.sims.catUtils.utils import (calcADUwrapper, testGalaxyBulgeDBObj, test
 import lsst.afw.image as afwImage
 from lsst.sims.coordUtils import clean_up_lsst_camera
 
-# Tell astropy not to download this file again, even if it's out of date.
+# Tell astropy not to download the IERS tables
 from astropy.utils import iers
-iers.conf.auto_max_age = None
+iers.conf.auto_download=False
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
