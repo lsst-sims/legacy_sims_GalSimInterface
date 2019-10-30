@@ -1137,6 +1137,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
             # Kolmogorov_and_Gaussian_PSF since it is faster to
             # evaluate than an AtmosphericPSF.
             folding_threshold = self.sky_bg_per_pixel/flux
+            folding_threshold = max(folding_threshold, 0.001)
             if folding_threshold >= self._ft_default:
                 gsparams = None
             else:
@@ -1146,7 +1147,10 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
                                               band=self._band,
                                               gsparams=gsparams)
             obj = self.drawPointSource(gsObject, psf=psf)
-            image_size = obj.getGoodImageSize(pixel_scale)
+            try:
+                image_size = obj.getGoodImageSize(pixel_scale)
+            except ValueError:
+                import ipdb; ipdb.set_trace()
         else:
             # For extended objects, recreate the object to draw, but
             # convolved with the faster DoubleGaussian PSF.
