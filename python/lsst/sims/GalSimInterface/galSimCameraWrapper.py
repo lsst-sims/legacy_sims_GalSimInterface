@@ -56,6 +56,7 @@ need:
 """
 
 import numpy as np
+import lsst.obs.lsst.phosim as obs_lsst_phosim
 from lsst.afw.cameraGeom import FOCAL_PLANE, PIXELS, TAN_PIXELS
 from lsst.afw.cameraGeom import FIELD_ANGLE
 import lsst.geom as LsstGeom
@@ -483,6 +484,11 @@ class GalSimCameraWrapper(object):
 class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
                         GalSimCameraWrapper):
 
+    def __init__(self):
+        self._camera = obs_lsst_phosim.PhosimMapper().camera
+
+
+
     def getTanPixelBounds(self, detector_name):
         """
         Return the min and max pixel values of a detector, assuming
@@ -544,10 +550,10 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
         are defined in the Camera team system, rather than the DM system.
         """
         (dm_x_pix,
-         dm_y_pix) = coordUtils.pixelCoordsFromPupilCoordsLSST(xPupil, yPupil,
-                                                               chipName=chipName,
-                                                               band=obs_metadata.bandpass,
-                                                               includeDistortion=includeDistortion)
+         dm_y_pix) = coordUtils.pixelCoordsFromPupilCoords(xPupil, yPupil,
+                                                           chipName=chipName,
+                                                           camera=self.camera,
+                                                           includeDistortion=includeDistortion)
 
         cam_y_pix = dm_x_pix
         if isinstance(chipName, list) or isinstance(chipName, np.ndarray):
@@ -609,9 +615,9 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
         else:
             cam_center_pix = self.getCenterPixel(chipName)
             dm_yPix = 2.0*cam_center_pix.getX()-xPix
-        return coordUtils.pupilCoordsFromPixelCoordsLSST(dm_xPix, dm_yPix, chipName,
-                                                         band=obs_metadata.bandpass,
-                                                         includeDistortion=includeDistortion)
+        return coordUtils.pupilCoordsFromPixelCoords(dm_xPix, dm_yPix, chipName,
+                                                     camera=self.camera,
+                                                     includeDistortion=includeDistortion)
 
     def _raDecFromPixelCoords(self, xPix, yPix, chipName, obs_metadata,
                               epoch=2000.0, includeDistortion=True):
@@ -666,11 +672,11 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
             cam_center_pix = self.getCenterPixel(chipName)
             dm_yPix = 2.0*cam_center_pix.getX() - xPix
 
-        return coordUtils._raDecFromPixelCoordsLSST(dm_xPix, dm_yPix, chipName,
-                                                    obs_metadata=obs_metadata,
-                                                    band=obs_metadata.bandpass,
-                                                    epoch=epoch,
-                                                    includeDistortion=includeDistortion)
+        return coordUtils._raDecFromPixelCoords(dm_xPix, dm_yPix, chipName,
+                                                obs_metadata=obs_metadata,
+                                                camera=self.camera,
+                                                epoch=epoch,
+                                                includeDistortion=includeDistortion)
 
     def raDecFromPixelCoords(self, xPix, yPix, chipName, obs_metadata,
                              epoch=2000.0, includeDistortion=True):
@@ -775,14 +781,14 @@ class LSSTCameraWrapper(coordUtils.DMtoCameraPixelTransformer,
         are defined in the Camera team system, rather than the DM system.
         """
 
-        dm_xPix, dm_yPix =  coordUtils._pixelCoordsFromRaDecLSST(ra, dec,
-                                                                 pm_ra=pm_ra, pm_dec=pm_dec,
-                                                                 parallax=parallax, v_rad=v_rad,
-                                                                 obs_metadata=obs_metadata,
-                                                                 chipName=chipName,
-                                                                 band=obs_metadata.bandpass,
-                                                                 epoch=epoch,
-                                                                 includeDistortion=includeDistortion)
+        dm_xPix, dm_yPix =  coordUtils._pixelCoordsFromRaDec(ra, dec,
+                                                             pm_ra=pm_ra, pm_dec=pm_dec,
+                                                             parallax=parallax, v_rad=v_rad,
+                                                             obs_metadata=obs_metadata,
+                                                             chipName=chipName,
+                                                             camera=self.camera,
+                                                             epoch=epoch,
+                                                             includeDistortion=includeDistortion)
 
         return self.cameraPixFromDMPix(dm_xPix, dm_yPix, chipName)
 

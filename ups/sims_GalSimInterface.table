@@ -8,7 +8,7 @@ setupRequired(sims_coordUtils)
 setupRequired(sims_catalogs)
 setupRequired(sims_catUtils)
 
-setupOptional(obs_lsstSim)
+setupOptional(obs_lsst)
 
 #This is needed by the mssql python module
 envPrepend(TDSVER, 7.0)

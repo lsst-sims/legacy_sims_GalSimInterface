@@ -15,6 +15,7 @@ import numpy as np
 import os
 from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
+import lsst.obs.lsst.phosim as obs_lsst_phosim
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.catalogs.db import fileDBObject
@@ -24,12 +25,7 @@ from testUtils import create_text_catalog
 
 from lsst.sims.coordUtils import pixelCoordsFromRaDec
 from lsst.sims.coordUtils import DMtoCameraPixelTransformer
-from lsst.sims.coordUtils import raDecFromPixelCoordsLSST
-from lsst.sims.coordUtils import pixelCoordsFromRaDecLSST
-from lsst.sims.coordUtils import chipNameFromPupilCoordsLSST
-from lsst.sims.coordUtils import pupilCoordsFromFocalPlaneCoordsLSST
-from lsst.sims.coordUtils import focalPlaneCoordsFromPupilCoordsLSST
-from lsst.sims.coordUtils import lsst_camera
+from lsst.sims.coordUtils import raDecFromPixelCoords
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
@@ -71,17 +67,10 @@ class GalSimPlacementTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         sims_clean_up()
-        if hasattr(chipNameFromPupilCoordsLSST, '_detector_arr'):
-            del chipNameFromPupilCoordsLSST._detector_arr
-        if hasattr(focalPlaneCoordsFromPupilCoordsLSST, '_z_fitter'):
-            del focalPlaneCoordsFromPupilCoordsLSST._z_fitter
-        if hasattr(pupilCoordsFromFocalPlaneCoordsLSST, '_z_fitter'):
-            del pupilCoordsFromFocalPlaneCoordsLSST._z_fitter
-        if hasattr(lsst_camera, '_lsst_camera'):
-            del lsst_camera._lsst_camera
 
     @classmethod
     def setUpClass(cls):
+        cls.camera = obs_lsst_phosim.PhosimMapper().camera
         opsimdb = os.path.join(getPackageDir('sims_data'), 'OpSimData',
                                'opsimblitz1_1133_sqlite.db')
         obs_gen = ObservationMetaDataGenerator(opsimdb)
@@ -104,7 +93,7 @@ class GalSimPlacementTest(unittest.TestCase):
             shutil.rmtree(scratchDir)
         os.mkdir(scratchDir)
 
-        detector = lsst_camera()['R:0,3 S:2,2']
+        detector = self.camera['R03_S22']
         det_name = 'R03_S22'
 
         magNorm = 19.0
@@ -121,10 +110,10 @@ class GalSimPlacementTest(unittest.TestCase):
 
             imageName = '%s_%s_%s.fits' % (imageRoot, det_name, obs.bandpass)
 
-            ra_c, dec_c = raDecFromPixelCoordsLSST(2000.0, 2000.0,
-                                                   detector.getName(),
-                                                   band=obs.bandpass,
-                                                   obs_metadata=obs)
+            ra_c, dec_c = raDecFromPixelCoords(2000.0, 2000.0,
+                                               detector.getName(),
+                                               camera=self.camera,
+                                               obs_metadata=obs)
 
             nSamples = 3
             rng = np.random.RandomState(42)
@@ -137,21 +126,15 @@ class GalSimPlacementTest(unittest.TestCase):
                 ra_obj = ra_c + rng.random_sample()*0.2 - 0.1
                 dec_obj = dec_c + rng.random_sample()*0.2 - 0.1
 
-                dmx_wrong, dmy_wrong = pixelCoordsFromRaDec(ra_obj, dec_obj,
-                                                            chipName=detector.getName(),
-                                                            obs_metadata=obs,
-                                                            camera=lsst_camera())
 
-                dmx_pix, dmy_pix = pixelCoordsFromRaDecLSST(ra_obj, dec_obj,
-                                                            chipName=detector.getName(),
-                                                            obs_metadata=obs,
-                                                            band=obs.bandpass)
+                dmx_pix, dmy_pix = pixelCoordsFromRaDec(ra_obj, dec_obj,
+                                                        chipName=detector.getName(),
+                                                        obs_metadata=obs,
+                                                        camera=self.camera)
 
                 x_pix, y_pix = pixel_transformer.cameraPixFromDMPix(dmx_pix, dmy_pix,
                                                                     detector.getName())
 
-                x_pix_wrong, y_pix_wrong = pixel_transformer.cameraPixFromDMPix(dmx_wrong, dmy_wrong,
-                                                                                detector.getName())
 
                 d_ra = 3600.0*(ra_obj - obs.pointingRA)  # in arcseconds
                 d_dec = 3600.0*(dec_obj - obs.pointingDec)
@@ -177,11 +160,6 @@ class GalSimPlacementTest(unittest.TestCase):
                 x_centroid = sum([ii*im[:,ii].sum() for ii in range(im.shape[1])])/tot_flux
                 dd = np.sqrt((x_pix-x_centroid)**2 + (y_pix-y_centroid)**2)
                 self.assertLess(dd, 0.5*fwhm)
-
-                dd_wrong = np.sqrt((x_pix_wrong-x_centroid)**2 +
-                                   (y_pix_wrong-y_centroid)**2)
-
-                self.assertLess(dd, dd_wrong)
 
                 if os.path.exists(dbFileName):
                     os.unlink(dbFileName)
