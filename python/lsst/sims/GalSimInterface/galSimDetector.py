@@ -117,7 +117,7 @@ class GalSim_afw_TanSipWCS(galsim.wcs.CelestialWCS):
         self.fitsHeader.set('ORIGIN', 'IMSIM')
         observatory = LsstObservatory()
         self.fitsHeader.set('OBS-LONG', observatory.getLongitude().asDegrees())
-        self.fitsHeader.set('OBS-LAT', observatory.getLongitude().asDegrees())
+        self.fitsHeader.set('OBS-LAT', observatory.getLatitude().asDegrees())
         self.fitsHeader.set('OBS-ELEV', observatory.getElevation())
         obs_location = observatory.getLocation()
         self.fitsHeader.set('OBSGEO-X', obs_location.geocentric[0].value)
