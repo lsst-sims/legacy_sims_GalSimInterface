@@ -36,9 +36,9 @@ from lsst.sims.catUtils.utils import (calcADUwrapper, testGalaxyBulgeDBObj, test
 import lsst.afw.image as afwImage
 from lsst.sims.coordUtils import clean_up_lsst_camera
 
-# Tell astropy not to download this file again, even if it's out of date.
+# Tell astropy not to download the IERS tables
 from astropy.utils import iers
-iers.conf.auto_max_age = None
+iers.conf.auto_download=False
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
@@ -1253,20 +1253,20 @@ class HourAngleTestCase(unittest.TestCase):
                                              BandpassDict.loadTotalBandpassesFromFiles(),
                                              None, apply_sensor_model=False)
 
-        mjd = 59877.15107861111027887
+        mjd = 57780.0  # pick an MJD that does not require interpolation
         ra = 55.52107440528638449
-        self.assertAlmostEqual(math.cos(math.radians(321.62974517903774)),
+        self.assertAlmostEqual(math.cos(math.radians(0.19508880821259567)),
                                math.cos(math.radians(gs_interpreter.getHourAngle(mjd, ra))),
                                places=4)
 
-        self.assertAlmostEqual(math.sin(math.radians(321.62974517903774)),
+        self.assertAlmostEqual(math.sin(math.radians(0.19508880821259567)),
                                math.sin(math.radians(gs_interpreter.getHourAngle(mjd, ra))),
                                places=4)
 
         # Pick a MJD such that GAST = -observatory geodetic longitude,
         # so that local hour angle = 360 - ra.
-        mjd = 58265.3194197049 - gs_interpreter.observatory.getLongitude().asDegrees()/360.
-        self.assertAlmostEqual(-ra, gs_interpreter.getHourAngle(mjd, ra),
+        mjd = 57779.84565546585
+        self.assertAlmostEqual(360.0-ra, gs_interpreter.getHourAngle(mjd, ra),
                                places=4)
 
 
