@@ -14,7 +14,7 @@ from lsst.sims.GalSimInterface import GalSimGalaxies, GalSimRandomWalk
 from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 
-from lsst.sims.coordUtils.utils import ReturnCamera
+#from lsst.sims.coordUtils.utils import ReturnCamera
 
 from testUtils import create_text_catalog
 
@@ -77,7 +77,7 @@ class hlrCatRandomWalk(GalSimRandomWalk):
                        ('gamma2', 0.0, float),
                        ('kappa', 0.0, float),
                        ]
-
+@unittest.skip('ReturnCamera deprecated - need replacement')
 class GalSimHlrTest(unittest.TestCase):
 
     @classmethod

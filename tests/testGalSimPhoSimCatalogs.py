@@ -7,7 +7,6 @@ import tempfile
 import shutil
 import lsst.utils.tests
 
-from lsst.utils import getPackageDir
 import lsst.afw.cameraGeom.testUtils as camTestUtils
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, radiansFromArcsec

@@ -13,15 +13,11 @@ from lsst.sims.coordUtils import pixelCoordsFromPupilCoords
 
 from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.GalSimInterface import LSSTCameraWrapper
-from lsst.sims.coordUtils import lsst_camera
 
 import lsst.afw.cameraGeom.testUtils as camTestUtils
 from lsst.afw.cameraGeom import FOCAL_PLANE
 from lsst.afw.cameraGeom import TAN_PIXELS, FIELD_ANGLE, PIXELS
 
-from lsst.sims.coordUtils import chipNameFromPupilCoordsLSST
-from lsst.sims.coordUtils import focalPlaneCoordsFromPupilCoordsLSST
-from lsst.sims.coordUtils import pupilCoordsFromFocalPlaneCoordsLSST
 from lsst.sims.coordUtils import pupilCoordsFromPixelCoordsLSST
 from lsst.sims.coordUtils import pixelCoordsFromPupilCoordsLSST
 from lsst.sims.coordUtils import raDecFromPixelCoordsLSST

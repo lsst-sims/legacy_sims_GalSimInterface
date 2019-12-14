@@ -1,4 +1,3 @@
-from builtins import zip
 from builtins import range
 import numpy as np
 import os
@@ -11,14 +10,12 @@ from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, arcsecFromRadians
-from lsst.sims.utils import angularSeparation
 from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from lsst.sims.GalSimInterface import Kolmogorov_and_Gaussian_PSF
 from lsst.sims.GalSimInterface import GalSimCameraWrapper
-from lsst.sims.coordUtils import raDecFromPixelCoords
 
-from lsst.sims.coordUtils.utils import ReturnCamera
+#from lsst.sims.coordUtils.utils import ReturnCamera
 
 from testUtils import create_text_catalog
 
@@ -53,7 +50,7 @@ class fwhmCat(GalSimStars):
                         ('radialVelocity', 0.0, np.float),
                         ('parallax', 0.0, np.float)]
 
-
+@unittest.skip('ReturnCamera deprecated - need replacement')
 class GalSimFwhmTest(unittest.TestCase):
 
     longMessage = True
@@ -180,7 +177,7 @@ class GalSimFwhmTest(unittest.TestCase):
         if os.path.exists(scratchDir):
             shutil.rmtree(scratchDir)
 
-
+@unittest.skip('ReturnCamera deprecated - need replacement')
 class KolmogrovGaussianTestCase(unittest.TestCase):
     """
     Just test that the Kolmogorov_and_Gaussian_PSF runs

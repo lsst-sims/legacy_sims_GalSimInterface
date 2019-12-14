@@ -4,7 +4,6 @@ test the placement of objects on the LSST camera.  This is to make
 sure that we have correctly handled the band-dependent optical distortions
 in the LSST camera.
 """
-from builtins import zip
 from builtins import range
 import unittest
 import tempfile

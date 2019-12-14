@@ -1,15 +1,10 @@
 import unittest
-import os
 import numpy as np
 import lsst.utils.tests
 import lsst.geom as LsstGeom
-from lsst.utils import getPackageDir
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, haversine, arcsecFromRadians
-from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import _raDecFromPixelCoords
 from lsst.sims.GalSimInterface.wcsUtils import tanWcsFromDetector, tanSipWcsFromDetector
-from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.GalSimInterface import LSSTCameraWrapper
 from lsst.sims.coordUtils import lsst_camera
 
