@@ -8,7 +8,7 @@ import lsst.utils.tests
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.photUtils import PhotometricParameters
-from lsst.sims.coordUtils.utils import ReturnCamera
+#from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.sims.coordUtils import _raDecFromPixelCoords, pupilCoordsFromPixelCoords
 from lsst.sims.GalSimInterface import GalSimDetector, GalSimCameraWrapper
 
@@ -16,7 +16,7 @@ from lsst.sims.GalSimInterface import GalSimDetector, GalSimCameraWrapper
 def setup_module(module):
     lsst.utils.tests.init()
 
-
+@unittest.skip('ReturnCamera deprecated - need replacement')
 class GalSimDetectorTest(unittest.TestCase):
 
     @classmethod

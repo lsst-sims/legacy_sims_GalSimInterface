@@ -10,8 +10,6 @@ from astropy._erfa import ErfaWarning
 import galsim
 import numpy as np
 import lsst.geom as LsstGeom
-from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
-from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
 from lsst.obs.lsstSim import LsstSimMapper
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.GalSimInterface.wcsUtils import tanSipWcsFromDetector

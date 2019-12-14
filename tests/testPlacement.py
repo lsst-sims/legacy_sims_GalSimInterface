@@ -11,7 +11,7 @@ from lsst.utils import getPackageDir
 import lsst.afw.image as afwImage
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData, arcsecFromRadians, haversine
-from lsst.sims.coordUtils.utils import ReturnCamera
+#from lsst.sims.coordUtils.utils import ReturnCamera
 from lsst.sims.coordUtils import _pixelCoordsFromRaDec, _raDecFromPixelCoords
 from lsst.sims.photUtils import Sed, Bandpass
 from lsst.sims.catalogs.db import fileDBObject
@@ -55,7 +55,7 @@ class placementCatalog(GalSimStars):
                         ('parallax', 0.0, np.float)
                         ]
 
-
+@unittest.skip('ReturnCamera deprecated - need replacement')
 class GalSimPlacementTest(unittest.TestCase):
 
     @classmethod

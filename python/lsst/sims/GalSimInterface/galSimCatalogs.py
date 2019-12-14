@@ -14,7 +14,6 @@ from builtins import zip
 from builtins import str
 import numpy as np
 import os
-import copy
 
 import lsst.utils
 from lsst.sims.utils import arcsecFromRadians
@@ -27,10 +26,7 @@ from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.GalSimInterface import make_galsim_detector
 from lsst.sims.photUtils import (Sed, Bandpass, BandpassDict,
                                  PhotometricParameters)
-import lsst.afw.cameraGeom.testUtils as camTestUtils
-import lsst.geom as LsstGeom
-from lsst.afw.cameraGeom import FIELD_ANGLE, PIXELS, FOCAL_PLANE
-from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
+from lsst.afw.cameraGeom import DetectorType
 
 __all__ = ["GalSimGalaxies", "GalSimAgn", "GalSimStars", "GalSimRandomWalk"]
 
@@ -440,7 +436,7 @@ class GalSimBase(InstanceCatalog, CameraCoords):
             detectors = []
 
             for dd in self.camera_wrapper.camera:
-                if dd.getType() == WAVEFRONT or dd.getType() == GUIDER:
+                if dd.getType() == DetectorType.WAVEFRONT or dd.getType() == DetectorType.GUIDER:
                     # This package does not yet handle the 90-degree rotation
                     # in WCS that occurs for wavefront or guide sensors
                     continue

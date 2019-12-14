@@ -14,7 +14,7 @@ from lsst.sims.GalSimInterface import GalSimGalaxies
 from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.coordUtils import _raDecFromPixelCoords
 
-from lsst.sims.coordUtils.utils import ReturnCamera
+#afrom lsst.sims.coordUtils.utils import ReturnCamera
 
 from testUtils import create_text_catalog
 
@@ -59,7 +59,7 @@ class paCat(GalSimGalaxies):
                        ('kappa', 0.0, float),
                        ]
 
-
+@unittest.skip('ReturnCamera deprecated - need replacement')
 class GalSimPositionAngleTest(unittest.TestCase):
 
     @classmethod

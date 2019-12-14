@@ -10,7 +10,7 @@ from lsst.utils import getPackageDir
 import lsst.afw.cameraGeom.testUtils as camTestUtils
 
 import lsst.afw.image as afwImage
-from lsst.afw.cameraGeom import WAVEFRONT, GUIDER
+from lsst.afw.cameraGeom import DetectorType
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import fileDBObject
@@ -150,7 +150,7 @@ class allowedChipsTest(unittest.TestCase):
 
         name_list = []
         for dd in self.camera:
-            if dd.getType() == WAVEFRONT or dd.getType() == GUIDER:
+            if dd.getType() == DetectorType.WAVEFRONT or dd.getType() == DetectorType.GUIDER:
                 continue
             name = dd.getName()
             name_list.append(name)

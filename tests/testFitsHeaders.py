@@ -14,12 +14,7 @@ from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.GalSimInterface import GalSimStars, SNRdocumentPSF
 from lsst.sims.GalSimInterface import GalSimCameraWrapper
 from lsst.sims.GalSimInterface import LSSTCameraWrapper
-from lsst.sims.coordUtils.utils import ReturnCamera
-from lsst.sims.coordUtils import lsst_camera
-
-from lsst.sims.coordUtils import chipNameFromPupilCoordsLSST
-from lsst.sims.coordUtils import focalPlaneCoordsFromPupilCoordsLSST
-from lsst.sims.coordUtils import pupilCoordsFromFocalPlaneCoordsLSST
+#from lsst.sims.coordUtils.utils import ReturnCamera
 
 from testUtils import create_text_catalog
 
@@ -61,7 +56,7 @@ class fitsHeaderCatalog(GalSimStars):
                         ('parallax', 0.0, np.float)
                         ]
 
-
+@unittest.skip('ReturnCamera deprecated - need replacement')
 class FitsHeaderTest(unittest.TestCase):
 
     @classmethod
