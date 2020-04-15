@@ -28,11 +28,12 @@ __all__ = ["make_gs_interpreter", "GalSimInterpreter", "GalSimSiliconInterpreter
 
 def make_gs_interpreter(obs_md, detectors, bandpassDict, noiseWrapper,
                         epoch=None, seed=None, apply_sensor_model=False,
-                        bf_strength=1):
+                        bf_strength=1, fits_image_ckpt_threshold=1e4):
     if apply_sensor_model:
         return GalSimSiliconInterpreter(obs_metadata=obs_md, detectors=detectors,
-                                       bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
-                                       epoch=epoch, seed=seed, bf_strength=bf_strength)
+                                        bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
+                                        epoch=epoch, seed=seed, bf_strength=bf_strength,
+                                        fits_image_ckpt_threshold=fits_image_ckpt_threshold)
 
     return GalSimInterpreter(obs_metadata=obs_md, detectors=detectors,
                              bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
@@ -736,12 +737,14 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
     model to the drawn objects.
     """
     def __init__(self, obs_metadata=None, detectors=None, bandpassDict=None,
-                 noiseWrapper=None, epoch=None, seed=None, bf_strength=1):
+                 noiseWrapper=None, epoch=None, seed=None, bf_strength=1,
+                 fits_image_ckpt_threshold=1e4):
         super(GalSimSiliconInterpreter, self)\
             .__init__(obs_metadata=obs_metadata, detectors=detectors,
                       bandpassDict=bandpassDict, noiseWrapper=noiseWrapper,
                       epoch=epoch, seed=seed)
 
+        self.fits_image_ckpt_threshold = fits_image_ckpt_threshold
         self.gs_bandpass_dict = {}
         for bandpassName in bandpassDict:
             bandpass = bandpassDict[bandpassName]
@@ -1009,7 +1012,7 @@ class GalSimSiliconInterpreter(GalSimInterpreter):
         # on cori-haswell), force a checkpoint after each object is
         # drawn.
         force_checkpoint = ((gsObject.galSimType == 'FitsImage') and
-                            realized_flux > 1e4)
+                            realized_flux > self.fits_image_ckpt_threshold)
         self.write_checkpoint(force=force_checkpoint)
         return outputString
 
