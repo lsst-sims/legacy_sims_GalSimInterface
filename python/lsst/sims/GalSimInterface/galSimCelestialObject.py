@@ -17,7 +17,8 @@ class GalSimCelestialObject(object):
                  halfLightRadius, minorAxis, majorAxis, positionAngle,
                  sindex, sed, bp_dict, photParams, npoints,
                  fits_image_file, pixel_scale, rotation_angle,
-                 gamma1=0, gamma2=0, kappa=0, uniqueId=None):
+                 gamma1=0, gamma2=0, kappa=0, uniqueId=None,
+                 nx=1, ny=1):
         """
         @param [in] galSimType is a string, either 'pointSource', 'sersic',
         'RandomWalk', or 'FitsImage' denoting the shape of the object
@@ -67,10 +68,18 @@ class GalSimCelestialObject(object):
         @param [in] kappa is the WL convergence parameter
 
         @param [in] uniqueId is an int storing a unique identifier for this object
+
+        @param [in] nx Integer containing the rebinning block size in the
+                    x-direction.  Default: 1
+
+        @param [in] ny Integer containing the rebinning block size in the
+                    y-direction.  Default: 1
         """
         self._uniqueId = uniqueId
         self._galSimType = galSimType
         self._fits_image_file = fits_image_file
+        self.nx = nx
+        self.ny = ny
 
         # The galsim.lens(...) function wants to be passed reduced
         # shears and magnification, so convert the WL parameters as

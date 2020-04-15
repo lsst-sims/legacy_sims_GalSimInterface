@@ -475,7 +475,11 @@ class GalSimInterpreter(object):
 
     def _drawFitsImage(self, gsObject, psf=None):
         # Create the galsim.InterpolatedImage profile from the FITS image.
-        centeredObj = galsim.InterpolatedImage(gsObject.fits_image_file,
+        image = galsim.fits.read(gsObject.fits_image_file)
+        if gsObject.nx != 1 or gsObject.ny != 1:
+            image = image.bin(gsObject.nx, gsObject.ny)
+
+        centeredObj = galsim.InterpolatedImage(image,
                                                scale=gsObject.pixel_scale)
         if gsObject.rotation_angle != 0:
             centeredObj = centeredObj.rotate(gsObject.rotation_angle*galsim.degrees)
