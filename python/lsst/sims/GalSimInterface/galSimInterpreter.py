@@ -481,7 +481,7 @@ class GalSimInterpreter(object):
             centeredObj = centeredObj.rotate(gsObject.rotation_angle*galsim.degrees)
 
         # Apply weak lensing distortion.
-        centerObject = centeredObj.lens(gsObject.g1, gsObject.g2, gsObject.mu)
+        centeredObj = centeredObj.lens(gsObject.g1, gsObject.g2, gsObject.mu)
 
         # Apply the PSF
         if psf is not None:
